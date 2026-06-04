@@ -115,6 +115,10 @@ npx supabase link --project-ref <project-ref>
 
 ## Cloudflare Pages 部署
 
+有两种部署方式。
+
+### 方式一：Cloudflare Pages Git 集成
+
 在 Cloudflare Dashboard 创建 Pages 项目，连接 GitHub 仓库：
 
 ```text
@@ -137,8 +141,26 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-当前 demo 不依赖 Supabase 也能部署和运行；填 Supabase 环境变量后，后续版本会切换到真实账号和共享基地。
 当前版本已经会在 Supabase 可用时读写 `demo_snapshots` 共享状态。
+
+### 方式二：GitHub Actions 发布到 Cloudflare Pages
+
+仓库已经包含 `.github/workflows/deploy-cloudflare-pages.yml`。GitHub Actions 需要这些 repository secrets：
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+```
+
+`SUPABASE_DB_URL` 也可以作为 GitHub secret 保存，供未来迁移脚本使用；它不应该传给 Cloudflare Pages 前端运行环境。
+
+如果走 GitHub Actions，Cloudflare API Token 需要能编辑 Cloudflare Pages，且目标项目名是：
+
+```text
+ember-dossier
+```
 
 ## 安全提醒
 
