@@ -8,7 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
-    "supabase:init": "node scripts/init-supabase.mjs"
+    "supabase:init": "node scripts/init-supabase.mjs",
+    "supabase:sql": "node scripts/print-supabase-sql.mjs",
+    "supabase:check": "node scripts/check-supabase-demo.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.0",

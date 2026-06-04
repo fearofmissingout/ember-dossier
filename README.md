@@ -78,9 +78,22 @@ npm run supabase:init
 如果你暂时没有 pooler 连接串，可以走 Dashboard：
 
 1. 打开 Supabase 项目的 SQL Editor。
-2. 先复制并执行 `supabase/schema.sql`。
-3. 再复制并执行 `supabase/seed.sql`。
-4. 刷新本地页面，顶部状态应从“数据库未连接”变成“数据库已同步”或“数据库已初始化”。
+2. 在本地复制合并后的 SQL：
+
+```powershell
+npm run --silent supabase:sql | clip
+```
+
+3. 粘贴到 SQL Editor 并执行。
+4. 回到本地验证表是否可读：
+
+```powershell
+npm run supabase:check
+```
+
+5. 刷新本地页面，顶部状态应从“数据库未连接”变成“数据库已同步”或“数据库已初始化”。
+
+如果不想用剪贴板命令，也可以按顺序手动复制并执行 `supabase/schema.sql` 和 `supabase/seed.sql`。
 
 如果要使用 Supabase 官方 CLI，本机没有全局 `supabase` 时可以用 `npx`：
 
