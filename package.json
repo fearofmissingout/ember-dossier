@@ -13,7 +13,6 @@
     "supabase:check": "node scripts/check-supabase-demo.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.86.0",
     "lucide-react": "^0.468.0",
     "pg": "^8.16.3",
     "react": "^19.2.3",
