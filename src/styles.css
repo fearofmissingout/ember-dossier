@@ -186,6 +186,29 @@ button:disabled {
   font-weight: 800;
 }
 
+.system-status .sync-pill.error {
+  border-color: #a94731;
+  background: #fff0e5;
+  color: #803521;
+}
+
+.sync-retry {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 6px 11px;
+  border: 1px solid #a94731;
+  border-radius: 999px;
+  background: #8a3c2a;
+  color: #fff9ef;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sync-retry:hover {
+  background: #713221;
+}
+
 .view-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.8fr);

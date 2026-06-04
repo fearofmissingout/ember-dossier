@@ -65,6 +65,8 @@ export default function App() {
   const [latestReportId, setLatestReportId] = useState<string | null>(null);
   const [remoteReady, setRemoteReady] = useState(!hasSupabaseConfig);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(hasSupabaseConfig ? "loading" : "local");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncRetryCount, setSyncRetryCount] = useState(0);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
     squadIds: ["lin", "mara", "otto"],
     locationId: "water-plant",
@@ -72,43 +74,79 @@ export default function App() {
     loadout: defaultLoadout
   }));
 
-  useEffect(() => {
-    let cancelled = false;
+  async function hydrateRemoteState() {
+    if (!hasSupabaseConfig) {
+      return;
+    }
 
-    async function hydrateRemoteState() {
-      if (!hasSupabaseConfig) {
-        return;
-      }
+    setSyncStatus("loading");
+    setSyncError(null);
 
-      setSyncStatus("loading");
+    try {
+      const result = await loadRemoteDemoState(createInitialState());
 
-      try {
-        const result = await loadRemoteDemoState(createInitialState());
+      setState(result.state);
+      saveDemoState(result.state);
+      setRemoteReady(true);
+      setSyncRetryCount(0);
+      setSyncStatus(result.mode === "initialized" ? "initialized" : "synced");
+    } catch (error) {
+      console.error("Failed to load Supabase demo state", error);
+      setRemoteReady(false);
+      setSyncError(describeSyncError(error));
+      setSyncRetryCount((count) => count + 1);
+      setSyncStatus("error");
+    }
+  }
 
-        if (cancelled) {
-          return;
-        }
+  async function pushRemoteState(nextState: GameState) {
+    if (!hasSupabaseConfig || !remoteReady) {
+      return;
+    }
 
-        setState(result.state);
-        saveDemoState(result.state);
-        setRemoteReady(true);
-        setSyncStatus(result.mode === "initialized" ? "initialized" : "synced");
-      } catch (error) {
-        console.error("Failed to load Supabase demo state", error);
+    setSyncStatus("saving");
+    setSyncError(null);
 
-        if (!cancelled) {
-          setRemoteReady(false);
-          setSyncStatus("error");
-        }
-      }
+    try {
+      await saveRemoteDemoState(nextState);
+      setSyncRetryCount(0);
+      setSyncStatus("synced");
+    } catch (error) {
+      console.error("Failed to save Supabase demo state", error);
+      setSyncError(describeSyncError(error));
+      setSyncRetryCount((count) => count + 1);
+      setSyncStatus("error");
+    }
+  }
+
+  function retryRemoteSync() {
+    if (!hasSupabaseConfig) {
+      return;
+    }
+
+    if (remoteReady) {
+      void pushRemoteState(state);
+      return;
     }
 
     void hydrateRemoteState();
+  }
+
+  useEffect(() => {
+    void hydrateRemoteState();
+  }, []);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || syncStatus !== "error" || syncRetryCount >= 3) {
+      return;
+    }
+
+    const retryTimer = window.setTimeout(retryRemoteSync, 4000);
 
     return () => {
-      cancelled = true;
+      window.clearTimeout(retryTimer);
     };
-  }, []);
+  }, [remoteReady, state, syncRetryCount, syncStatus]);
 
   useEffect(() => {
     saveDemoState(state);
@@ -120,9 +158,11 @@ export default function App() {
     let cancelled = false;
     const timer = window.setTimeout(() => {
       setSyncStatus("saving");
+      setSyncError(null);
       void saveRemoteDemoState(state)
         .then(() => {
           if (!cancelled) {
+            setSyncRetryCount(0);
             setSyncStatus("synced");
           }
         })
@@ -130,6 +170,8 @@ export default function App() {
           console.error("Failed to save Supabase demo state", error);
 
           if (!cancelled) {
+            setSyncError(describeSyncError(error));
+            setSyncRetryCount((count) => count + 1);
             setSyncStatus("error");
           }
         });
@@ -206,13 +248,7 @@ export default function App() {
     });
 
     if (hasSupabaseConfig && remoteReady) {
-      setSyncStatus("saving");
-      void saveRemoteDemoState(initialState)
-        .then(() => setSyncStatus("synced"))
-        .catch((error) => {
-          console.error("Failed to reset Supabase demo state", error);
-          setSyncStatus("error");
-        });
+      void pushRemoteState(initialState);
     }
   }
 
@@ -257,7 +293,14 @@ export default function App() {
             <h1>{views.find((item) => item.key === view)?.label}</h1>
           </div>
           <div className="system-status">
-            <span>{syncStatusLabels[syncStatus]}</span>
+            <span className={syncStatus === "error" ? "sync-pill error" : "sync-pill"} title={syncError ?? undefined}>
+              {syncStatusLabels[syncStatus]}
+            </span>
+            {syncStatus === "error" && hasSupabaseConfig && (
+              <button className="sync-retry" type="button" onClick={retryRemoteSync}>
+                重试
+              </button>
+            )}
             <span>士气 {state.resources.morale}</span>
             <span>危险 {state.resources.danger}</span>
           </div>
@@ -652,4 +695,16 @@ function calculateReadiness(squad: GameState["survivors"], recommendedStats: Gam
   }, 0);
 
   return total / squad.length;
+}
+
+function describeSyncError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+
+  return "Supabase request failed";
 }
