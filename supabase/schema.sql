@@ -117,6 +117,12 @@ create table if not exists public.content_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.demo_snapshots (
+  room_slug text primary key,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 alter table public.rooms enable row level security;
 alter table public.bases enable row level security;
 alter table public.members enable row level security;
@@ -127,6 +133,10 @@ alter table public.expeditions enable row level security;
 alter table public.reports enable row level security;
 alter table public.feed_items enable row level security;
 alter table public.content_events enable row level security;
+alter table public.demo_snapshots enable row level security;
+
+grant usage on schema public to anon, authenticated;
+grant select, insert, update on public.demo_snapshots to anon, authenticated;
 
 do $$
 begin
@@ -146,5 +156,35 @@ begin
       and policyname = 'content events are readable'
   ) then
     create policy "content events are readable" on public.content_events for select using (true);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'demo_snapshots'
+      and policyname = 'demo snapshot is readable'
+  ) then
+    create policy "demo snapshot is readable" on public.demo_snapshots
+      for select using (room_slug = 'ember-demo');
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'demo_snapshots'
+      and policyname = 'demo snapshot can be inserted'
+  ) then
+    create policy "demo snapshot can be inserted" on public.demo_snapshots
+      for insert with check (room_slug = 'ember-demo');
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'demo_snapshots'
+      and policyname = 'demo snapshot can be updated'
+  ) then
+    create policy "demo snapshot can be updated" on public.demo_snapshots
+      for update using (room_slug = 'ember-demo') with check (room_slug = 'ember-demo');
   end if;
 end $$;

@@ -17,6 +17,8 @@ import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, r
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import { resolveExpedition } from "./game/sim";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
+import { loadRemoteDemoState, saveRemoteDemoState } from "./lib/remoteState";
+import { hasSupabaseConfig } from "./lib/supabase";
 
 type ViewKey = "overview" | "survivors" | "expedition" | "reports" | "facilities" | "members" | "archive";
 
@@ -25,6 +27,17 @@ type ExpeditionDraft = {
   locationId: string;
   risk: RiskStrategy;
   loadout: ResourceBundle;
+};
+
+type SyncStatus = "local" | "loading" | "initialized" | "saving" | "synced" | "error";
+
+const syncStatusLabels: Record<SyncStatus, string> = {
+  local: "本地模式",
+  loading: "读取数据库",
+  initialized: "数据库已初始化",
+  saving: "同步中",
+  synced: "数据库已同步",
+  error: "数据库未连接"
 };
 
 const views: Array<{ key: ViewKey; label: string; icon: typeof Home }> = [
@@ -50,6 +63,8 @@ export default function App() {
   const [state, setState] = useState<GameState>(() => loadDemoState());
   const [view, setView] = useState<ViewKey>("overview");
   const [latestReportId, setLatestReportId] = useState<string | null>(null);
+  const [remoteReady, setRemoteReady] = useState(!hasSupabaseConfig);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(hasSupabaseConfig ? "loading" : "local");
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
     squadIds: ["lin", "mara", "otto"],
     locationId: "water-plant",
@@ -58,8 +73,73 @@ export default function App() {
   }));
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateRemoteState() {
+      if (!hasSupabaseConfig) {
+        return;
+      }
+
+      setSyncStatus("loading");
+
+      try {
+        const result = await loadRemoteDemoState(createInitialState());
+
+        if (cancelled) {
+          return;
+        }
+
+        setState(result.state);
+        saveDemoState(result.state);
+        setRemoteReady(true);
+        setSyncStatus(result.mode === "initialized" ? "initialized" : "synced");
+      } catch (error) {
+        console.error("Failed to load Supabase demo state", error);
+
+        if (!cancelled) {
+          setRemoteReady(false);
+          setSyncStatus("error");
+        }
+      }
+    }
+
+    void hydrateRemoteState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     saveDemoState(state);
-  }, [state]);
+
+    if (!hasSupabaseConfig || !remoteReady) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setSyncStatus("saving");
+      void saveRemoteDemoState(state)
+        .then(() => {
+          if (!cancelled) {
+            setSyncStatus("synced");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to save Supabase demo state", error);
+
+          if (!cancelled) {
+            setSyncStatus("error");
+          }
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [remoteReady, state]);
 
   const selectedLocation = state.locations.find((location) => location.id === draft.locationId) ?? state.locations[0];
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
@@ -112,8 +192,10 @@ export default function App() {
   }
 
   function resetDemo() {
+    const initialState = createInitialState();
+
     clearDemoState();
-    setState(createInitialState());
+    setState(initialState);
     setLatestReportId(null);
     setView("overview");
     setDraft({
@@ -122,6 +204,16 @@ export default function App() {
       risk: "standard",
       loadout: defaultLoadout
     });
+
+    if (hasSupabaseConfig && remoteReady) {
+      setSyncStatus("saving");
+      void saveRemoteDemoState(initialState)
+        .then(() => setSyncStatus("synced"))
+        .catch((error) => {
+          console.error("Failed to reset Supabase demo state", error);
+          setSyncStatus("error");
+        });
+    }
   }
 
   return (
@@ -165,6 +257,7 @@ export default function App() {
             <h1>{views.find((item) => item.key === view)?.label}</h1>
           </div>
           <div className="system-status">
+            <span>{syncStatusLabels[syncStatus]}</span>
             <span>士气 {state.resources.morale}</span>
             <span>危险 {state.resources.danger}</span>
           </div>
