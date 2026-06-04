@@ -6,4 +6,19 @@ const supabasePublishableKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
 
 export const hasSupabaseConfig = Boolean(supabaseUrl && supabasePublishableKey);
 
-export const supabase = hasSupabaseConfig ? createClient(supabaseUrl as string, supabasePublishableKey as string) : null;
+export const supabase = hasSupabaseConfig
+  ? createClient(supabaseUrl as string, supabasePublishableKey as string, {
+      accessToken: async () => supabasePublishableKey as string,
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          "X-Client-Info": "ember-dossier"
+        }
+      },
+      tracePropagation: false
+    })
+  : null;
