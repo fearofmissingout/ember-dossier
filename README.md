@@ -63,7 +63,7 @@ Copy-Item .env.example .env.local
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_DB_URL=postgresql://postgres:your-db-password@db.your-project.supabase.co:5432/postgres
 ```
 
@@ -78,7 +78,7 @@ npm run supabase:init
 前端真正接入账号、房间、共享基地时需要：
 
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 不要把 database password、connection string、service role key 提交到仓库。
 
@@ -103,7 +103,7 @@ Root directory: /
 
 ```text
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
 当前 demo 不依赖 Supabase 也能部署和运行；填 Supabase 环境变量后，后续版本会切换到真实账号和共享基地。
