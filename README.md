@@ -73,6 +73,15 @@ SUPABASE_DB_URL=postgresql://postgres:your-db-password@db.your-project.supabase.
 npm run supabase:init
 ```
 
+如果要使用 Supabase 官方 CLI，本机没有全局 `supabase` 时可以用 `npx`：
+
+```powershell
+npx supabase login
+npx supabase link --project-ref <project-ref>
+```
+
+`supabase init` 已经执行过，CLI 配置在 `supabase/config.toml`。`link` 只会绑定远端项目，不会自动执行 `schema.sql` 和 `seed.sql`；数据库初始化仍然使用上面的 `npm run supabase:init`，或者进入 Supabase Dashboard 的 SQL Editor 手动执行。
+
 注意：Supabase 的 direct database host 可能只提供 IPv6。如果本机或当前环境无法直连 `db.<project-ref>.supabase.co:5432`，请在 Supabase Dashboard 里复制 **Connection pooler** 的连接串，放到 `SUPABASE_DB_URL`。也可以直接进入 Supabase Dashboard 的 SQL Editor，按顺序执行 `schema.sql` 和 `seed.sql`。
 
 前端真正接入账号、房间、共享基地时需要：
