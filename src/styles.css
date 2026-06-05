@@ -975,7 +975,7 @@ button:disabled {
 
 .route-pacing {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2314,6 +2314,7 @@ button:disabled {
   .facility-grid,
   .frontline-grid,
   .journey-status-grid,
+  .route-pacing,
   .march-forecast,
   .travel-record-strip,
   .road-event-strip,
@@ -2398,6 +2399,7 @@ button:disabled {
   .frontline-grid,
   .archive-grid,
   .journey-status-grid,
+  .route-pacing,
   .travel-record-strip,
   .road-event-strip,
   .hardship-strip,

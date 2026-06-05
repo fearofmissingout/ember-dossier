@@ -1747,6 +1747,11 @@ function JourneyPanel({
           <strong>{routePace.nextLabel}</strong>
           <small>{routePace.nextTitle}</small>
         </div>
+        <div>
+          <span>March clock</span>
+          <strong>{routePace.clockLabel}</strong>
+          <small>{routePace.etaLabel}</small>
+        </div>
       </div>
       <div className="journey-track" aria-label="Expedition route progress">
         {routePace.forecast.map((stop) => (
@@ -1796,7 +1801,7 @@ function JourneyPanel({
             <span>Next march</span>
             <strong>Segment {segmentForecast.segment}</strong>
             <small>
-              {segmentForecast.planLabel} / {segmentForecast.tacticLabel}
+              {segmentForecast.planLabel} / {segmentForecast.tacticLabel} / {segmentForecast.hours}h
             </small>
           </div>
           <div>
@@ -1817,7 +1822,9 @@ function JourneyPanel({
             <strong>
               F{segmentForecast.resultingCondition.fatigue} H{segmentForecast.resultingCondition.hunger} T{segmentForecast.resultingCondition.thirst}
             </strong>
-            <small>Pressure {segmentForecast.resultingPressure}%</small>
+            <small>
+              Pressure {segmentForecast.resultingPressure}% / Clock {segmentForecast.resultingElapsedHours}h
+            </small>
             {segmentForecast.hardship && (
               <small className={`hardship-risk ${segmentForecast.hardship.severity}`}>
                 Risk: {segmentForecast.hardship.label} ({segmentForecast.hardship.effects.join(", ")})
@@ -1836,6 +1843,7 @@ function JourneyPanel({
               </div>
               <p>{record.body}</p>
               <small>{record.planLabel}</small>
+              <small>Travel time {record.timeLabel}</small>
               <small>{record.conditionText}</small>
               <div>
                 {record.effects.map((effect) => (

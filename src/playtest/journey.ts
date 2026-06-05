@@ -153,10 +153,14 @@ export type JourneyRouteStop = {
 };
 
 export type JourneyRoutePace = {
+  clockLabel: string;
   currentLabel: string;
   currentStop: number;
   currentTitle: string;
   distanceSegments: number;
+  elapsedHours: number;
+  etaHours: number;
+  etaLabel: string;
   forecast: JourneyRouteStop[];
   nextLabel: string;
   nextTitle: string;
@@ -189,9 +193,11 @@ export type JourneyTravelRecord = {
   body: string;
   conditionText: string;
   effects: string[];
+  hours: number;
   planLabel: string;
   pressureDelta: number;
   segment: number;
+  timeLabel: string;
   title: string;
   tone: JourneyTravelTone;
 };
@@ -216,10 +222,12 @@ export type JourneyHardshipRecord = JourneyHardship & {
 export type JourneySegmentForecast = {
   conditionDeltas: Omit<JourneyCondition, "distance">;
   hardship: JourneyHardship | null;
+  hours: number;
   notes: string[];
   planLabel: string;
   pressureDelta: number;
   resultingCondition: JourneyCondition;
+  resultingElapsedHours: number;
   resultingPressure: number;
   riskLevel: JourneySegmentForecastRisk;
   segment: number;
@@ -307,6 +315,7 @@ export type JourneyState = {
   burden: JourneyCarryBurden;
   combat: JourneyCombat | null;
   currentNodeIndex: number;
+  elapsedHours: number;
   extractionStatus: JourneyExtractionStatus;
   fieldSupplies: ResourceBundle;
   id: string;
@@ -337,6 +346,7 @@ export type JourneyTravelPlanOption = {
   id: JourneyTravelPlan;
   label: string;
   text: string;
+  hours: number;
   pressure: number;
   fatigue: number;
   hunger: number;
@@ -406,12 +416,18 @@ export function routePaceFor(journey: JourneyState): JourneyRoutePace {
   const nextLabel = nextNode ? nodeTypeLabel(nextNode.type) : "return";
   const nextTitle = nextNode?.title ?? "Back to base";
   const progressPercent = totalStops <= 1 ? 100 : Math.round((safeIndex / (totalStops - 1)) * 100);
+  const elapsedHours = journeyElapsedHours(journey);
+  const etaHours = Math.max(0, totalStops - safeIndex - 1) * (travelPlanOptions[journey.travelPlan]?.hours ?? 3) + (pendingRoad ? 1 : 0);
 
   return {
+    clockLabel: `${elapsedHours}h on road`,
     currentLabel,
     currentStop: safeIndex + 1,
     currentTitle,
     distanceSegments: journey.condition.distance,
+    elapsedHours,
+    etaHours,
+    etaLabel: etaHours > 0 ? `~${etaHours}h to extraction` : "Extraction ready",
     forecast: journey.nodes.map((node, index) => ({
       index: index + 1,
       label: nodeTypeLabel(node.type),
@@ -1149,6 +1165,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
+    elapsedHours: 0,
     extractionStatus: "in-progress",
     fieldSupplies,
     id: `journey-${Date.now()}`,
@@ -1623,6 +1640,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   const tacticOutcome = applySegmentTactic(next, tactic);
   const threat = segmentThreatFor(next);
   const threatOutcome = applySegmentThreat(next, threat, tactic.id);
+  const segmentHours = segmentHoursFor(plan, tactic.id);
   const beforePressure = next.pressure;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
@@ -1637,6 +1655,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure + threatOutcome.pressure;
 
   next.condition.distance += 1;
+  next.elapsedHours = journeyElapsedHours(next) + segmentHours;
   next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
   next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger + threatOutcome.hunger);
   next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst + threatOutcome.thirst);
@@ -1650,9 +1669,11 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
     waterSpent ? "water -1" : "no water: thirst rises"
   ].join(", ");
   next.logs.push(
-    `Road: segment ${next.condition.distance}, ${plan.label}. ${rationLog}${planSupplyResult.log ? `, ${planSupplyResult.log}` : ""}. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
+    `Road: segment ${next.condition.distance}, ${plan.label}, ${formatHours(segmentHours)}. ${rationLog}${
+      planSupplyResult.log ? `, ${planSupplyResult.log}` : ""
+    }. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
       rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
-      )}.`
+    )}.`
   );
   next.travelHistory.push(
     createTravelRecord(next, plan, {
@@ -1667,6 +1688,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
         `Fatigue +${fatigueGain}`,
         `Pressure ${formatSignedPercent(pressureDelta)}`
       ],
+      hours: segmentHours,
       pressureDelta
     })
   );
@@ -1698,6 +1720,7 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
   const tacticOutcome = applySegmentTactic(next, tactic);
   const threat = segmentThreatFor(next);
   const threatOutcome = applySegmentThreat(next, threat, tactic.id);
+  const segmentHours = segmentHoursFor(plan, tactic.id);
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
@@ -1711,6 +1734,7 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
   const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure + threatOutcome.pressure;
 
   next.condition.distance += 1;
+  next.elapsedHours = journeyElapsedHours(next) + segmentHours;
   next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
   next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger + threatOutcome.hunger);
   next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst + threatOutcome.thirst);
@@ -1738,10 +1762,12 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
       thirst: next.condition.thirst - beforeCondition.thirst
     },
     hardship: hardship ? publicHardship(hardship) : null,
+    hours: segmentHours,
     notes,
     planLabel: plan.label,
     pressureDelta,
     resultingCondition: { ...next.condition },
+    resultingElapsedHours: journeyElapsedHours(next),
     resultingPressure: next.pressure,
     riskLevel: segmentForecastRisk(next),
     segment: next.condition.distance,
@@ -2133,6 +2159,7 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
   {
     fatigue: 0,
     hunger: 0,
+    hours: 3,
     id: "steady",
     label: "Steady march",
     pressure: -1,
@@ -2142,6 +2169,7 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
   {
     fatigue: 3,
     hunger: 3,
+    hours: 5,
     id: "scavenge",
     label: "Strip the road",
     pressure: 5,
@@ -2151,6 +2179,7 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
   {
     fatigue: 6,
     hunger: 5,
+    hours: 2,
     id: "rush",
     label: "Forced march",
     pressure: -6,
@@ -2160,6 +2189,7 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
   {
     fatigue: 2,
     hunger: 1,
+    hours: 4,
     id: "sneak",
     label: "Go quiet",
     pressure: -5,
@@ -2897,6 +2927,7 @@ function createTravelRecord(
   plan: JourneyTravelPlanOption,
   result: {
     effects: string[];
+    hours: number;
     pressureDelta: number;
   }
 ): JourneyTravelRecord {
@@ -2908,12 +2939,32 @@ function createTravelRecord(
     body: `${mood.body} ${plan.text}`,
     conditionText,
     effects: result.effects,
+    hours: result.hours,
     planLabel: plan.label,
     pressureDelta: result.pressureDelta,
     segment: journey.condition.distance,
+    timeLabel: formatHours(result.hours),
     title: mood.title,
     tone: travelToneFor(journey)
   };
+}
+
+function journeyElapsedHours(journey: Pick<JourneyState, "condition"> & Partial<Pick<JourneyState, "elapsedHours">>): number {
+  return journey.elapsedHours ?? journey.condition.distance * 3;
+}
+
+function segmentHoursFor(plan: JourneyTravelPlanOption, tactic: JourneySegmentTactic): number {
+  const tacticHours: Record<JourneySegmentTactic, number> = {
+    brace: 1,
+    observe: 0,
+    prospect: 1,
+    ration: 0
+  };
+  return Math.max(1, plan.hours + tacticHours[tactic]);
+}
+
+function formatHours(hours: number): string {
+  return `${hours}h`;
 }
 
 function travelToneFor(journey: JourneyState): JourneyTravelTone {

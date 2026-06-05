@@ -123,6 +123,43 @@ describe("journey route generation", () => {
     });
   });
 
+  test("tracks march clock and ETA for route survival pacing", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "clock-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const startPace = routePaceFor(journey);
+    const rushJourney = setJourneyTravelPlan(journey, "rush");
+    const forecast = forecastNextSegment(rushJourney, squad, 60);
+    const advanced = advanceJourneyTravel(rushJourney, squad, 60);
+
+    expect(startPace).toMatchObject({
+      clockLabel: "0h on road",
+      elapsedHours: 0,
+      etaHours: 12,
+      etaLabel: "~12h to extraction"
+    });
+    expect(forecast).toMatchObject({
+      hours: 2,
+      resultingElapsedHours: 2
+    });
+    expect(advanced.elapsedHours).toBe(2);
+    expect(advanced.travelHistory[0]).toMatchObject({
+      hours: 2,
+      timeLabel: "2h"
+    });
+  });
+
   test("combat inherits enemy stats and salvage rewards from the route node", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "combat-room");
