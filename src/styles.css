@@ -1058,8 +1058,31 @@ button:disabled {
   background: #fffdf5;
 }
 
+.facility-card.unbuilt {
+  border-style: dashed;
+  background: #f8f1e4;
+}
+
+.facility-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .facility-card h3 {
+  margin: 0;
   font-size: 18px;
+}
+
+.facility-title-row small {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #efe4cf;
+  color: #765e42;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .facility-card span {

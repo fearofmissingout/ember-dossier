@@ -20,6 +20,7 @@ import {
   Wrench
 } from "lucide-react";
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
+import { facilityActionCost, facilityActionLabel, isFacilityBuilt } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
 import {
@@ -1639,24 +1640,32 @@ function Facilities({ state, onUpgrade }: { state: GameState; onUpgrade: (id: st
   return (
     <section className="panel">
       <p className="eyebrow">Facilities</p>
-      <h2>轻量设施管理</h2>
+      <h2>Base development</h2>
       <div className="facility-grid">
-        {state.facilities.map((facility) => (
-          <article className={`facility-card ${facility.status}`} key={facility.id}>
-            <h3>{facility.name}</h3>
-            <span>等级 {facility.level}</span>
-            <p>{facility.effect}</p>
-            <button
-              className="ghost-button compact-action"
-              type="button"
-              disabled={state.resources.materials < facility.level * 5}
-              onClick={() => onUpgrade(facility.id)}
-            >
-              <Wrench size={16} aria-hidden="true" />
-              Upgrade: {facility.level * 5} materials
-            </button>
-          </article>
-        ))}
+        {state.facilities.map((facility) => {
+          const cost = facilityActionCost(facility);
+          const actionLabel = facilityActionLabel(facility);
+          const built = isFacilityBuilt(facility);
+          return (
+            <article className={`facility-card ${facility.status} ${built ? "" : "unbuilt"}`} key={facility.id}>
+              <div className="facility-title-row">
+                <h3>{facility.name}</h3>
+                <small>{facility.category ?? "core"}</small>
+              </div>
+              <span>{built ? `Level ${facility.level}` : "Blueprint"}</span>
+              <p>{facility.effect}</p>
+              <button
+                className="ghost-button compact-action"
+                type="button"
+                disabled={state.resources.materials < cost}
+                onClick={() => onUpgrade(facility.id)}
+              >
+                <Wrench size={16} aria-hidden="true" />
+                {actionLabel}: {cost} materials
+              </button>
+            </article>
+          );
+        })}
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import type { GameState, ResourceBundle } from "../game/types";
+import { completeFacilities } from "../game/facilities";
 import {
   starterAccountResources,
   starterAccountSurvivors,
@@ -41,7 +42,7 @@ export function createStarterRoom(slug: string, name = "Tower Run", hostUserId =
     base: {
       danger: 12,
       day: 1,
-      facilities: starterRoomFacilities(),
+      facilities: completeFacilities(starterRoomFacilities()),
       morale: 62,
       name: `${name} Base`,
       objective: starterObjective(),
@@ -94,7 +95,7 @@ export function createStarterSession(userId: string, displayName: string, roomSl
 
 export function roomToGameState(room: PlaytestRoom, survivors: AccountState["survivors"] = []): GameState {
   return {
-    facilities: room.base.facilities,
+    facilities: completeFacilities(room.base.facilities),
     feed: room.feed,
     locations: room.locations,
     resources: {
@@ -135,6 +136,10 @@ export function loadPlaytestSession(userId: string, displayName: string, roomSlu
 
     const room = {
       ...session.room,
+      base: {
+        ...session.room.base,
+        facilities: completeFacilities(session.room.base.facilities ?? [])
+      },
       baseAssignments: session.room.baseAssignments ?? []
     };
 

@@ -1,4 +1,5 @@
 import type { BaseResources, Facility, GameState, Location, ResourceBundle, Survivor } from "./types";
+import { facilityBlueprints } from "./facilities";
 
 export const emptyResources = (): ResourceBundle => ({
   food: 0,
@@ -285,10 +286,7 @@ export const starterLocations: Location[] = [
 ];
 
 export const starterFacilities: Facility[] = [
-  { id: "dorm", name: "宿舍", level: 1, status: "stable", effect: "床位 12，疲劳恢复正常" },
-  { id: "clinic", name: "医疗站", level: 1, status: "strained", effect: "可处理轻伤，重伤治疗缓慢" },
-  { id: "generator", name: "发电机", level: 1, status: "strained", effect: "电力勉强覆盖夜间照明" },
-  { id: "watchtower", name: "哨塔", level: 1, status: "stable", effect: "危险等级每日少量回落" }
+  ...facilityBlueprints
 ];
 
 export const starterGameState: GameState = {

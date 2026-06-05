@@ -1,5 +1,6 @@
 import { createStarterAccount, emptyLoadout, roomToGameState } from "../playtest/state";
 import { starterObjective, starterRoomFacilities, starterRoomLocations, starterRoomResources } from "../playtest/content";
+import { completeFacilities } from "../game/facilities";
 import type { ExpeditionReport, FeedItem } from "../game/types";
 import type {
   AccountState,
@@ -122,7 +123,7 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
     base: {
       danger: base.danger,
       day: base.day,
-      facilities: base.facilities,
+      facilities: completeFacilities(base.facilities ?? []),
       morale: base.morale,
       name: base.name,
       objective: remoteObjective.objective,
@@ -374,7 +375,7 @@ function serializeStarterRoomBase(roomId: string): PlaytestRoomBaseRow {
   return {
     danger: 12,
     day: 1,
-    facilities: starterRoomFacilities(),
+    facilities: completeFacilities(starterRoomFacilities()),
     morale: 62,
     name: "Tower Run Base",
     objective: {

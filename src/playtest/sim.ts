@@ -1,5 +1,6 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
+import { facilityActionCost, facilityBaseEffect, isFacilityBuilt } from "../game/facilities";
 import { hasSurvivorPerk, survivorPerkDetails } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
@@ -157,7 +158,8 @@ export function resolvePlaytestExpedition(
     }
 
     const participated = request.survivorIds.includes(survivor.id);
-    const nextXp = participated ? survivor.xp + 8 + Math.floor((request.travelFatigue ?? 0) / 25) : survivor.xp;
+    const trainingLevel = facilityLevel(next, "training");
+    const nextXp = participated ? survivor.xp + 8 + Math.floor((request.travelFatigue ?? 0) / 25) + trainingLevel * 2 : survivor.xp;
     const nextLevel = participated && nextXp >= survivor.level * 20 ? survivor.level + 1 : survivor.level;
     if (nextLevel > survivor.level) {
       const unlocked = survivorPerkDetails({ ...survivor, level: nextLevel, xp: nextXp }).filter(
@@ -241,21 +243,24 @@ export function upgradeFacility(session: PlaytestSession, userId: string, facili
     throw new Error(`Unknown facility: ${facilityId}`);
   }
 
-  const materialCost = facility.level * 5;
+  const wasBuilt = isFacilityBuilt(facility);
+  const materialCost = facilityActionCost(facility);
   if (next.room.base.resources.materials < materialCost) {
-    throw new Error("Not enough materials to upgrade this facility.");
+    throw new Error(`Not enough materials to ${wasBuilt ? "upgrade" : "build"} this facility.`);
   }
 
   next.room.base.resources.materials -= materialCost;
-  facility.level += 1;
-  facility.status = facility.level >= 3 ? "stable" : facility.status;
-  facility.effect = `${facility.effect} / Lv.${facility.level} upgrade: stronger expedition support.`;
+  facility.level = wasBuilt ? facility.level + 1 : 1;
+  facility.status = facility.level >= 3 ? "stable" : "strained";
+  facility.effect = `${facilityBaseEffect(facility.id)} / Lv.${facility.level}: stronger base and expedition support.`;
   next.room.feed.unshift({
-    body: `${facility.name} reached level ${facility.level}. Materials -${materialCost}; the room has a little more breathing room.`,
+    body: `${facility.name} ${wasBuilt ? "reached" : "came online at"} level ${facility.level}. Materials -${materialCost}; ${facilityEffectSummary(
+      facility.id
+    )}.`,
     id: `feed-facility-${Date.now()}`,
     kind: "system",
     timestamp: "刚刚",
-    title: "Facility upgraded"
+    title: wasBuilt ? "Facility upgraded" : "Facility built"
   });
 
   refreshUiState(next);
@@ -272,21 +277,31 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
 
   const previousDay = next.room.base.day;
   const nextDay = previousDay + 1;
-  const foodNeed = Math.max(2, next.room.members.length * 2);
-  const waterNeed = Math.max(2, next.room.members.length * 2);
-  const foodShortage = spendWithShortage(next.room.base.resources, "food", foodNeed);
-  const waterShortage = spendWithShortage(next.room.base.resources, "water", waterNeed);
-  const shortagePressure = foodShortage + waterShortage;
   const dormLevel = facilityLevel(next, "dorm");
   const clinicLevel = facilityLevel(next, "clinic");
   const watchtowerLevel = facilityLevel(next, "watchtower");
+  const kitchenLevel = facilityLevel(next, "kitchen");
+  const barricadeLevel = facilityLevel(next, "barricade");
+  const radioLevel = facilityLevel(next, "radio");
+  const foodNeed = Math.max(1, Math.max(2, next.room.members.length * 2) - kitchenLevel);
+  const waterNeed = Math.max(1, Math.max(2, next.room.members.length * 2) - Math.floor(kitchenLevel / 2));
+  const foodShortage = spendWithShortage(next.room.base.resources, "food", foodNeed);
+  const waterShortage = spendWithShortage(next.room.base.resources, "water", waterNeed);
+  const shortagePressure = foodShortage + waterShortage;
   const recovery = 6 + dormLevel * 3 + clinicLevel * 2;
   const shift = resolveBaseAssignments(next);
   const recoveredCount = recoverSurvivors(next, recovery);
+  const radioObjectiveBonus = radioLevel >= 2 ? 1 : 0;
+  if (radioObjectiveBonus > 0) {
+    next.room.base.objective.repairedParts = Math.min(
+      next.room.base.objective.requiredParts,
+      next.room.base.objective.repairedParts + radioObjectiveBonus
+    );
+  }
 
   next.room.base.day = nextDay;
   next.room.base.morale = clamp(next.room.base.morale + (shortagePressure > 0 ? -shortagePressure * 6 : 2), 0, 100);
-  next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel - shift.dangerReduction, 0, 100);
+  next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel - barricadeLevel - shift.dangerReduction, 0, 100);
 
   const logs = [
     ...shift.logs,
@@ -296,6 +311,15 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
       : "Pressure: the base makes it through the night without ration panic. Morale +2.",
     `Recovery: ${recoveredCount} survivor${recoveredCount === 1 ? "" : "s"} rested. Fatigue -${recovery} before injuries.`
   ];
+  if (kitchenLevel > 0) {
+    logs.push(`Kitchen: upkeep reduced by level ${kitchenLevel}.`);
+  }
+  if (barricadeLevel > 0) {
+    logs.push(`Barricade: danger pressure -${barricadeLevel}.`);
+  }
+  if (radioObjectiveBonus > 0) {
+    logs.push(`Radio: tower coordination adds Objective +${radioObjectiveBonus}.`);
+  }
 
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
@@ -342,6 +366,22 @@ const baseWorkLabels: Record<BaseWorkType, string> = {
   guard: "watch duty",
   repair: "tower repair"
 };
+
+const facilityEffectSummaries: Record<string, string> = {
+  barricade: "daily danger and guard pressure improve",
+  clinic: "care shifts and field patching improve",
+  dorm: "recovery and guard endurance improve",
+  generator: "ammo support and powered field starts improve",
+  kitchen: "daily upkeep and foraging improve",
+  radio: "tower coordination and route pressure improve",
+  training: "expedition XP and combat stamina improve",
+  watchtower: "daily danger and route pressure improve",
+  workshop: "repair shifts and ammo damage improve"
+};
+
+function facilityEffectSummary(facilityId: string) {
+  return facilityEffectSummaries[facilityId] ?? "base operations improve";
+}
 
 function ensureUser(session: PlaytestSession, userId: string) {
   if (session.account.profile.userId !== userId) {
@@ -480,29 +520,47 @@ function resolveBaseAssignments(session: PlaytestSession) {
     const fatiguePenalty = survivor.fatigue >= 70 ? 1 : 0;
     const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
     if (assignment.type === "forage") {
-      const yieldScore = Math.max(1, Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty + baseInstinctBonus);
+      const kitchenBonus = Math.floor(facilityLevel(session, "kitchen") / 2);
+      const yieldScore = Math.max(
+        1,
+        Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty + baseInstinctBonus + kitchenBonus
+      );
       session.room.base.resources.food += yieldScore;
       session.room.base.resources.water += Math.max(1, yieldScore - 1);
       survivor.fatigue = clamp(survivor.fatigue + 6, 0, 100);
-      logs.push(`${survivor.name} foraged: Food +${yieldScore}, Water +${Math.max(1, yieldScore - 1)}, fatigue +6.`);
+      logs.push(
+        `${survivor.name} foraged: Food +${yieldScore}, Water +${Math.max(1, yieldScore - 1)}, fatigue +6${
+          kitchenBonus > 0 ? `, kitchen bonus +${kitchenBonus}` : ""
+        }.`
+      );
     }
 
     if (assignment.type === "repair") {
-      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty + baseInstinctBonus);
+      const workshopBonus = Math.floor(facilityLevel(session, "workshop") / 2);
+      const radioBonus = facilityLevel(session, "radio") >= 1 ? 1 : 0;
+      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty + baseInstinctBonus + workshopBonus + radioBonus);
       session.room.base.objective.repairedParts = Math.min(
         session.room.base.objective.requiredParts,
         session.room.base.objective.repairedParts + repairScore
       );
       session.room.base.resources.materials += repairScore > 1 ? 1 : 0;
       survivor.fatigue = clamp(survivor.fatigue + 5, 0, 100);
-      logs.push(`${survivor.name} repaired the tower: Objective +${repairScore}${repairScore > 1 ? ", Materials +1" : ""}, fatigue +5.`);
+      logs.push(
+        `${survivor.name} repaired the tower: Objective +${repairScore}${repairScore > 1 ? ", Materials +1" : ""}, fatigue +5${
+          workshopBonus + radioBonus > 0 ? `, facility bonus +${workshopBonus + radioBonus}` : ""
+        }.`
+      );
     }
 
     if (assignment.type === "guard") {
-      const guardScore = Math.max(1, Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty + baseInstinctBonus);
+      const barricadeBonus = facilityLevel(session, "barricade");
+      const guardScore = Math.max(
+        1,
+        Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty + baseInstinctBonus + barricadeBonus
+      );
       dangerReduction += guardScore;
       survivor.fatigue = clamp(survivor.fatigue + 4, 0, 100);
-      logs.push(`${survivor.name} kept watch: danger pressure -${guardScore}, fatigue +4.`);
+      logs.push(`${survivor.name} kept watch: danger pressure -${guardScore}, fatigue +4${barricadeBonus > 0 ? `, barricade +${barricadeBonus}` : ""}.`);
     }
 
     if (assignment.type === "care") {

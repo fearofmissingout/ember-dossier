@@ -64,13 +64,17 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
   const clinic = facilityLevel(facilities, "clinic");
   const generator = facilityLevel(facilities, "generator");
   const watchtower = facilityLevel(facilities, "watchtower");
+  const barricade = facilityLevel(facilities, "barricade");
+  const radio = facilityLevel(facilities, "radio");
+  const training = facilityLevel(facilities, "training");
+  const workshop = facilityLevel(facilities, "workshop");
 
   return {
-    ammoDamage: Math.max(0, generator - 1),
-    guardBlock: Math.max(0, dorm - 1),
-    maxHp: Math.max(0, dorm - 1) * 4,
+    ammoDamage: Math.max(0, generator - 1) + workshop,
+    guardBlock: Math.max(0, dorm - 1) + barricade,
+    maxHp: Math.max(0, dorm - 1) * 4 + training * 2,
     patchHeal: Math.max(0, clinic - 1) * 3,
-    pressureRelief: Math.max(0, watchtower - 1) * 2,
+    pressureRelief: Math.max(0, watchtower - 1) * 2 + radio,
     startingSupplies: {
       ammo: generator >= 3 ? 1 : 0,
       medicine: clinic >= 3 ? 1 : 0

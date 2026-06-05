@@ -49,6 +49,7 @@ export type Location = {
 };
 
 export type Facility = {
+  category?: "core" | "survival" | "expedition" | "utility";
   id: string;
   name: string;
   level: number;

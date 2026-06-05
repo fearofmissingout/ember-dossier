@@ -38,6 +38,7 @@ describe("playtest state constructors", () => {
     expect(session.room.members[0]?.userId).toBe("user-a");
     expect(session.uiState.resources.food).toBe(session.room.base.resources.food);
     expect(session.uiState.survivors.length).toBe(session.account.survivors.length);
+    expect(session.uiState.facilities.some((facility) => facility.id === "training" && facility.level === 0)).toBe(true);
     expect(session.uiState.feed[0]?.kind).toBe("system");
   });
 
@@ -304,6 +305,37 @@ describe("playtest room loop", () => {
     expect(result.session.account.survivors[0].xp).toBeGreaterThan(8);
   });
 
+  test("training room increases expedition xp gain", () => {
+    let session = createStarterSession("user-a", "Alice", "training-room");
+    const training = session.room.base.facilities.find((facility) => facility.id === "training");
+    if (training) {
+      training.level = 2;
+    }
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.session.account.survivors[0].xp).toBe(12);
+  });
+
   test("treats injured survivors by spending medicine", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     const survivorId = session.account.survivors[0].id;
@@ -329,6 +361,43 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.materials).toBeLessThan(20);
     expect(next.room.base.facilities[0].level).toBe(facility.level + 1);
     expect(next.room.feed[0]?.title).toContain("Facility upgraded");
+  });
+
+  test("builds facility blueprints from level zero", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    const kitchen = session.room.base.facilities.find((facility) => facility.id === "kitchen");
+    session.room.base.resources.materials = 10;
+
+    const next = upgradeFacility(session, "user-a", "kitchen");
+    const builtKitchen = next.room.base.facilities.find((facility) => facility.id === "kitchen");
+
+    expect(kitchen?.level).toBe(0);
+    expect(builtKitchen?.level).toBe(1);
+    expect(next.room.base.resources.materials).toBe(4);
+    expect(next.room.feed[0]?.title).toContain("Facility built");
+  });
+
+  test("kitchen and barricade change daily upkeep and danger", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.danger = 18;
+    const kitchen = session.room.base.facilities.find((facility) => facility.id === "kitchen");
+    const barricade = session.room.base.facilities.find((facility) => facility.id === "barricade");
+    if (kitchen) {
+      kitchen.level = 2;
+    }
+    if (barricade) {
+      barricade.level = 2;
+    }
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.base.resources.food).toBe(7);
+    expect(next.room.base.resources.water).toBe(7);
+    expect(next.room.base.danger).toBeLessThan(18);
+    expect(next.room.feed[0]?.body).toContain("Kitchen");
+    expect(next.room.feed[0]?.body).toContain("Barricade");
   });
 
   test("advances a room day with upkeep, recovery, pressure, and feed", () => {
