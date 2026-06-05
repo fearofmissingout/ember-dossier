@@ -16,7 +16,6 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,9 +31,6 @@ jobs:
 
       - name: Test
         run: npm test
-
-      - name: Apply Supabase schema
-        run: npm run supabase:init
 
       - name: Build
         run: npm run build
