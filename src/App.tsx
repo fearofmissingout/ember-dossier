@@ -1778,6 +1778,11 @@ function JourneyPanel({
               F{segmentForecast.resultingCondition.fatigue} H{segmentForecast.resultingCondition.hunger} T{segmentForecast.resultingCondition.thirst}
             </strong>
             <small>Pressure {segmentForecast.resultingPressure}%</small>
+            {segmentForecast.hardship && (
+              <small className={`hardship-risk ${segmentForecast.hardship.severity}`}>
+                Risk: {segmentForecast.hardship.label} ({segmentForecast.hardship.effects.join(", ")})
+              </small>
+            )}
           </div>
         </div>
       )}
@@ -1808,6 +1813,18 @@ function JourneyPanel({
               <span>Seg {event.segment}</span>
               <strong>{event.title}</strong>
               <small>{event.outcome}</small>
+            </div>
+          ))}
+        </div>
+      )}
+      {journey.hardships.length > 0 && (
+        <div className="hardship-strip" aria-label="Recent road hardships">
+          {journey.hardships.slice(-3).map((hardship) => (
+            <div className={`hardship-card ${hardship.severity}`} key={`${journey.id}-hardship-${hardship.segment}-${hardship.id}`}>
+              <span>Seg {hardship.segment}</span>
+              <strong>{hardship.label}</strong>
+              <small>{hardship.effects.join(" / ")}</small>
+              {hardship.targetName && <small>{hardship.targetName} marked for treatment</small>}
             </div>
           ))}
         </div>

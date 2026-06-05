@@ -198,8 +198,24 @@ export type JourneyTravelRecord = {
 
 export type JourneySegmentForecastRisk = "stable" | "strained" | "critical";
 
+export type JourneyHardshipSeverity = "minor" | "severe";
+
+export type JourneyHardship = {
+  effects: string[];
+  id: string;
+  label: string;
+  severity: JourneyHardshipSeverity;
+  text: string;
+};
+
+export type JourneyHardshipRecord = JourneyHardship & {
+  segment: number;
+  targetName?: string;
+};
+
 export type JourneySegmentForecast = {
   conditionDeltas: Omit<JourneyCondition, "distance">;
+  hardship: JourneyHardship | null;
   notes: string[];
   planLabel: string;
   pressureDelta: number;
@@ -299,6 +315,7 @@ export type JourneyState = {
   locationId: string;
   logs: string[];
   nodes: JourneyNode[];
+  hardships: JourneyHardshipRecord[];
   pendingCombatLoot: JourneyCombatLoot | null;
   pendingRoadEvent: JourneyPendingRoadEncounter | null;
   pressure: number;
@@ -465,6 +482,14 @@ type JourneyRoadBeatTemplate = {
   supplyPriority: ResourceKey[];
   thirst: number;
   title: string;
+};
+
+type RoadHardship = JourneyHardship & {
+  battleScar: boolean;
+  fatigueDelta: number;
+  pressureDelta: number;
+  rollShiftDelta: number;
+  score: number;
 };
 
 const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
@@ -1138,6 +1163,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       }${burden.pressurePenalty !== 0 ? `, starting pressure ${formatSignedPercent(burden.pressurePenalty)}` : ""}.`
     ],
     nodes,
+    hardships: [],
     pendingCombatLoot: null,
     pendingRoadEvent: null,
     pressure: startingPressure,
@@ -1616,6 +1642,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
   next.rollShift += (rationPressure + planPressure) / 100 + next.condition.fatigue / 350;
 
+  const hardshipEffects = applyRoadHardship(next, squad);
   const pressureDelta = next.pressure - beforePressure;
   const rationLog = [
     foodSpent ? "food -1" : "no food: hunger rises",
@@ -1634,6 +1661,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
         ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
         ...tacticOutcome.effects,
         ...threatOutcome.effects,
+        ...hardshipEffects,
         ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
         `Fatigue +${fatigueGain}`,
         `Pressure ${formatSignedPercent(pressureDelta)}`
@@ -1687,10 +1715,17 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
   next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst + threatOutcome.thirst);
   next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
 
+  const hardship = roadHardshipFor(next);
+  if (hardship) {
+    next.condition.fatigue = clampPercent(next.condition.fatigue + hardship.fatigueDelta);
+    next.pressure = clampPercent(next.pressure + hardship.pressureDelta);
+  }
+
   const pressureDelta = next.pressure - beforePressure;
   const notes = [
     ...tacticOutcome.effects,
     ...threatOutcome.effects,
+    ...(hardship ? [`Hardship risk: ${hardship.label}`] : []),
     ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
     ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : [])
   ];
@@ -1701,6 +1736,7 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
       hunger: next.condition.hunger - beforeCondition.hunger,
       thirst: next.condition.thirst - beforeCondition.thirst
     },
+    hardship: hardship ? publicHardship(hardship) : null,
     notes,
     planLabel: plan.label,
     pressureDelta,
@@ -2888,6 +2924,155 @@ function travelToneFor(journey: JourneyState): JourneyTravelTone {
   }
 
   return "safe";
+}
+
+function applyRoadHardship(journey: JourneyState, squad: Survivor[]): string[] {
+  const hardship = roadHardshipFor(journey);
+  if (!hardship) {
+    return [];
+  }
+
+  let targetName: string | undefined;
+  if (hardship.battleScar) {
+    const target = roadHardshipTarget(journey, squad);
+    journey.battleScars += 1;
+    if (target) {
+      markCombatScarTarget(journey, target.id);
+      targetName = target.name;
+    }
+  }
+
+  journey.condition.fatigue = clampPercent(journey.condition.fatigue + hardship.fatigueDelta);
+  journey.pressure = clampPercent(journey.pressure + hardship.pressureDelta);
+  journey.rollShift += hardship.rollShiftDelta;
+  const record: JourneyHardshipRecord = {
+    ...publicHardship(hardship),
+    segment: journey.condition.distance,
+    targetName
+  };
+  journey.hardships.push(record);
+  journey.logs.push(
+    `Hardship: ${hardship.label}. ${hardship.text} ${[
+      ...hardship.effects,
+      ...(targetName ? [`${targetName} marked for treatment`] : [])
+    ].join(", ")}.`
+  );
+
+  return [`Hardship: ${hardship.label}`, ...hardship.effects];
+}
+
+function roadHardshipFor(journey: Pick<JourneyState, "condition" | "pressure">): RoadHardship | null {
+  const candidates = [
+    createHardshipCandidate({
+      battleScar: true,
+      fatigueDelta: 3,
+      id: "dehydration-crash",
+      label: "Dehydration crash",
+      minorAt: 58,
+      pressureDelta: 8,
+      rollShiftDelta: 0.08,
+      severeAt: 82,
+      text: "The squad runs too dry to keep a clean marching order.",
+      value: journey.condition.thirst
+    }),
+    createHardshipCandidate({
+      battleScar: true,
+      fatigueDelta: 6,
+      id: "hunger-shakes",
+      label: "Hunger shakes",
+      minorAt: 62,
+      pressureDelta: 6,
+      rollShiftDelta: 0.06,
+      severeAt: 84,
+      text: "Empty stomachs turn small mistakes into real injuries.",
+      value: journey.condition.hunger
+    }),
+    createHardshipCandidate({
+      battleScar: true,
+      fatigueDelta: 0,
+      id: "fatigue-collapse",
+      label: "Fatigue collapse",
+      minorAt: 64,
+      pressureDelta: 7,
+      rollShiftDelta: 0.07,
+      severeAt: 86,
+      text: "Someone's legs give out just when the route needs speed.",
+      value: journey.condition.fatigue
+    }),
+    createHardshipCandidate({
+      battleScar: false,
+      fatigueDelta: 4,
+      id: "panic-spiral",
+      label: "Panic spiral",
+      minorAt: 64,
+      pressureDelta: 4,
+      rollShiftDelta: 0.09,
+      severeAt: 86,
+      text: "Bad radio discipline makes the road feel crowded.",
+      value: journey.pressure
+    })
+  ].filter((candidate): candidate is RoadHardship => Boolean(candidate));
+
+  return candidates.sort((left, right) => right.score - left.score)[0] ?? null;
+}
+
+function createHardshipCandidate(input: {
+  battleScar: boolean;
+  fatigueDelta: number;
+  id: string;
+  label: string;
+  minorAt: number;
+  pressureDelta: number;
+  rollShiftDelta: number;
+  severeAt: number;
+  text: string;
+  value: number;
+}): RoadHardship | null {
+  if (input.value < input.minorAt) {
+    return null;
+  }
+
+  const severe = input.value >= input.severeAt;
+  const pressureDelta = severe ? input.pressureDelta : Math.max(2, Math.floor(input.pressureDelta / 2));
+  const fatigueDelta = severe ? input.fatigueDelta : Math.max(0, Math.floor(input.fatigueDelta / 2));
+  const effects = [
+    ...(severe && input.battleScar ? ["Battle scar +1"] : []),
+    ...(fatigueDelta > 0 ? [`Fatigue +${fatigueDelta}`] : []),
+    `Pressure +${pressureDelta}%`
+  ];
+
+  return {
+    battleScar: severe && input.battleScar,
+    effects,
+    fatigueDelta,
+    id: input.id,
+    label: input.label,
+    pressureDelta,
+    rollShiftDelta: severe ? input.rollShiftDelta : input.rollShiftDelta / 2,
+    score: input.value + (severe ? 100 : 0),
+    severity: severe ? "severe" : "minor",
+    text: input.text
+  };
+}
+
+function publicHardship(hardship: RoadHardship): JourneyHardship {
+  return {
+    effects: [...hardship.effects],
+    id: hardship.id,
+    label: hardship.label,
+    severity: hardship.severity,
+    text: hardship.text
+  };
+}
+
+function roadHardshipTarget(journey: JourneyState, squad: Survivor[]) {
+  const squadIds = new Set(journey.squadIds);
+  const candidates = squad.filter((survivor) => squadIds.has(survivor.id));
+  return [...candidates].sort((left, right) => {
+    const leftScore = left.fatigue + left.injuries.length * 18 - Math.floor((left.attributes.stamina + left.attributes.willpower) / 2);
+    const rightScore = right.fatigue + right.injuries.length * 18 - Math.floor((right.attributes.stamina + right.attributes.willpower) / 2);
+    return rightScore - leftScore;
+  })[0];
 }
 
 function segmentForecastRisk(journey: Pick<JourneyState, "condition" | "pressure">): JourneySegmentForecastRisk {

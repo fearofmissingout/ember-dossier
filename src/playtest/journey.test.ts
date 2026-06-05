@@ -388,6 +388,61 @@ describe("journey route generation", () => {
     expect(forecast.notes).toEqual(expect.arrayContaining(["Countered: Open ditch", "Tactic pressure -6%"]));
   });
 
+  test("next segment forecast warns about severe road hardship", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "hardship-forecast-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+    journey.condition.thirst = 70;
+
+    const forecast = forecastNextSegment(journey, squad, 55);
+
+    expect(forecast.hardship).toMatchObject({
+      label: "Dehydration crash",
+      severity: "severe"
+    });
+    expect(forecast.hardship?.effects).toEqual(expect.arrayContaining(["Battle scar +1", "Pressure +8%"]));
+  });
+
+  test("severe road hardships mark survivors and appear in the road diary", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "hardship-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+    journey.condition.thirst = 70;
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+
+    expect(advanced.battleScars).toBe(journey.battleScars + 1);
+    expect(advanced.woundedSurvivorIds.length).toBe(1);
+    expect(squad.map((survivor) => survivor.id)).toContain(advanced.woundedSurvivorIds[0]);
+    expect(advanced.hardships[0]).toMatchObject({
+      label: "Dehydration crash",
+      segment: 1,
+      severity: "severe"
+    });
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining(["Hardship: Dehydration crash", "Battle scar +1"]));
+    expect(advanced.logs.join("\n")).toContain("Hardship: Dehydration crash");
+  });
+
   test("segment tactics change the next road advance then reset to watch mode", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const session = createStarterSession("user-a", "Alice", "tactic-room");

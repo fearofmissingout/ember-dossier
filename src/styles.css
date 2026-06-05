@@ -1193,6 +1193,18 @@ button:disabled {
   line-height: 1.25;
 }
 
+.hardship-risk {
+  font-weight: 900;
+}
+
+.hardship-risk.minor {
+  color: #8a651c;
+}
+
+.hardship-risk.severe {
+  color: #973a28;
+}
+
 .march-forecast.strained {
   border-color: #d4ba77;
   background: #fff9e8;
@@ -1367,6 +1379,57 @@ button:disabled {
 .road-event-card.road span,
 .road-event-card.road strong {
   color: #355f72;
+}
+
+.hardship-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.hardship-card {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #d4ba77;
+  border-radius: 8px;
+  background: #fff9e8;
+}
+
+.hardship-card.severe {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.hardship-card span {
+  color: #7b5a13;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hardship-card.severe span {
+  color: #8a3524;
+}
+
+.hardship-card strong,
+.hardship-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hardship-card strong {
+  color: #493a22;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.hardship-card small {
+  color: #725f45;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .journey-plan-strip,
@@ -2106,7 +2169,8 @@ button:disabled {
   .journey-status-grid,
   .march-forecast,
   .travel-record-strip,
-  .road-event-strip {
+  .road-event-strip,
+  .hardship-strip {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -2188,6 +2252,7 @@ button:disabled {
   .journey-status-grid,
   .travel-record-strip,
   .road-event-strip,
+  .hardship-strip,
   .resource-grid {
     grid-template-columns: 1fr;
   }
