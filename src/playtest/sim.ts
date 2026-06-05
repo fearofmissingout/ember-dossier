@@ -6,9 +6,11 @@ import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
+  battleScars?: number;
   journeyLogs?: string[];
   routeObjectiveBonus?: number;
   survivorIds: string[];
+  trophies?: string[];
   travelFatigue?: number;
   userId: string;
 };
@@ -201,6 +203,7 @@ export function resolvePlaytestExpedition(
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
   }
+  applyCombatAftermath(next, request, result.report);
 
   refreshUiState(next);
   return { report: result.report, session: next };
@@ -380,6 +383,8 @@ const facilityEffectSummaries: Record<string, string> = {
   workshop: "repair shifts and ammo damage improve"
 };
 
+const combatScarNames = ["cracked ribs", "torn shoulder", "infected bite", "shrapnel cut"];
+
 function facilityEffectSummary(facilityId: string) {
   return facilityEffectSummaries[facilityId] ?? "base operations improve";
 }
@@ -492,6 +497,41 @@ function applyProcessEffects(session: PlaytestSession, request: PlaytestExpediti
     const target = session.account.survivors.find((survivor) => survivor.id === request.survivorIds[0]);
     if (target && !target.injuries.includes(process.injury)) {
       target.injuries = [...target.injuries, process.injury];
+    }
+  }
+}
+
+function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport) {
+  const scars = request.battleScars ?? 0;
+  const trophies = request.trophies ?? [];
+  if (trophies.length) {
+    session.room.base.resources.materials += Math.min(2, trophies.length);
+    report.reward.materials += Math.min(2, trophies.length);
+    report.logs.unshift(`Combat trophies recovered: ${trophies.join(", ")}. Materials +${Math.min(2, trophies.length)}.`);
+  }
+
+  if (scars <= 0) {
+    return;
+  }
+
+  const squad = request.survivorIds
+    .map((survivorId) => session.account.survivors.find((survivor) => survivor.id === survivorId))
+    .filter(Boolean) as PlaytestSession["account"]["survivors"];
+  const sorted = squad.sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20));
+  for (let index = 0; index < scars; index += 1) {
+    const target = sorted[index % Math.max(1, sorted.length)];
+    if (!target) {
+      continue;
+    }
+
+    const injury = combatScarNames[index % combatScarNames.length];
+    if (!target.injuries.includes(injury)) {
+      target.injuries = [...target.injuries, injury];
+      target.status = "recovering";
+      report.logs.unshift(`${target.name} returns with ${injury} from the fight.`);
+    } else {
+      target.fatigue = clamp(target.fatigue + 10, 0, 100);
+      report.logs.unshift(`${target.name} aggravates ${injury}. Fatigue +10.`);
     }
   }
 }

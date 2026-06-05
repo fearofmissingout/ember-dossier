@@ -225,4 +225,32 @@ describe("journey route generation", () => {
     expect(retreated.pressure).toBeGreaterThan(journey.pressure);
     expect(retreated.logs.join("\n")).toContain("retreats under pressure");
   });
+
+  test("combat victory records trophies and battle scars based on remaining stamina", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "aftermath-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+      journey.combat.squadHp = Math.floor(journey.combat.squadMaxHp * 0.3);
+    }
+
+    const won = resolveCombatRound(journey, "strike", squad, 75);
+
+    expect(won.trophies).toContain("armor plates");
+    expect(won.battleScars).toBeGreaterThan(0);
+    expect(won.logs.join("\n")).toContain("Battle scars");
+  });
 });

@@ -305,6 +305,39 @@ describe("playtest room loop", () => {
     expect(result.session.room.base.objective.repairedParts).toBeGreaterThanOrEqual(1);
   });
 
+  test("combat aftermath applies injuries, trophies, and report logs", () => {
+    let session = createStarterSession("user-a", "Alice", "combat-aftermath-room");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+    session.room.base.resources.materials = 3;
+
+    const result = resolvePlaytestExpedition(session, {
+      battleScars: 2,
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      trophies: ["armor plates", "pack lure"],
+      userId: "user-a"
+    });
+
+    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("cracked ribs"))).toBe(true);
+    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("torn shoulder"))).toBe(true);
+    expect(result.report.reward.materials).toBeGreaterThan(0);
+    expect(result.report.logs.join("\n")).toContain("Combat trophies recovered");
+  });
+
   test("journey fatigue carries into survivor settlement", () => {
     let session = createStarterSession("user-a", "Alice", "fatigue-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);

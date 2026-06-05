@@ -98,6 +98,7 @@ export type JourneyCondition = {
 };
 
 export type JourneyState = {
+  battleScars: number;
   bonusReward: ResourceBundle;
   combat: JourneyCombat | null;
   currentNodeIndex: number;
@@ -114,6 +115,7 @@ export type JourneyState = {
   condition: JourneyCondition;
   objectiveBonus: number;
   support: ExpeditionSupport;
+  trophies: string[];
 };
 
 type JourneyEventTemplate = {
@@ -542,6 +544,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
   addPartialResources(fieldSupplies, support.startingSupplies);
 
   return {
+    battleScars: 0,
     bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
@@ -565,7 +568,8 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       thirst: 0
     },
     objectiveBonus: 0,
-    support
+    support,
+    trophies: []
   };
 }
 
@@ -701,9 +705,26 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     }
   } else {
     addResources(next.bonusReward, combat.reward);
+    const hpRatio = combat.squadHp / combat.squadMaxHp;
+    const trophy = combatTrophyFor(combat.enemyTrait);
+    next.trophies.push(trophy);
+    if (hpRatio < 0.35) {
+      next.battleScars += 2;
+      next.condition.fatigue = clampPercent(next.condition.fatigue + 14);
+      next.pressure = clampPercent(next.pressure + 8);
+      next.rollShift += 0.08;
+      next.logs.push(`${node.title}: the victory is ugly. Battle scars +2, fatigue +14, pressure +8%.`);
+    } else if (hpRatio < 0.65) {
+      next.battleScars += 1;
+      next.condition.fatigue = clampPercent(next.condition.fatigue + 7);
+      next.logs.push(`${node.title}: the squad wins but has to drag each other clear. Battle scars +1, fatigue +7.`);
+    } else {
+      next.bonusReward.materials += 1;
+      next.logs.push(`${node.title}: clean control of the fight leaves time to strip extra salvage. Materials +1.`);
+    }
     next.pressure = clampPercent(next.pressure - 12);
     next.rollShift -= 0.12;
-    next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, pressure -12%.`);
+    next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, trophy: ${trophy}, pressure -12%.`);
     next.currentNodeIndex += 1;
     next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
   }
@@ -968,6 +989,16 @@ function formatSignedPercent(value: number) {
 
 function formatSignedNumber(value: number) {
   return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+function combatTrophyFor(trait: JourneyEnemy["trait"]) {
+  const trophies: Record<JourneyEnemy["trait"], string> = {
+    armored: "armor plates",
+    bleeder: "serrated sample",
+    dread: "black signal shard",
+    swarm: "pack lure"
+  };
+  return trophies[trait];
 }
 
 function pick<T>(items: T[]): T {

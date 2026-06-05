@@ -771,6 +771,7 @@ export default function App() {
       Math.max(0.02, Math.min(0.98, roll + completedJourney.rollShift))
     );
     const result = resolvePlaytestExpedition(session, {
+      battleScars: completedJourney.battleScars,
       journeyLogs: completedJourney.logs,
       loadout: completedJourney.loadout,
       locationId: completedJourney.locationId,
@@ -778,6 +779,7 @@ export default function App() {
       routeObjectiveBonus: completedJourney.objectiveBonus,
       risk: completedJourney.risk,
       survivorIds: completedJourney.squadIds,
+      trophies: completedJourney.trophies,
       travelFatigue: completedJourney.condition.fatigue,
       userId: session.account.profile.userId
     });
@@ -1510,6 +1512,13 @@ function JourneyPanel({
         <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
         <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
       </div>
+      {(journey.trophies.length > 0 || journey.battleScars > 0) && (
+        <div className="journey-aftermath">
+          <span>Combat aftermath</span>
+          {journey.trophies.length > 0 && <strong>Trophies: {journey.trophies.join(", ")}</strong>}
+          {journey.battleScars > 0 && <strong>Battle scars: {journey.battleScars}</strong>}
+        </div>
+      )}
       <div className="journey-node">
         <span className="subtle-pill">{activeNode.type}</span>
         <h3>{activeNode.title}</h3>
