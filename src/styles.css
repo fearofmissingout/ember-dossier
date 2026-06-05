@@ -965,6 +965,74 @@ button:disabled {
   color: #8a3524;
 }
 
+.road-event-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.road-event-card {
+  display: grid;
+  min-height: 78px;
+  gap: 4px;
+  align-content: start;
+  padding: 8px 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.road-event-card span {
+  color: #8a6f4e;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.road-event-card strong {
+  color: #46372a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.road-event-card small {
+  color: #667267;
+  font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.road-event-card.find {
+  border-color: #9fbd83;
+  background: #f4faed;
+}
+
+.road-event-card.find span,
+.road-event-card.find strong {
+  color: #3d6f4d;
+}
+
+.road-event-card.hazard {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.road-event-card.hazard span,
+.road-event-card.hazard strong {
+  color: #8a3524;
+}
+
+.road-event-card.road {
+  border-color: #aebdc5;
+  background: #f3f8fa;
+}
+
+.road-event-card.road span,
+.road-event-card.road strong {
+  color: #355f72;
+}
+
 .journey-plan-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1394,7 +1462,8 @@ button:disabled {
   .expedition-layout,
   .survivor-grid,
   .facility-grid,
-  .journey-status-grid {
+  .journey-status-grid,
+  .road-event-strip {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1473,6 +1542,7 @@ button:disabled {
   .facility-grid,
   .archive-grid,
   .journey-status-grid,
+  .road-event-strip,
   .resource-grid {
     grid-template-columns: 1fr;
   }

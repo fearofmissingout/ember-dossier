@@ -140,6 +140,60 @@ describe("journey route generation", () => {
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
   });
 
+  test("travel segments surface road encounters with visible outcomes", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "road-event-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 55);
+    const salvageTotal = Object.values(advanced.bonusReward).reduce((sum, value) => sum + value, 0);
+
+    expect(advanced.roadEvents).toHaveLength(1);
+    expect(advanced.roadEvents[0]).toMatchObject({
+      segment: 1,
+      title: "Thorn Wire Ditch",
+      tone: "find"
+    });
+    expect(salvageTotal).toBeGreaterThan(0);
+    expect(advanced.logs.join("\n")).toContain("Road event: Thorn Wire Ditch");
+  });
+
+  test("road hazards spend matching field supplies to mitigate damage", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "road-hazard-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+
+    expect(advanced.fieldSupplies.materials).toBe(0);
+    expect(advanced.roadEvents[0]).toMatchObject({
+      title: "Collapsed Stairwell",
+      tone: "hazard"
+    });
+    expect(advanced.roadEvents[0].outcome).toContain("Materials -1");
+    expect(advanced.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
+  });
+
   test("travel plans change road risk and salvage rhythm", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.6);
     const session = createStarterSession("user-a", "Alice", "travel-plan-room");

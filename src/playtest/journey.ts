@@ -24,6 +24,7 @@ export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade"
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
+export type JourneyRoadEventTone = "find" | "hazard" | "road";
 
 export type JourneyDraft = {
   squadIds: string[];
@@ -93,6 +94,13 @@ export type JourneyNode = {
   shop?: JourneyShop;
 };
 
+export type JourneyRoadEventRecord = {
+  outcome: string;
+  segment: number;
+  title: string;
+  tone: JourneyRoadEventTone;
+};
+
 export type JourneyCombat = {
   armor: number;
   bleed: number;
@@ -135,6 +143,7 @@ export type JourneyState = {
   fieldSupplies: ResourceBundle;
   id: string;
   loadout: ResourceBundle;
+  locationFamily: LocationFamily;
   locationId: string;
   logs: string[];
   nodes: JourneyNode[];
@@ -142,6 +151,7 @@ export type JourneyState = {
   pressure: number;
   risk: RiskStrategy;
   rollShift: number;
+  roadEvents: JourneyRoadEventRecord[];
   squadIds: string[];
   condition: JourneyCondition;
   objectiveBonus: number;
@@ -186,6 +196,21 @@ type EnemyTemplate = Omit<JourneyEnemy, "reward"> & {
 
 type ShopTemplate = Omit<JourneyShop, "reward"> & {
   rewardKeys: ResourceKey[];
+};
+
+type JourneyRoadBeatTemplate = {
+  fatigue: number;
+  hazardLog: string;
+  hunger: number;
+  mitigationLog: string;
+  neutralLog: string;
+  opportunityLog: string;
+  pressure: number;
+  rewardKeys: ResourceKey[];
+  rollShift: number;
+  supplyPriority: ResourceKey[];
+  thirst: number;
+  title: string;
 };
 
 const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
@@ -548,6 +573,185 @@ const familyCamps: Record<LocationFamily, { body: string; title: string }> = {
   }
 };
 
+const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
+  resources: [
+    {
+      fatigue: 5,
+      hazardLog: "A flooded service tunnel forces everyone to haul packs over shoulder height.",
+      hunger: 2,
+      mitigationLog: "A clean bypass keeps the squad out of the black water.",
+      neutralLog: "The squad follows chalk marks through dripping concrete.",
+      opportunityLog: "A pump cabinet still has a dry inner tray.",
+      pressure: 10,
+      rewardKeys: ["water", "materials"],
+      rollShift: 0.08,
+      supplyPriority: ["fuel", "materials", "water"],
+      thirst: 9,
+      title: "Flooded Underpass"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "A pressure valve snaps and throws hot mist across the route.",
+      hunger: 1,
+      mitigationLog: "A quick brace turns the valve failure into a noisy inconvenience.",
+      neutralLog: "The old valves tick like a clock as the squad passes.",
+      opportunityLog: "The broken manifold coughs out usable fittings.",
+      pressure: 8,
+      rewardKeys: ["materials", "fuel"],
+      rollShift: 0.06,
+      supplyPriority: ["materials", "ammo"],
+      thirst: 5,
+      title: "Valve Burst"
+    },
+    {
+      fatigue: 3,
+      hazardLog: "A dry basin reflects too much sound and draws attention from the far catwalk.",
+      hunger: 3,
+      mitigationLog: "The squad cuts across with muffled steps and leaves no echo trail.",
+      neutralLog: "The basin is empty, but every boot scrape feels borrowed.",
+      opportunityLog: "A maintenance basket hangs under the basin ladder.",
+      pressure: 9,
+      rewardKeys: ["ammo", "medicine"],
+      rollShift: 0.07,
+      supplyPriority: ["ammo", "fuel"],
+      thirst: 4,
+      title: "Echo Basin"
+    }
+  ],
+  urban: [
+    {
+      fatigue: 6,
+      hazardLog: "A stairwell has collapsed into rebar teeth, turning one block into three.",
+      hunger: 4,
+      mitigationLog: "A marked side door cuts around the wreckage before anything hears them.",
+      neutralLog: "The route bends through dead offices and broken stair signs.",
+      opportunityLog: "A janitor closet still has sealed utility bins.",
+      pressure: 11,
+      rewardKeys: ["materials", "medicine"],
+      rollShift: 0.08,
+      supplyPriority: ["materials", "fuel"],
+      thirst: 4,
+      title: "Collapsed Stairwell"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "A vending bank topples in the corridor and turns the hall into a dinner bell.",
+      hunger: 7,
+      mitigationLog: "The squad wedges the machines down slowly and keeps the noise contained.",
+      neutralLog: "Old snack wrappers scrape underfoot in the dark hall.",
+      opportunityLog: "One vending column still has a few useful packets inside.",
+      pressure: 9,
+      rewardKeys: ["food", "water"],
+      rollShift: 0.06,
+      supplyPriority: ["materials", "ammo"],
+      thirst: 3,
+      title: "Vending Bank"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "A sealed apartment breathes mold and panic when the door opens.",
+      hunger: 2,
+      mitigationLog: "A mask filter and a slow sweep keep the room from turning ugly.",
+      neutralLog: "The squad passes door after door with names scratched off.",
+      opportunityLog: "Someone hid a compact first-aid roll behind a family photo.",
+      pressure: 10,
+      rewardKeys: ["medicine", "ammo"],
+      rollShift: 0.08,
+      supplyPriority: ["medicine", "fuel"],
+      thirst: 5,
+      title: "Sealed Apartment"
+    }
+  ],
+  weird: [
+    {
+      fatigue: 5,
+      hazardLog: "A corridor repeats itself until the squad starts losing count of their own footsteps.",
+      hunger: 3,
+      mitigationLog: "A burned marker breaks the loop before it becomes a second memory.",
+      neutralLog: "The walls lean in, then pretend they did not.",
+      opportunityLog: "The wrong turn reveals a cache wrapped in clean plastic.",
+      pressure: 12,
+      rewardKeys: ["medicine", "materials"],
+      rollShift: 0.1,
+      supplyPriority: ["fuel", "materials"],
+      thirst: 5,
+      title: "Repeating Hall"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "A chorus under the floor learns the squad's names a little too quickly.",
+      hunger: 2,
+      mitigationLog: "A burst of noise scrambles the chorus long enough to move.",
+      neutralLog: "The floor hums under each step, almost in time with breathing.",
+      opportunityLog: "The humming floor hides a hatch with untouched tools.",
+      pressure: 13,
+      rewardKeys: ["ammo", "fuel"],
+      rollShift: 0.11,
+      supplyPriority: ["ammo", "fuel"],
+      thirst: 4,
+      title: "Name Chorus"
+    },
+    {
+      fatigue: 3,
+      hazardLog: "A patch of glassy spores bursts and sticks silver dust to exposed skin.",
+      hunger: 4,
+      mitigationLog: "A quick wash and sealed sleeves keep the spores from spreading.",
+      neutralLog: "Silver dust drifts where sunlight should have been.",
+      opportunityLog: "The spore bed has grown around a sealed medical pouch.",
+      pressure: 10,
+      rewardKeys: ["medicine", "water"],
+      rollShift: 0.09,
+      supplyPriority: ["water", "medicine"],
+      thirst: 8,
+      title: "Glassy Spores"
+    }
+  ],
+  wilds: [
+    {
+      fatigue: 6,
+      hazardLog: "A ditch full of thorn wire snags packs and makes every crossing loud.",
+      hunger: 3,
+      mitigationLog: "A cut path through the wire saves time and skin.",
+      neutralLog: "The road fades into weeds and half-buried road reflectors.",
+      opportunityLog: "A weather box under the brush still has dry stores.",
+      pressure: 10,
+      rewardKeys: ["food", "materials"],
+      rollShift: 0.07,
+      supplyPriority: ["materials", "fuel"],
+      thirst: 5,
+      title: "Thorn Wire Ditch"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "A flock erupts from the field and points every distant head toward the squad.",
+      hunger: 2,
+      mitigationLog: "The squad waits under cover until the field settles again.",
+      neutralLog: "Grass hides the old lane better than the map does.",
+      opportunityLog: "A forgotten hunting blind still holds useful supplies.",
+      pressure: 11,
+      rewardKeys: ["ammo", "food"],
+      rollShift: 0.08,
+      supplyPriority: ["fuel", "ammo"],
+      thirst: 4,
+      title: "Bird Rise"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "A creek crossing breaks under the lead foot and soaks the drinking kit.",
+      hunger: 3,
+      mitigationLog: "A rope line keeps the crossing clean and fast.",
+      neutralLog: "The creek is shallow, cold, and too clear.",
+      opportunityLog: "A bank cache has been washed open by the current.",
+      pressure: 9,
+      rewardKeys: ["water", "medicine"],
+      rollShift: 0.06,
+      supplyPriority: ["materials", "water"],
+      thirst: 9,
+      title: "Cold Creek"
+    }
+  ]
+};
+
 export function createJourney(session: PlaytestSession, draft: JourneyDraft, locationId: string, readiness: number): JourneyState {
   const location = session.room.locations.find((candidate) => candidate.id === locationId);
   const family = location?.family ?? "urban";
@@ -607,6 +811,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     fieldSupplies,
     id: `journey-${Date.now()}`,
     loadout: { ...draft.loadout },
+    locationFamily: family,
     locationId,
     logs: [
       `Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`,
@@ -617,6 +822,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
+    roadEvents: [],
     squadIds: [...draft.squadIds],
     condition: {
       distance: 0,
@@ -879,6 +1085,8 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
       rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
     )}.`
   );
+
+  resolveRoadBeat(next, squad, readiness, plan.id, routeSkill);
 
   const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) - next.pressure / 250;
   if (scavengeRoll > 0.72) {
@@ -1342,6 +1550,93 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
     log: "",
     pressure: 0
   };
+}
+
+function resolveRoadBeat(journey: JourneyState, squad: Survivor[], readiness: number, plan: JourneyTravelPlan, routeSkill: number) {
+  const table = familyRoadBeats[journey.locationFamily] ?? familyRoadBeats.urban;
+  const beat = table[Math.max(0, journey.condition.distance - 1) % table.length];
+  const bestLuck = bestBy(squad, "luck").attributes.luck;
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  const roll =
+    Math.random() +
+    routeSkill * 0.05 +
+    Math.floor(bestLuck / 40) * 0.03 +
+    roadBeatPlanBonus(plan) -
+    journey.pressure / 260 -
+    worstCondition / 260;
+
+  if (roll >= 0.78) {
+    const key = beat.rewardKeys[(journey.condition.distance + Math.floor(roll * 100)) % beat.rewardKeys.length];
+    const pressureRelief = plan === "scavenge" ? 6 : 4;
+    journey.bonusReward[key] += 1;
+    journey.pressure = clampPercent(journey.pressure - pressureRelief);
+    journey.rollShift -= pressureRelief / 100;
+    pushRoadEvent(journey, beat.title, "find", `${beat.opportunityLog} ${resourceLabels[key]} +1, pressure -${pressureRelief}%.`);
+    return;
+  }
+
+  if (roll <= 0.22) {
+    const spentKey = spendFieldSupplyFromPriority(journey, beat.supplyPriority, 1);
+    if (spentKey) {
+      const mitigatedPressure = Math.max(2, beat.pressure - 7);
+      const mitigatedFatigue = Math.max(1, Math.ceil(beat.fatigue / 2));
+      journey.condition.fatigue = clampPercent(journey.condition.fatigue + mitigatedFatigue);
+      journey.pressure = clampPercent(journey.pressure + mitigatedPressure);
+      journey.rollShift += Math.max(0.02, beat.rollShift / 2);
+      pushRoadEvent(
+        journey,
+        beat.title,
+        "hazard",
+        `${beat.mitigationLog} ${resourceLabels[spentKey]} -1, fatigue +${mitigatedFatigue}, pressure ${formatSignedPercent(mitigatedPressure)}.`
+      );
+      return;
+    }
+
+    const rushPenalty = plan === "rush" ? 4 : 0;
+    const hazardPressure = beat.pressure + rushPenalty;
+    journey.condition.fatigue = clampPercent(journey.condition.fatigue + beat.fatigue);
+    journey.condition.hunger = clampPercent(journey.condition.hunger + beat.hunger);
+    journey.condition.thirst = clampPercent(journey.condition.thirst + beat.thirst);
+    journey.pressure = clampPercent(journey.pressure + hazardPressure);
+    journey.rollShift += beat.rollShift + rushPenalty / 100;
+    pushRoadEvent(
+      journey,
+      beat.title,
+      "hazard",
+      `${beat.hazardLog} Fatigue ${formatSignedNumber(beat.fatigue)}, hunger ${formatSignedNumber(beat.hunger)}, thirst ${formatSignedNumber(
+        beat.thirst
+      )}, pressure ${formatSignedPercent(hazardPressure)}.`
+    );
+    return;
+  }
+
+  const steadyRelief = plan === "steady" ? 1 : 0;
+  if (steadyRelief > 0) {
+    journey.pressure = clampPercent(journey.pressure - steadyRelief);
+    journey.rollShift -= steadyRelief / 100;
+  }
+  pushRoadEvent(journey, beat.title, "road", `${beat.neutralLog}${steadyRelief > 0 ? " Pressure -1%." : ""}`);
+}
+
+function pushRoadEvent(journey: JourneyState, title: string, tone: JourneyRoadEventTone, outcome: string) {
+  const record = {
+    outcome,
+    segment: journey.condition.distance,
+    title,
+    tone
+  };
+  journey.roadEvents.push(record);
+  journey.logs.push(`Road event: ${title}. ${outcome}`);
+}
+
+function roadBeatPlanBonus(plan: JourneyTravelPlan) {
+  const bonuses: Record<JourneyTravelPlan, number> = {
+    rush: -0.1,
+    scavenge: 0.12,
+    sneak: 0.08,
+    steady: 0.03
+  };
+  return bonuses[plan];
 }
 
 function planScavengeBonus(plan: JourneyTravelPlan) {

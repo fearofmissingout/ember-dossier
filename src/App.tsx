@@ -1558,6 +1558,17 @@ function JourneyPanel({
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
       </div>
+      {journey.roadEvents.length > 0 && (
+        <div className="road-event-strip" aria-label="Recent road events">
+          {journey.roadEvents.slice(-3).map((event) => (
+            <div className={`road-event-card ${event.tone}`} key={`${journey.id}-road-${event.segment}-${event.title}`}>
+              <span>Seg {event.segment}</span>
+              <strong>{event.title}</strong>
+              <small>{event.outcome}</small>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="journey-plan-strip" aria-label="Road travel plan">
         {travelPlanList.map((plan) => (
           <button
@@ -1694,7 +1705,7 @@ function JourneyPanel({
         )}
       </div>
       <div className="journey-log">
-        {journey.logs.slice(-4).map((line, index) => (
+        {journey.logs.slice(-6).map((line, index) => (
           <p key={`${journey.id}-log-${index}`}>{line}</p>
         ))}
       </div>
