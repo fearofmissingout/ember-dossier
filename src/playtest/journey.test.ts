@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   advanceJourneyTravel,
+  baseCommandOptions,
   calculateCarryBurden,
   campOptionOutcome,
   combatActionPreview,
@@ -8,6 +9,7 @@ import {
   createCombatForNode,
   forecastNextSegment,
   resolveCampAction,
+  resolveBaseCommand,
   resolveCombatLootChoice,
   resolveCombatRound,
   resolveRoadEncounterChoice,
@@ -259,6 +261,81 @@ describe("journey route generation", () => {
     expect(supported.frontline.reduce((sum, combatant) => sum + combatant.guard, 0)).toBe(3);
     expect(supportedPreview.effect).not.toContain("armor absorbs");
     expect(supportedPreview.effect).not.toBe(baselinePreview.effect);
+  });
+
+  test("base command support creates limited expedition orders", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "base-command-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 0, fuel: 0, materials: 0, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support: {
+          ...supportFromFacilities([]),
+          guardBlock: 1,
+          pressureRelief: 1,
+          roadSearch: 2,
+          roadSecure: 1,
+          shopRations: 1
+        }
+      },
+      "hospital",
+      60
+    );
+
+    const options = baseCommandOptions(journey);
+    const guard = options.find((option) => option.id === "guard-relay");
+    const recon = options.find((option) => option.id === "recon-ping");
+    const supply = options.find((option) => option.id === "supply-cache");
+
+    expect(guard).toMatchObject({
+      canUse: true,
+      remainingUses: 1
+    });
+    expect(recon).toMatchObject({
+      canUse: true,
+      remainingUses: 1
+    });
+    expect(supply).toMatchObject({
+      canUse: true,
+      remainingUses: 1
+    });
+
+    const guarded = resolveBaseCommand(journey, "guard-relay");
+    expect(guarded.pressure).toBeLessThan(journey.pressure);
+    expect(guarded.baseCommandUses["guard-relay"]).toBe(1);
+    expect(baseCommandOptions(guarded).find((option) => option.id === "guard-relay")?.remainingUses).toBe(0);
+    expect(guarded.logs.join("\n")).toContain("Base command: Guard relay");
+  });
+
+  test("recon base command exposes combat targets", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-command-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support: {
+          ...supportFromFacilities([]),
+          roadSearch: 2
+        }
+      },
+      "water-plant",
+      60
+    );
+    const combat = createCombatForNode(journey.nodes[1], squad, 60, journey.support)!;
+    const withCombat = { ...journey, combat, currentNodeIndex: 1 };
+
+    const pinged = resolveBaseCommand(withCombat, "recon-ping");
+
+    expect(pinged.combat?.exposed).toBeGreaterThan(combat.exposed);
+    expect(pinged.logs.join("\n")).toContain("Base command: Recon ping");
   });
 
   test("combat actions show and apply actor strain", () => {

@@ -39,6 +39,7 @@ import {
 import {
   addResources,
   advanceJourneyTravel,
+  baseCommandOptions,
   campOptionOutcome,
   calculateCarryBurden,
   combatActionPreview,
@@ -49,6 +50,7 @@ import {
   enemyTraitPulse,
   forecastNextSegment,
   resolveCampAction,
+  resolveBaseCommand,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
   resolveShopAction,
@@ -62,6 +64,7 @@ import {
   spendFieldSupplyFromPriority,
   travelPlanList,
   resolveCombatRound,
+  type JourneyBaseCommandAction,
   type CombatAction,
   type JourneyAction,
   type JourneyCampAction,
@@ -748,6 +751,12 @@ export default function App() {
 
   function resolveJourneyAction(action: JourneyAction) {
     if (!journey) {
+      return;
+    }
+
+    const selectedBaseCommand = baseCommandActionFromJourneyAction(action);
+    if (selectedBaseCommand) {
+      setJourney(resolveBaseCommand(journey, selectedBaseCommand));
       return;
     }
 
@@ -1717,6 +1726,7 @@ function JourneyPanel({
     !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
   const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
+  const baseCommands = baseCommandOptions(journey);
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
@@ -1794,6 +1804,25 @@ function JourneyPanel({
       <div className={`journey-outlook ${outlook.tone}`}>
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
+      </div>
+      <div className="base-command-strip" aria-label="Base commands">
+        {baseCommands.map((command) => (
+          <button
+            disabled={!command.canUse}
+            key={command.id}
+            type="button"
+            onClick={() => onJourneyAction(`command-${command.id}` as JourneyAction)}
+          >
+            <div>
+              <strong>{command.label}</strong>
+              <span>
+                {command.remainingUses}/{command.maxUses}
+              </span>
+            </div>
+            <small>{command.effect}</small>
+            <em>{command.text}</em>
+          </button>
+        ))}
       </div>
       {segmentForecast && (
         <div className={`march-forecast ${segmentForecast.riskLevel}`} aria-label="Next march forecast">
@@ -2500,6 +2529,15 @@ function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombat
     "loot-salvage": "salvage"
   };
   return lootByAction[action] ?? null;
+}
+
+function baseCommandActionFromJourneyAction(action: JourneyAction): JourneyBaseCommandAction | null {
+  const commandByAction: Partial<Record<JourneyAction, JourneyBaseCommandAction>> = {
+    "command-guard-relay": "guard-relay",
+    "command-recon-ping": "recon-ping",
+    "command-supply-cache": "supply-cache"
+  };
+  return commandByAction[action] ?? null;
 }
 
 function combatActionIcon(action: CombatAction) {

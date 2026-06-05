@@ -22,6 +22,9 @@ export type JourneyAction =
   | "road-search"
   | "road-support"
   | "road-push"
+  | "command-guard-relay"
+  | "command-recon-ping"
+  | "command-supply-cache"
   | "plan-steady"
   | "plan-scavenge"
   | "plan-rush"
@@ -35,6 +38,7 @@ export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade"
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
 export type JourneyCombatantStatus = "steady" | "strained" | "down";
 export type JourneyRoadEncounterAction = "secure" | "search" | "support" | "push";
+export type JourneyBaseCommandAction = "guard-relay" | "recon-ping" | "supply-cache";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 export type JourneySegmentTactic = "observe" | "brace" | "ration" | "prospect";
@@ -311,6 +315,7 @@ export type JourneyCondition = {
 
 export type JourneyState = {
   battleScars: number;
+  baseCommandUses: Partial<Record<JourneyBaseCommandAction, number>>;
   bonusReward: ResourceBundle;
   burden: JourneyCarryBurden;
   combat: JourneyCombat | null;
@@ -402,6 +407,16 @@ export type JourneyCombatLootOption = {
   reward: ResourceBundle;
   rollShift: number;
   supportText?: string;
+  text: string;
+};
+
+export type JourneyBaseCommandOption = {
+  canUse: boolean;
+  effect: string;
+  id: JourneyBaseCommandAction;
+  label: string;
+  maxUses: number;
+  remainingUses: number;
   text: string;
 };
 
@@ -1161,6 +1176,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
 
   return {
     battleScars: 0,
+    baseCommandUses: {},
     burden,
     bonusReward: createEmptyResourceBundle(),
     combat: null,
@@ -1777,6 +1793,67 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
   };
 }
 
+export function baseCommandOptions(journey: Pick<JourneyState, "baseCommandUses" | "combat" | "support">): JourneyBaseCommandOption[] {
+  return baseCommandDefinitions.map((definition) => {
+    const maxUses = baseCommandCharges(journey.support, definition.id);
+    const used = journey.baseCommandUses?.[definition.id] ?? 0;
+    const remainingUses = Math.max(0, maxUses - used);
+    return {
+      ...definition,
+      canUse: remainingUses > 0,
+      effect: baseCommandEffectText(journey, definition.id),
+      maxUses,
+      remainingUses
+    };
+  });
+}
+
+export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCommandAction): JourneyState {
+  const option = baseCommandOptions(journey).find((candidate) => candidate.id === action);
+  if (!option?.canUse) {
+    return journey;
+  }
+
+  const next = structuredClone(journey) as JourneyState;
+  next.baseCommandUses = {
+    ...(next.baseCommandUses ?? {}),
+    [action]: (next.baseCommandUses?.[action] ?? 0) + 1
+  };
+
+  if (action === "guard-relay") {
+    const guardValue = 3 + next.support.guardBlock + next.support.roadSecure;
+    if (next.combat) {
+      spreadCombatGuard(next.combat, guardValue);
+      next.logs.push(`Base command: Guard relay. The base covers the line and adds ${guardValue} guard across the frontline.`);
+    } else {
+      const pressureDrop = Math.max(4, guardValue * 2);
+      next.pressure = clampPercent(next.pressure - pressureDrop);
+      next.logs.push(`Base command: Guard relay. The gate crew covers the route. Pressure -${pressureDrop}%.`);
+    }
+  } else if (action === "recon-ping") {
+    const reconValue = 1 + Math.floor((next.support.roadSearch + next.support.campScout + next.support.shopIntel) / 2);
+    if (next.combat) {
+      next.combat.exposed += reconValue;
+      next.logs.push(`Base command: Recon ping. The base marks weak points. Exposed +${reconValue}.`);
+    } else {
+      const pressureDrop = 4 + Math.min(4, next.support.pressureRelief + next.support.roadSearch);
+      next.pressure = clampPercent(next.pressure - pressureDrop);
+      next.objectiveBonus += 1;
+      next.logs.push(`Base command: Recon ping. Route notes clear the next decision. Pressure -${pressureDrop}%, objective +1.`);
+    }
+  } else if (action === "supply-cache") {
+    const food = 1 + Math.floor(next.support.shopRations / 2);
+    const water = 1 + Math.floor(next.support.campCook / 2);
+    next.fieldSupplies.food += food;
+    next.fieldSupplies.water += water;
+    next.condition.hunger = clampPercent(next.condition.hunger - 12);
+    next.condition.thirst = clampPercent(next.condition.thirst - 12);
+    next.logs.push(`Base command: Supply cache. Field supplies recover food +${food}, water +${water}, hunger -12, thirst -12.`);
+  }
+
+  return next;
+}
+
 export function setJourneySegmentTactic(journey: JourneyState, tactic: JourneySegmentTactic): JourneyState {
   const option = segmentTacticOptions[tactic];
   if (!option || journey.segmentTactic === tactic) {
@@ -2154,6 +2231,73 @@ const resourceLabels: Record<ResourceKey, string> = {
   medicine: "Medicine",
   water: "Water"
 };
+
+const baseCommandDefinitions: Array<Pick<JourneyBaseCommandOption, "id" | "label" | "text">> = [
+  {
+    id: "guard-relay",
+    label: "Guard relay",
+    text: "Ask the base guard line to cover the squad or cool route pressure."
+  },
+  {
+    id: "recon-ping",
+    label: "Recon ping",
+    text: "Call for route notes, weak-point marks, and objective guidance."
+  },
+  {
+    id: "supply-cache",
+    label: "Supply cache",
+    text: "Use base prep to recover emergency food and water in the field."
+  }
+];
+
+function baseCommandCharges(support: ExpeditionSupport, action: JourneyBaseCommandAction): number {
+  if (action === "guard-relay") {
+    const supportValue = support.guardBlock + support.roadSecure;
+    return supportValue > 0 ? 1 + Math.floor((supportValue - 1) / 3) : 0;
+  }
+
+  if (action === "recon-ping") {
+    const supportValue = support.roadSearch + support.campScout + support.shopIntel + support.pressureRelief;
+    return supportValue > 0 ? 1 + Math.floor((supportValue - 1) / 3) : 0;
+  }
+
+  const supportValue =
+    support.shopRations +
+    support.campCook +
+    (support.startingSupplies.food ?? 0) +
+    (support.startingSupplies.water ?? 0);
+  return supportValue > 0 ? 1 + Math.floor((supportValue - 1) / 3) : 0;
+}
+
+function baseCommandEffectText(journey: Pick<JourneyState, "combat" | "support">, action: JourneyBaseCommandAction): string {
+  if (action === "guard-relay") {
+    const guardValue = 3 + journey.support.guardBlock + journey.support.roadSecure;
+    return journey.combat ? `Frontline guard +${guardValue}` : `Pressure -${Math.max(4, guardValue * 2)}%`;
+  }
+
+  if (action === "recon-ping") {
+    const reconValue = 1 + Math.floor((journey.support.roadSearch + journey.support.campScout + journey.support.shopIntel) / 2);
+    const pressureDrop = 4 + Math.min(4, journey.support.pressureRelief + journey.support.roadSearch);
+    return journey.combat ? `Expose +${reconValue}` : `Pressure -${pressureDrop}% / Objective +1`;
+  }
+
+  const food = 1 + Math.floor(journey.support.shopRations / 2);
+  const water = 1 + Math.floor(journey.support.campCook / 2);
+  return `Food +${food} / Water +${water}`;
+}
+
+function spreadCombatGuard(combat: JourneyCombat, guardValue: number) {
+  const frontline = combat.frontline.filter((combatant) => combatant.status !== "down");
+  if (frontline.length === 0 || guardValue <= 0) {
+    return;
+  }
+
+  const share = Math.floor(guardValue / frontline.length);
+  const remainder = guardValue % frontline.length;
+  frontline.forEach((combatant, index) => {
+    combatant.guard += share + (index < remainder ? 1 : 0);
+  });
+}
 
 export const travelPlanList: JourneyTravelPlanOption[] = [
   {
