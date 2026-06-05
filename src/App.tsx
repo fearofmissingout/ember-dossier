@@ -38,13 +38,16 @@ import {
   createCombatForNode,
   createJourney,
   resolveCampAction,
+  setJourneyTravelPlan,
   spendFieldSupplyFromPriority,
+  travelPlanList,
   resolveCombatRound,
   type CombatAction,
   type JourneyAction,
   type JourneyChoice,
   type JourneyNode,
-  type JourneyState
+  type JourneyState,
+  type JourneyTravelPlan
 } from "./playtest/journey";
 import { supportFromFacilities, survivorPerkDetails, xpForNextLevel } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
@@ -698,6 +701,12 @@ export default function App() {
 
   function resolveJourneyAction(action: JourneyAction) {
     if (!journey) {
+      return;
+    }
+
+    const selectedTravelPlan = travelPlanFromAction(action);
+    if (selectedTravelPlan) {
+      setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
       return;
     }
 
@@ -1512,6 +1521,21 @@ function JourneyPanel({
         <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
         <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
       </div>
+      <div className="journey-plan-strip" aria-label="Road travel plan">
+        {travelPlanList.map((plan) => (
+          <button
+            className={journey.travelPlan === plan.id ? "active" : ""}
+            key={plan.id}
+            type="button"
+            onClick={() => onJourneyAction(`plan-${plan.id}` as JourneyAction)}
+          >
+            <span>{plan.label}</span>
+            <small>
+              F{formatSignedNumber(plan.fatigue)} P{formatSignedPercent(plan.pressure)}
+            </small>
+          </button>
+        ))}
+      </div>
       {(journey.trophies.length > 0 || journey.battleScars > 0) && (
         <div className="journey-aftermath">
           <span>Combat aftermath</span>
@@ -1863,6 +1887,16 @@ function applyJourneyChoice(journey: JourneyState, title: string, choice: Journe
   journey.logs.push(`${title}: ${choice.fallbackLog} ${formatResourceDelta(choice.reward)}, pressure ${formatSignedPercent(fallbackPressure)}.`);
 }
 
+function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {
+  const planByAction: Partial<Record<JourneyAction, JourneyTravelPlan>> = {
+    "plan-rush": "rush",
+    "plan-scavenge": "scavenge",
+    "plan-sneak": "sneak",
+    "plan-steady": "steady"
+  };
+  return planByAction[action] ?? null;
+}
+
 function formatResourceDelta(resources: ResourceBundle) {
   const entries = resourceKeys.filter((key) => resources[key] > 0);
   if (entries.length === 0) {
@@ -1878,6 +1912,10 @@ function clampPercent(value: number) {
 
 function formatSignedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value}%`;
+}
+
+function formatSignedNumber(value: number) {
+  return `${value >= 0 ? "+" : ""}${value}`;
 }
 
 function loadGuestMode() {

@@ -917,6 +917,48 @@ button:disabled {
   font-weight: 900;
 }
 
+.journey-plan-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.journey-plan-strip button {
+  display: grid;
+  min-height: 54px;
+  gap: 3px;
+  align-content: center;
+  padding: 7px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #5d4f3d;
+  cursor: pointer;
+  text-align: left;
+}
+
+.journey-plan-strip button.active {
+  border-color: #7b8f67;
+  background: #edf4e7;
+  color: #2f5f43;
+}
+
+.journey-plan-strip span,
+.journey-plan-strip small {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.journey-plan-strip small {
+  color: #8a6f4e;
+}
+
+.journey-plan-strip button.active small {
+  color: #437257;
+}
+
 .journey-aftermath {
   display: flex;
   flex-wrap: wrap;
@@ -1311,6 +1353,10 @@ button:disabled {
   .journey-status-grid,
   .resource-grid {
     grid-template-columns: 1fr;
+  }
+
+  .journey-plan-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .summary-panel {

@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { advanceJourneyTravel, createJourney, createCombatForNode, resolveCampAction, resolveCombatRound, spendFieldSupplyFromPriority } from "./journey";
+import {
+  advanceJourneyTravel,
+  createJourney,
+  createCombatForNode,
+  resolveCampAction,
+  resolveCombatRound,
+  setJourneyTravelPlan,
+  spendFieldSupplyFromPriority
+} from "./journey";
 import { createStarterSession } from "./state";
 
 describe("journey route generation", () => {
@@ -123,6 +131,51 @@ describe("journey route generation", () => {
     expect(advanced.fieldSupplies.food).toBe(0);
     expect(advanced.fieldSupplies.water).toBe(0);
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
+  });
+
+  test("travel plans change road risk and salvage rhythm", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.6);
+    const session = createStarterSession("user-a", "Alice", "travel-plan-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const planned = setJourneyTravelPlan(journey, "scavenge");
+    const advanced = advanceJourneyTravel(planned, squad, 55);
+
+    expect(planned.travelPlan).toBe("scavenge");
+    expect(advanced.bonusReward.food).toBe(1);
+    expect(advanced.logs.join("\n")).toContain("Strip the road");
+  });
+
+  test("sneak travel spends cover gear to lower route pressure", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "sneak-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(setJourneyTravelPlan(journey, "sneak"), squad, 55);
+
+    expect(advanced.fieldSupplies.fuel).toBe(0);
+    expect(advanced.pressure).toBeLessThan(journey.pressure);
+    expect(advanced.logs.join("\n")).toContain("Fuel -1 for cover");
   });
 
   test("camp choices trade supplies for recovery and objective progress", () => {

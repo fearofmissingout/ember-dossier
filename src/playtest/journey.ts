@@ -2,8 +2,21 @@ import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrate
 import type { ExpeditionSupport } from "./progression";
 import type { PlaytestSession } from "./types";
 
-export type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract" | "rest" | "cook" | "scout";
+export type JourneyAction =
+  | "careful"
+  | "force"
+  | "trade"
+  | "skip"
+  | "extract"
+  | "rest"
+  | "cook"
+  | "scout"
+  | "plan-steady"
+  | "plan-scavenge"
+  | "plan-rush"
+  | "plan-sneak";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
+export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 
 export type JourneyDraft = {
   squadIds: string[];
@@ -116,6 +129,17 @@ export type JourneyState = {
   objectiveBonus: number;
   support: ExpeditionSupport;
   trophies: string[];
+  travelPlan: JourneyTravelPlan;
+};
+
+export type JourneyTravelPlanOption = {
+  id: JourneyTravelPlan;
+  label: string;
+  text: string;
+  pressure: number;
+  fatigue: number;
+  hunger: number;
+  thirst: number;
 };
 
 type JourneyEventTemplate = {
@@ -569,7 +593,8 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     },
     objectiveBonus: 0,
     support,
-    trophies: []
+    trophies: [],
+    travelPlan: "steady"
   };
 }
 
@@ -734,33 +759,36 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
 export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number): JourneyState {
   const next = structuredClone(journey) as JourneyState;
+  const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
   const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount;
-  const fatigueGain = Math.max(3, riskFatigue + pressureFatigue - routeSkill);
+  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue - routeSkill);
   const foodSpent = spendFieldSupply(next, "food", 1);
   const waterSpent = spendFieldSupply(next, "water", 1);
+  const planSupplyResult = applyTravelPlanSupply(next, plan.id);
   const rationPressure = (foodSpent ? 0 : 8) + (waterSpent ? 0 : 10);
+  const planPressure = plan.pressure + planSupplyResult.pressure;
 
   next.condition.distance += 1;
   next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
-  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18));
-  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22));
-  next.pressure = clampPercent(next.pressure + rationPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
-  next.rollShift += rationPressure / 100 + next.condition.fatigue / 350;
+  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger);
+  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst);
+  next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
+  next.rollShift += (rationPressure + planPressure) / 100 + next.condition.fatigue / 350;
 
   const rationLog = [
     foodSpent ? "food -1" : "no food: hunger rises",
     waterSpent ? "water -1" : "no water: thirst rises"
   ].join(", ");
   next.logs.push(
-    `Road: segment ${next.condition.distance}, ${rationLog}. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
-      rationPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
+    `Road: segment ${next.condition.distance}, ${plan.label}. ${rationLog}${planSupplyResult.log ? `, ${planSupplyResult.log}` : ""}. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
+      rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
     )}.`
   );
 
-  const scavengeRoll = Math.random() + routeSkill * 0.04 - next.pressure / 250;
+  const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) - next.pressure / 250;
   if (scavengeRoll > 0.72) {
     const key = travelScavengeKeys[next.condition.distance % travelScavengeKeys.length];
     next.bonusReward[key] += 1;
@@ -772,6 +800,19 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   }
 
   return next;
+}
+
+export function setJourneyTravelPlan(journey: JourneyState, plan: JourneyTravelPlan): JourneyState {
+  const option = travelPlanOptions[plan];
+  if (!option || journey.travelPlan === plan) {
+    return journey;
+  }
+
+  return {
+    ...journey,
+    logs: [...journey.logs, `Road plan: ${option.label}. ${option.text}`],
+    travelPlan: plan
+  };
 }
 
 export function resolveCampAction(journey: JourneyState, action: JourneyCampAction): JourneyState {
@@ -937,6 +978,49 @@ const resourceLabels: Record<ResourceKey, string> = {
   water: "Water"
 };
 
+export const travelPlanList: JourneyTravelPlanOption[] = [
+  {
+    fatigue: 0,
+    hunger: 0,
+    id: "steady",
+    label: "Steady march",
+    pressure: -1,
+    text: "Balanced travel with a small pressure drop.",
+    thirst: 0
+  },
+  {
+    fatigue: 3,
+    hunger: 3,
+    id: "scavenge",
+    label: "Strip the road",
+    pressure: 5,
+    text: "More finds, more time exposed.",
+    thirst: 3
+  },
+  {
+    fatigue: 6,
+    hunger: 5,
+    id: "rush",
+    label: "Forced march",
+    pressure: -6,
+    text: "Lower contact pressure at a heavy stamina cost.",
+    thirst: 6
+  },
+  {
+    fatigue: 2,
+    hunger: 1,
+    id: "sneak",
+    label: "Go quiet",
+    pressure: -5,
+    text: "Spend cover gear to mute the route.",
+    thirst: 1
+  }
+];
+
+const travelPlanOptions: Record<JourneyTravelPlan, JourneyTravelPlanOption> = Object.fromEntries(
+  travelPlanList.map((option) => [option.id, option])
+) as Record<JourneyTravelPlan, JourneyTravelPlanOption>;
+
 function emptySupport(): ExpeditionSupport {
   return {
     ammoDamage: 0,
@@ -952,6 +1036,53 @@ function addPartialResources(target: ResourceBundle, source: Partial<ResourceBun
   for (const [key, value] of Object.entries(source) as Array<[ResourceKey, number | undefined]>) {
     target[key] += value ?? 0;
   }
+}
+
+function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
+  if (plan === "sneak") {
+    const spentKey = spendFieldSupplyFromPriority(journey, ["fuel", "materials", "ammo"], 1);
+    if (spentKey) {
+      return {
+        log: `${resourceLabels[spentKey]} -1 for cover`,
+        pressure: -5
+      };
+    }
+
+    journey.condition.fatigue = clampPercent(journey.condition.fatigue + 3);
+    return {
+      log: "no cover gear: the quiet route takes longer",
+      pressure: 6
+    };
+  }
+
+  if (plan === "scavenge") {
+    return {
+      log: "extra search time",
+      pressure: 0
+    };
+  }
+
+  if (plan === "rush") {
+    return {
+      log: "no stops",
+      pressure: 0
+    };
+  }
+
+  return {
+    log: "",
+    pressure: 0
+  };
+}
+
+function planScavengeBonus(plan: JourneyTravelPlan) {
+  const bonuses: Record<JourneyTravelPlan, number> = {
+    rush: -0.14,
+    scavenge: 0.24,
+    sneak: 0.06,
+    steady: 0
+  };
+  return bonuses[plan];
 }
 
 function bestBy(squad: Survivor[], stat: keyof Survivor["attributes"]) {
