@@ -102,4 +102,101 @@ describe("remote room state", () => {
     expect(body.state.rooms["room-test"].room.revision).toBe(3);
     expect(body.state.rooms["room-test"].room.players[player.id].name).toBe("Player");
   });
+
+  test("loads only the requested room from a shared snapshot", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.resetModules();
+
+    const roomAState = createInitialState();
+    const roomBState = createInitialState();
+    roomAState.resources.food = 1;
+    roomBState.resources.food = 9;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => [
+          {
+            state: {
+              rooms: {
+                "room-a": {
+                  gameState: roomAState,
+                  room: {
+                    players: {},
+                    revision: 1
+                  }
+                },
+                "room-b": {
+                  gameState: roomBState,
+                  room: {
+                    players: {},
+                    revision: 7
+                  }
+                }
+              },
+              version: 3
+            },
+            updated_at: "2026-06-05T00:02:00.000Z"
+          }
+        ],
+        ok: true
+      })
+    );
+
+    const { loadRemoteDemoState } = await import("./remoteState");
+    const result = await loadRemoteDemoState("room-b", createInitialState(), player);
+
+    expect(result.state.resources.food).toBe(9);
+    expect(result.meta.revision).toBe(7);
+    expect(result.meta.players[player.id]?.name).toBe("Player");
+  });
+
+  test("preserves existing rooms when saving one room", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.resetModules();
+
+    const existingState = createInitialState();
+    existingState.resources.water = 33;
+    const nextState = createInitialState();
+    nextState.resources.water = 12;
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => [
+          {
+            state: {
+              rooms: {
+                "room-existing": {
+                  gameState: existingState,
+                  room: {
+                    players: {},
+                    revision: 5
+                  }
+                }
+              },
+              version: 3
+            }
+          }
+        ],
+        ok: true
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => ""
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { saveRemoteDemoState } = await import("./remoteState");
+    await saveRemoteDemoState("room-new", nextState, { players: {}, revision: 0 }, player);
+
+    const [, init] = fetchMock.mock.calls[1] as [URL, RequestInit];
+    const body = JSON.parse(init.body as string);
+
+    expect(body.state.rooms["room-existing"].gameState.resources.water).toBe(33);
+    expect(body.state.rooms["room-new"].gameState.resources.water).toBe(12);
+    expect(Object.keys(body.state.rooms)).toEqual(["room-existing", "room-new"]);
+  });
 });

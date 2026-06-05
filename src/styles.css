@@ -203,7 +203,7 @@ button:disabled {
 }
 
 .top-bar h1 {
-  font-size: clamp(28px, 4vw, 46px);
+  font-size: 42px;
 }
 
 .eyebrow {
@@ -717,11 +717,16 @@ button:disabled {
   .resource-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .top-bar h1 {
+    font-size: 36px;
+  }
 }
 
 @media (max-width: 720px) {
   body {
     min-width: 0;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .workspace,
@@ -749,7 +754,7 @@ button:disabled {
   }
 
   .top-bar h1 {
-    font-size: 30px;
+    font-size: 28px;
   }
 
   .system-status {
