@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   advanceJourneyTravel,
   campOptionOutcome,
+  combatActionPreview,
   createJourney,
   createCombatForNode,
   resolveCampAction,
@@ -526,6 +527,77 @@ describe("journey route generation", () => {
 
     expect(guarded.combat?.squadHp).toBeGreaterThan(struck.combat?.squadHp ?? 0);
     expect(guarded.logs.join("\n")).toContain("guard catches the wind-up");
+  });
+
+  test("combat action previews show damage, costs, and wind-up counters", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "preview-windup-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "windup";
+      journey.combat.intentLabel = "Wind-up";
+      journey.combat.intentText = "A heavy hit is building. Guard can punish it.";
+    }
+
+    const strike = combatActionPreview(journey, "strike", squad, 60);
+    const guard = combatActionPreview(journey, "guard", squad, 60);
+
+    expect(strike?.effect).toContain("damage");
+    expect(strike?.cost).toContain("Ammo -1");
+    expect(guard?.counterTag).toBe("Counter");
+    expect(guard?.effect).toContain("block");
+    expect(guard?.risk).toContain("Wind-up");
+  });
+
+  test("combat action previews call out brace, prowl, and patch risk", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "preview-prowl-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "brace";
+      journey.combat.intentLabel = "Brace";
+      journey.combat.intentText = "Armor rises this round. Tactic breaks the posture.";
+    }
+
+    const tactic = combatActionPreview(journey, "tactic", squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "prowl";
+      journey.combat.intentLabel = "Prowl";
+      journey.combat.intentText = "It is looking for an opening. Strike or tactic can interrupt.";
+    }
+    const strike = combatActionPreview(journey, "strike", squad, 60);
+    const patch = combatActionPreview(journey, "patch", squad, 60);
+
+    expect(tactic?.counterTag).toBe("Counter");
+    expect(tactic?.effect).toContain("Expose");
+    expect(strike?.counterTag).toBe("Counter");
+    expect(strike?.risk).toContain("interrupt");
+    expect(patch?.counterTag).toBe("Risk");
+    expect(patch?.risk).toContain("open");
   });
 
   test("tactic breaks brace intent", () => {

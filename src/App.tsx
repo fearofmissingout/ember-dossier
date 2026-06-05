@@ -36,6 +36,7 @@ import {
   addResources,
   advanceJourneyTravel,
   campOptionOutcome,
+  combatActionPreview,
   combatLootOutcome,
   combatLootList,
   createCombatForNode,
@@ -141,6 +142,7 @@ const defaultLoadout: ResourceBundle = {
 };
 
 const campActionList: JourneyCampAction[] = ["rest", "cook", "scout"];
+const combatActionList: CombatAction[] = ["strike", "guard", "patch", "tactic", "retreat"];
 const shopActionList: JourneyShopAction[] = ["resupply", "intel", "service"];
 
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
@@ -1519,6 +1521,8 @@ function ExpeditionPrep({
             journey={journey}
             onCombatAction={onCombatAction}
             onJourneyAction={onJourneyAction}
+            readiness={readiness}
+            squad={state.survivors.filter((survivor) => journey.squadIds.includes(survivor.id))}
           />
         )}
         <button className="primary-button full-width" type="button" disabled={!squadReady || !canAffordLoadout || Boolean(journey)} onClick={onDispatch}>
@@ -1537,12 +1541,16 @@ function JourneyPanel({
   activeNode,
   journey,
   onCombatAction,
-  onJourneyAction
+  onJourneyAction,
+  readiness,
+  squad
 }: {
   activeNode: JourneyNode;
   journey: JourneyState;
   onCombatAction: (action: CombatAction) => void;
   onJourneyAction: (action: JourneyAction) => void;
+  readiness: number;
+  squad: GameState["survivors"];
 }) {
   const outlook = getJourneyOutlook(journey);
   const pendingRoad = journey.pendingRoadEvent;
@@ -1706,25 +1714,27 @@ function JourneyPanel({
               <span>Exposed {journey.combat.exposed}</span>
               <span>Bleed {journey.combat.bleed}</span>
             </div>
-            <div className="journey-actions">
-              <button className="primary-button" type="button" onClick={() => onCombatAction("strike")}>
-                <Swords size={17} aria-hidden="true" />
-                Strike
-              </button>
-              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("guard")}>
-                <Shield size={17} aria-hidden="true" />
-                Guard
-              </button>
-              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("patch")}>
-                <PackageCheck size={17} aria-hidden="true" />
-                Patch
-              </button>
-              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("tactic")}>
-                Tactic
-              </button>
-              <button className="ghost-button inline danger-action" type="button" onClick={() => onCombatAction("retreat")}>
-                Retreat
-              </button>
+            <div className="combat-action-grid">
+              {combatActionList.map((action) => {
+                const preview = combatActionPreview(journey, action, squad, readiness);
+                if (!preview) {
+                  return null;
+                }
+                const Icon = combatActionIcon(action);
+                return (
+                  <button className={`combat-action-card ${preview.counterTag.toLowerCase()}`} key={action} type="button" onClick={() => onCombatAction(action)}>
+                    <div>
+                      <Icon size={16} aria-hidden="true" />
+                      <strong>{preview.label}</strong>
+                      <b>{preview.counterTag}</b>
+                    </div>
+                    <span>{preview.actorName}</span>
+                    <small>{preview.effect}</small>
+                    <small>{preview.cost}</small>
+                    <em>{preview.risk}</em>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : activeNode.type === "event" ? (
@@ -2095,6 +2105,17 @@ function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombat
     "loot-salvage": "salvage"
   };
   return lootByAction[action] ?? null;
+}
+
+function combatActionIcon(action: CombatAction) {
+  const icons: Record<CombatAction, typeof Swords> = {
+    guard: Shield,
+    patch: PackageCheck,
+    retreat: RotateCcw,
+    strike: Swords,
+    tactic: Activity
+  };
+  return icons[action];
 }
 
 function shopActionFromJourneyAction(action: JourneyAction): JourneyShopAction | null {

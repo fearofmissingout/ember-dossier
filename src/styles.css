@@ -1367,6 +1367,101 @@ button:disabled {
   font-weight: 900;
 }
 
+.combat-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.combat-action-card {
+  display: grid;
+  min-width: 0;
+  min-height: 132px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #3e3327;
+  cursor: pointer;
+  text-align: left;
+}
+
+.combat-action-card:hover {
+  border-color: #a34d32;
+}
+
+.combat-action-card > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+.combat-action-card svg {
+  flex: 0 0 auto;
+  color: #8f4a32;
+}
+
+.combat-action-card strong,
+.combat-action-card span,
+.combat-action-card small,
+.combat-action-card em {
+  overflow-wrap: anywhere;
+}
+
+.combat-action-card strong {
+  color: #473a2b;
+  font-size: 12px;
+}
+
+.combat-action-card b {
+  margin-left: auto;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #efe4cf;
+  color: #6d5c47;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.combat-action-card span {
+  color: #5d6b61;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.combat-action-card small,
+.combat-action-card em {
+  color: #7b6a52;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.combat-action-card.counter {
+  border-color: #7aa66d;
+  background: #f3fbef;
+}
+
+.combat-action-card.counter b {
+  background: #dcefd2;
+  color: #315b33;
+}
+
+.combat-action-card.risk {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.combat-action-card.risk b {
+  background: #f3d1c4;
+  color: #8a3524;
+}
+
 .combat-bar {
   display: grid;
   gap: 5px;

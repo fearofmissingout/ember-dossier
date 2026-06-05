@@ -259,6 +259,16 @@ export type JourneyCombatLootOption = {
   text: string;
 };
 
+export type JourneyCombatActionPreview = {
+  action: CombatAction;
+  actorName: string;
+  cost: string;
+  counterTag: "Counter" | "Risk" | "Standard";
+  effect: string;
+  label: string;
+  risk: string;
+};
+
 type JourneyEventTemplate = {
   body: string;
   careful: Omit<JourneyChoice, "reward"> & { rewardKeys: ResourceKey[] };
@@ -951,6 +961,107 @@ export function createCombatForNode(
     round: 1,
     squadHp: squadMaxHp,
     squadMaxHp
+  };
+}
+
+export function combatActionPreview(journey: JourneyState, action: CombatAction, squad: Survivor[], readiness: number): JourneyCombatActionPreview | null {
+  const combat = journey.combat;
+  if (!combat || squad.length === 0) {
+    return null;
+  }
+
+  const intent = combatIntentDetails[combat.intent] ?? combatIntentDetails.maul;
+  const lead = bestBy(squad, "willpower");
+  const striker = bestBy(squad, "agility");
+  const tactician = bestBy(squad, "technical");
+  const medic = bestBy(squad, "medical");
+  const incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(journey.pressure / 20) : 0) + intent.incoming;
+
+  if (action === "strike") {
+    const hasAmmo = journey.fieldSupplies.ammo > 0;
+    const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (hasAmmo ? 2 : 0));
+    const fieldRunnerBonus = hasPerk(striker, "field_runner") ? 2 : 0;
+    const interruptBonus = combat.intent === "prowl" ? 3 : 0;
+    const damage = Math.max(
+      3,
+      Math.round(readiness / 14) +
+        Math.floor(striker.attributes.agility / 18) +
+        fieldRunnerBonus +
+        interruptBonus +
+        (hasAmmo ? 5 + journey.support.ammoDamage : 0) -
+        armorPenalty
+    );
+    return {
+      action,
+      actorName: striker.name,
+      cost: hasAmmo ? "Ammo -1" : "No ammo",
+      counterTag: combat.intent === "prowl" ? "Counter" : "Standard",
+      effect: `${damage} damage${armorPenalty > 0 ? `, armor absorbs ${armorPenalty}` : ""}`,
+      label: "Strike",
+      risk: combat.intent === "prowl" ? "Can interrupt Prowl and reduce the hit back." : `Expected hit back ${incoming}.`
+    };
+  }
+
+  if (action === "guard") {
+    const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + journey.support.guardBlock;
+    const windupBlock = combat.intent === "windup" ? 6 : 0;
+    const blocked = Math.max(0, incoming - Math.max(1, Math.floor(incoming / 2) - guardValue - windupBlock));
+    return {
+      action,
+      actorName: lead.name,
+      cost: "No supply",
+      counterTag: combat.intent === "windup" ? "Counter" : "Standard",
+      effect: `block ${blocked}, expose +${combat.intent === "windup" ? 2 : 1}`,
+      label: "Guard",
+      risk: combat.intent === "windup" ? "Wind-up punish window. Strongest defensive answer." : `Expected hit back ${Math.max(1, incoming - blocked)}.`
+    };
+  }
+
+  if (action === "patch") {
+    const hasMedicine = journey.fieldSupplies.medicine > 0;
+    const steadyHandsBonus = hasPerk(medic, "steady_hands") ? 3 : 0;
+    const heal = Math.floor(medic.attributes.medical / 9) + steadyHandsBonus + journey.support.patchHeal + (hasMedicine ? 12 : 4);
+    const bleedRelief = combat.bleed > 0 ? (hasMedicine ? 2 : 1) : 0;
+    return {
+      action,
+      actorName: medic.name,
+      cost: hasMedicine ? "Medicine -1" : "No medicine",
+      counterTag: combat.intent === "prowl" ? "Risk" : "Standard",
+      effect: `Heal ${heal}${bleedRelief > 0 ? `, bleed -${bleedRelief}` : ""}`,
+      label: "Patch",
+      risk: combat.intent === "prowl" ? "Prowl leaves the line open while patching." : `Expected hit back ${incoming}.`
+    };
+  }
+
+  if (action === "tactic") {
+    const braceBreak = combat.intent === "brace" ? 2 : 0;
+    const prowlRead = combat.intent === "prowl" ? 1 : 0;
+    const expose = 1 + braceBreak + prowlRead + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
+    const pressureDrop = Math.floor(tactician.attributes.luck / 25) + journey.support.pressureRelief;
+    return {
+      action,
+      actorName: tactician.name,
+      cost: "No supply",
+      counterTag: combat.intent === "brace" || combat.intent === "prowl" ? "Counter" : "Standard",
+      effect: `Expose +${expose}, pressure -${pressureDrop}%`,
+      label: "Tactic",
+      risk:
+        combat.intent === "brace"
+          ? "Breaks Brace before armor rises."
+          : combat.intent === "prowl"
+            ? "Reads Prowl and softens the hit."
+            : `Expected hit back ${incoming}.`
+    };
+  }
+
+  return {
+    action,
+    actorName: lead.name,
+    cost: "No supply",
+    counterTag: "Risk",
+    effect: `Exit combat, take ${Math.max(3, Math.ceil(combat.attack / 2))} damage`,
+    label: "Retreat",
+    risk: `Pressure +${Math.max(8, 18 - journey.support.pressureRelief)}%, route continues.`
   };
 }
 
