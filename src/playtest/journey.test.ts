@@ -600,6 +600,39 @@ describe("journey route generation", () => {
     expect(patch?.risk).toContain("open");
   });
 
+  test("combat action previews surface enemy special pulse counters", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "preview-pulse-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.pressure = 64;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "maul";
+      journey.combat.intentLabel = "Maul";
+      journey.combat.intentText = "A direct hit is coming.";
+    }
+
+    const tactic = combatActionPreview(journey, "tactic", squad, 60);
+    const guard = combatActionPreview(journey, "guard", squad, 60);
+
+    expect(journey.combat?.traitPulse.label).toBe("Pack pressure");
+    expect(tactic?.counterTag).toBe("Counter");
+    expect(tactic?.risk).toContain("Counters Pack pressure");
+    expect(guard?.counterTag).toBe("Risk");
+    expect(guard?.risk).toContain("Pack pressure");
+  });
+
   test("tactic breaks brace intent", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "brace-intent-room");
@@ -650,6 +683,39 @@ describe("journey route generation", () => {
 
     expect(bleeding.combat?.bleed).toBeGreaterThan(0);
     expect(patched.combat?.bleed).toBeLessThan(bleeding.combat?.bleed ?? 0);
+  });
+
+  test("enemy special pulses log countered and uncountered monster pressure", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "pulse-log-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "maul";
+      journey.combat.intentLabel = "Maul";
+      journey.combat.intentText = "A direct hit is coming.";
+      journey.combat.exposed = 0;
+      journey.combat.armor = 2;
+    }
+
+    const hardened = resolveCombatRound(journey, "strike", squad, 60);
+    const countered = resolveCombatRound(journey, "tactic", squad, 60);
+
+    expect(hardened.combat?.armor).toBe(3);
+    expect(hardened.logs.join("\n")).toContain("Trait pulse: Plating lock");
+    expect(countered.combat?.armor).toBe(2);
+    expect(countered.logs.join("\n")).toContain("Trait counter: Plating lock");
   });
 
   test("retreat exits combat with pressure and route progress", () => {

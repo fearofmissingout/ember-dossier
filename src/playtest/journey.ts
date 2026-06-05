@@ -63,6 +63,13 @@ export type JourneyEnemy = {
   traitText: string;
 };
 
+export type JourneyEnemyPulse = {
+  counterActions: CombatAction[];
+  label: string;
+  text: string;
+  warning: string;
+};
+
 export type JourneyShopAction = "resupply" | "intel" | "service";
 
 export type JourneyShopOffer = {
@@ -193,6 +200,7 @@ export type JourneyCombat = {
   attack: number;
   round: number;
   reward: ResourceBundle;
+  traitPulse: JourneyEnemyPulse;
 };
 
 export type JourneyCombatLoot = {
@@ -960,7 +968,8 @@ export function createCombatForNode(
     reward: { ...enemy.reward },
     round: 1,
     squadHp: squadMaxHp,
-    squadMaxHp
+    squadMaxHp,
+    traitPulse: enemyTraitPulse(enemy.trait)
   };
 }
 
@@ -991,14 +1000,21 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
         (hasAmmo ? 5 + journey.support.ammoDamage : 0) -
         armorPenalty
     );
+    const pulsePreview = previewWithEnemyPulse(
+      combat,
+      action,
+      journey.pressure,
+      combat.intent === "prowl" ? "Counter" : "Standard",
+      combat.intent === "prowl" ? "Can interrupt Prowl and reduce the hit back." : `Expected hit back ${incoming}.`
+    );
     return {
       action,
       actorName: striker.name,
       cost: hasAmmo ? "Ammo -1" : "No ammo",
-      counterTag: combat.intent === "prowl" ? "Counter" : "Standard",
+      counterTag: pulsePreview.counterTag,
       effect: `${damage} damage${armorPenalty > 0 ? `, armor absorbs ${armorPenalty}` : ""}`,
       label: "Strike",
-      risk: combat.intent === "prowl" ? "Can interrupt Prowl and reduce the hit back." : `Expected hit back ${incoming}.`
+      risk: pulsePreview.risk
     };
   }
 
@@ -1006,14 +1022,21 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + journey.support.guardBlock;
     const windupBlock = combat.intent === "windup" ? 6 : 0;
     const blocked = Math.max(0, incoming - Math.max(1, Math.floor(incoming / 2) - guardValue - windupBlock));
+    const pulsePreview = previewWithEnemyPulse(
+      combat,
+      action,
+      journey.pressure,
+      combat.intent === "windup" ? "Counter" : "Standard",
+      combat.intent === "windup" ? "Wind-up punish window. Strongest defensive answer." : `Expected hit back ${Math.max(1, incoming - blocked)}.`
+    );
     return {
       action,
       actorName: lead.name,
       cost: "No supply",
-      counterTag: combat.intent === "windup" ? "Counter" : "Standard",
+      counterTag: pulsePreview.counterTag,
       effect: `block ${blocked}, expose +${combat.intent === "windup" ? 2 : 1}`,
       label: "Guard",
-      risk: combat.intent === "windup" ? "Wind-up punish window. Strongest defensive answer." : `Expected hit back ${Math.max(1, incoming - blocked)}.`
+      risk: pulsePreview.risk
     };
   }
 
@@ -1022,14 +1045,21 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     const steadyHandsBonus = hasPerk(medic, "steady_hands") ? 3 : 0;
     const heal = Math.floor(medic.attributes.medical / 9) + steadyHandsBonus + journey.support.patchHeal + (hasMedicine ? 12 : 4);
     const bleedRelief = combat.bleed > 0 ? (hasMedicine ? 2 : 1) : 0;
+    const pulsePreview = previewWithEnemyPulse(
+      combat,
+      action,
+      journey.pressure,
+      combat.intent === "prowl" ? "Risk" : "Standard",
+      combat.intent === "prowl" ? "Prowl leaves the line open while patching." : `Expected hit back ${incoming}.`
+    );
     return {
       action,
       actorName: medic.name,
       cost: hasMedicine ? "Medicine -1" : "No medicine",
-      counterTag: combat.intent === "prowl" ? "Risk" : "Standard",
+      counterTag: pulsePreview.counterTag,
       effect: `Heal ${heal}${bleedRelief > 0 ? `, bleed -${bleedRelief}` : ""}`,
       label: "Patch",
-      risk: combat.intent === "prowl" ? "Prowl leaves the line open while patching." : `Expected hit back ${incoming}.`
+      risk: pulsePreview.risk
     };
   }
 
@@ -1038,30 +1068,46 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     const prowlRead = combat.intent === "prowl" ? 1 : 0;
     const expose = 1 + braceBreak + prowlRead + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
     const pressureDrop = Math.floor(tactician.attributes.luck / 25) + journey.support.pressureRelief;
+    const tacticRisk =
+      combat.intent === "brace"
+        ? "Breaks Brace before armor rises."
+        : combat.intent === "prowl"
+          ? "Reads Prowl and softens the hit."
+          : `Expected hit back ${incoming}.`;
+    const pulsePreview = previewWithEnemyPulse(
+      combat,
+      action,
+      journey.pressure,
+      combat.intent === "brace" || combat.intent === "prowl" ? "Counter" : "Standard",
+      tacticRisk
+    );
     return {
       action,
       actorName: tactician.name,
       cost: "No supply",
-      counterTag: combat.intent === "brace" || combat.intent === "prowl" ? "Counter" : "Standard",
+      counterTag: pulsePreview.counterTag,
       effect: `Expose +${expose}, pressure -${pressureDrop}%`,
       label: "Tactic",
-      risk:
-        combat.intent === "brace"
-          ? "Breaks Brace before armor rises."
-          : combat.intent === "prowl"
-            ? "Reads Prowl and softens the hit."
-            : `Expected hit back ${incoming}.`
+      risk: pulsePreview.risk
     };
   }
+
+  const retreatPreview = previewWithEnemyPulse(
+    combat,
+    action,
+    journey.pressure,
+    "Risk",
+    `Pressure +${Math.max(8, 18 - journey.support.pressureRelief)}%, route continues.`
+  );
 
   return {
     action,
     actorName: lead.name,
     cost: "No supply",
-    counterTag: "Risk",
+    counterTag: retreatPreview.counterTag,
     effect: `Exit combat, take ${Math.max(3, Math.ceil(combat.attack / 2))} damage`,
     label: "Retreat",
-    risk: `Pressure +${Math.max(8, 18 - journey.support.pressureRelief)}%, route continues.`
+    risk: retreatPreview.risk
   };
 }
 
@@ -1187,20 +1233,59 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   }
 
   if (combat.enemyHp > 0) {
+    const traitPulseLog: string[] = [];
+    const traitPulseCountered = enemyPulseCountersAction(combat, action);
+
+    if (combat.enemyTrait === "armored") {
+      if (traitPulseCountered) {
+        traitPulseLog.push("Trait counter: Plating lock stays open.");
+      } else if (combat.exposed <= 0) {
+        combat.armor = Math.min(6, combat.armor + 1);
+        traitPulseLog.push("Trait pulse: Plating lock hardens armor +1.");
+      }
+    }
+
+    if (combat.enemyTrait === "swarm") {
+      const pressureDamage = Math.floor(next.pressure / 20);
+      if (traitPulseCountered && pressureDamage > 0) {
+        incoming = Math.max(1, incoming - Math.min(4, pressureDamage));
+        next.pressure = clampPercent(next.pressure - 2);
+        next.rollShift -= 0.02;
+        traitPulseLog.push("Trait counter: Pack pressure is split before it lands.");
+      } else if (pressureDamage > 0) {
+        next.pressure = clampPercent(next.pressure + 3);
+        next.rollShift += 0.02;
+        traitPulseLog.push(`Trait pulse: Pack pressure converts route heat into +${pressureDamage} hit back and pressure +3%.`);
+      }
+    }
+
+    if (combat.enemyTrait === "dread") {
+      if (traitPulseCountered) {
+        next.pressure = clampPercent(next.pressure - 2);
+        next.rollShift -= 0.02;
+        traitPulseLog.push("Trait counter: Black signal is grounded.");
+      } else {
+        next.pressure = clampPercent(next.pressure + 5);
+        next.rollShift += 0.04;
+        pressureLog.push("pressure +5%");
+        traitPulseLog.push("Trait pulse: Black signal drives pressure +5%.");
+      }
+    }
+
     if (combat.bleed > 0) {
       applyCombatDamage(next, combat, combat.bleed, incomingFocusId);
       pressureLog.push(`bleed deals ${combat.bleed}`);
     }
 
     applyCombatDamage(next, combat, incoming, incomingFocusId);
-    if (combat.enemyTrait === "bleeder" && action !== "guard" && !patchedThisRound) {
-      combat.bleed = Math.min(6, combat.bleed + 2);
-      pressureLog.push("bleed +2");
-    }
-    if (combat.enemyTrait === "dread" && action !== "guard") {
-      next.pressure = clampPercent(next.pressure + 5);
-      next.rollShift += 0.04;
-      pressureLog.push("pressure +5%");
+    if (combat.enemyTrait === "bleeder") {
+      if (traitPulseCountered || patchedThisRound) {
+        traitPulseLog.push("Trait counter: Open wounds are contained.");
+      } else {
+        combat.bleed = Math.min(6, combat.bleed + 2);
+        pressureLog.push("bleed +2");
+        traitPulseLog.push("Trait pulse: Open wounds add bleed +2 until patched.");
+      }
     }
     if (combat.intent === "windup" && action !== "guard") {
       next.pressure = clampPercent(next.pressure + 4);
@@ -1208,6 +1293,9 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       pressureLog.push("wind-up pressure +4%");
     }
 
+    if (traitPulseLog.length > 0) {
+      next.logs.push(`${node.title}: ${traitPulseLog.join(" ")}`);
+    }
     next.logs.push(`${combat.enemyName} hits back for ${incoming}${pressureLog.length ? ` (${pressureLog.join(", ")})` : ""}.`);
     if (combat.squadHp <= 0) {
       next.pressure = clampPercent(next.pressure + 24);
@@ -1910,6 +1998,82 @@ const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: Jour
     text: "A heavy hit is building. Guard can punish it."
   }
 };
+
+export function enemyTraitPulse(trait: JourneyEnemy["trait"]): JourneyEnemyPulse {
+  const pulses: Record<JourneyEnemy["trait"], JourneyEnemyPulse> = {
+    armored: {
+      counterActions: ["tactic"],
+      label: "Plating lock",
+      text: "The shell tightens when it is not kept exposed.",
+      warning: "armor can harden if tactics do not keep a weak point open."
+    },
+    bleeder: {
+      counterActions: ["guard", "patch"],
+      label: "Open wounds",
+      text: "Uncontrolled hits leave lingering bleed on the squad.",
+      warning: "new bleed can stack until someone patches or covers the line."
+    },
+    dread: {
+      counterActions: ["guard", "tactic"],
+      label: "Black signal",
+      text: "Every unsteady exchange pushes the route toward panic.",
+      warning: "pressure spikes unless the squad holds or reads the pattern."
+    },
+    swarm: {
+      counterActions: ["strike", "tactic"],
+      label: "Pack pressure",
+      text: "Route pressure turns into extra bodies in the hit back.",
+      warning: "current pressure adds extra damage and can climb higher."
+    }
+  };
+
+  return pulses[trait];
+}
+
+function enemyPulseCountersAction(combat: JourneyCombat, action: CombatAction) {
+  const pulse = combat.traitPulse ?? enemyTraitPulse(combat.enemyTrait);
+  return pulse.counterActions.includes(action);
+}
+
+function enemyPulseRisksAction(combat: JourneyCombat, action: CombatAction, pressure: number) {
+  if (action === "retreat") {
+    return false;
+  }
+
+  if (combat.enemyTrait === "armored") {
+    return action !== "tactic" && combat.exposed <= 0;
+  }
+
+  if (combat.enemyTrait === "bleeder") {
+    return action !== "guard" && action !== "patch";
+  }
+
+  if (combat.enemyTrait === "dread") {
+    return action !== "guard" && action !== "tactic";
+  }
+
+  return action !== "strike" && action !== "tactic" && Math.floor(pressure / 20) > 0;
+}
+
+function previewWithEnemyPulse(
+  combat: JourneyCombat,
+  action: CombatAction,
+  pressure: number,
+  counterTag: JourneyCombatActionPreview["counterTag"],
+  risk: string
+): Pick<JourneyCombatActionPreview, "counterTag" | "risk"> {
+  const pulse = combat.traitPulse ?? enemyTraitPulse(combat.enemyTrait);
+  const countersPulse = enemyPulseCountersAction(combat, action);
+  const risksPulse = enemyPulseRisksAction(combat, action, pressure);
+  const nextCounterTag: JourneyCombatActionPreview["counterTag"] =
+    countersPulse || counterTag === "Counter" ? "Counter" : counterTag === "Risk" || risksPulse ? "Risk" : "Standard";
+  const nextRisk = countersPulse ? `${risk} Counters ${pulse.label}.` : risksPulse ? `${risk} ${pulse.label}: ${pulse.warning}` : risk;
+
+  return {
+    counterTag: nextCounterTag,
+    risk: nextRisk
+  };
+}
 
 function emptySupport(): ExpeditionSupport {
   return {

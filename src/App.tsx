@@ -41,6 +41,7 @@ import {
   combatLootList,
   createCombatForNode,
   createJourney,
+  enemyTraitPulse,
   resolveCampAction,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
@@ -1558,6 +1559,7 @@ function JourneyPanel({
   const nodeTypeLabel = pendingRoad ? `road ${pendingRoad.tone}` : activeNode.type;
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
+  const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
 
   return (
     <div className="journey-panel">
@@ -1682,6 +1684,11 @@ function JourneyPanel({
             <div className="combat-intent">
               <strong>Intent: {journey.combat.intentLabel}</strong>
               <span>{journey.combat.intentText}</span>
+            </div>
+            <div className="combat-special">
+              <strong>{activeCombatPulse?.label}</strong>
+              <span>{activeCombatPulse?.text}</span>
+              <small>Counter: {activeCombatPulse?.counterActions.map(combatActionLabel).join(" / ")}</small>
             </div>
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
@@ -2116,6 +2123,17 @@ function combatActionIcon(action: CombatAction) {
     tactic: Activity
   };
   return icons[action];
+}
+
+function combatActionLabel(action: CombatAction) {
+  const labels: Record<CombatAction, string> = {
+    guard: "Guard",
+    patch: "Patch",
+    retreat: "Retreat",
+    strike: "Strike",
+    tactic: "Tactic"
+  };
+  return labels[action];
 }
 
 function shopActionFromJourneyAction(action: JourneyAction): JourneyShopAction | null {

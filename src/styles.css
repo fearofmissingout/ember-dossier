@@ -1171,8 +1171,23 @@ button:disabled {
   background: #fff1ea;
 }
 
+.combat-special {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #b9a46b;
+  border-radius: 8px;
+  background: #fff7da;
+}
+
 .combat-trait strong {
   color: #783924;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.combat-special strong {
+  color: #6d5520;
   font-size: 12px;
   text-transform: uppercase;
 }
@@ -1193,6 +1208,17 @@ button:disabled {
   color: #765645;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.combat-special span,
+.combat-special small {
+  color: #6b5b35;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.combat-special small {
+  font-weight: 900;
 }
 
 .combat-loot-card > div:first-child {
