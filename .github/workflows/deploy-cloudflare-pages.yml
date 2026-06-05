@@ -42,3 +42,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=ember-dossier --branch=master
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Production playtest smoke
+        run: npm run playtest:check

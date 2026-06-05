@@ -102,4 +102,29 @@ describe("auth client", () => {
     const { signUpWithPassword } = await import("./auth");
     await expect(signUpWithPassword("alice@example.com", "secret-pass")).rejects.toThrow(/^Email rate limit exceeded$/);
   });
+
+  test("explains when signup requires email confirmation before a session is issued", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.resetModules();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          user: {
+            confirmation_sent_at: "2026-06-05T00:00:00.000Z",
+            email: "alice@example.com",
+            id: "user-a"
+          }
+        }),
+        ok: true
+      })
+    );
+
+    const { signUpWithPassword } = await import("./auth");
+    await expect(signUpWithPassword("alice@example.com", "secret-pass")).rejects.toThrow(
+      /^账号已创建，但 Supabase 仍要求邮箱确认/
+    );
+  });
 });

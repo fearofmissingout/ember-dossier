@@ -660,6 +660,9 @@ export default function App() {
               Continue as guest
             </button>
           </div>
+          <p className="muted-copy">
+            If account creation asks for email confirmation, use guest mode for this playtest or disable Confirm email in Supabase Auth.
+          </p>
           {authNotice && <p className="muted-copy">{authNotice}</p>}
         </section>
       </main>

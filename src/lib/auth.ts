@@ -6,6 +6,9 @@ export type AuthSession = {
   userId: string;
 };
 
+const emailConfirmationRequiredMessage =
+  "账号已创建，但 Supabase 仍要求邮箱确认。请去邮箱点击确认链接，或先点 Continue as guest 试玩；如果想注册后立刻进入，请在 Supabase Auth 里关闭 Confirm email。";
+
 type EmailOtpType = "email" | "magiclink" | "signup" | "recovery" | "invite" | "email_change";
 
 export async function requestMagicLink(email: string) {
@@ -44,7 +47,7 @@ export async function signUpWithPassword(email: string, password: string): Promi
     method: "POST"
   });
 
-  return readAuthSessionResponse(response, "Supabase did not return a session. If email confirmations are enabled, confirm the account first or disable confirmation for playtests.");
+  return readAuthSessionResponse(response, emailConfirmationRequiredMessage);
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<AuthSession> {

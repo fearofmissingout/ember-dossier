@@ -10,7 +10,8 @@
     "test": "vitest run",
     "supabase:init": "node scripts/init-supabase.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
-    "supabase:check": "node scripts/check-supabase-demo.mjs"
+    "supabase:check": "node scripts/check-supabase-demo.mjs",
+    "playtest:check": "node scripts/check-production-playtest.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
