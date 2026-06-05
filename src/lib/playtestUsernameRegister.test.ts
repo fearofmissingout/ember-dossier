@@ -76,6 +76,76 @@ describe("playtest username register function", () => {
       apikey: "service-role-key"
     });
   });
+
+  test("falls back to normal Supabase signup when service role is absent", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        access_token: "signup-token",
+        user: {
+          email: "bob_02@players.ember-dossier.example.com",
+          id: "user-b"
+        }
+      }),
+      ok: true
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await onRequestPost({
+      env: {
+        VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+        VITE_SUPABASE_URL: "https://project.supabase.co"
+      },
+      request: createRequest({ password: "secret-pass", username: "Bob_02" })
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      accessToken: "signup-token",
+      email: "bob_02@players.ember-dossier.example.com",
+      userId: "user-b"
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(String(url)).toBe("https://project.supabase.co/auth/v1/signup");
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      data: {
+        display_name: "bob_02",
+        username: "bob_02"
+      },
+      email: "bob_02@players.ember-dossier.example.com",
+      password: "secret-pass"
+    });
+    expect(init.headers).toMatchObject({
+      apikey: "publishable-key"
+    });
+  });
+
+  test("explains confirmation settings when normal signup creates no session", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      json: async () => ({
+        user: {
+          email: "casey@players.ember-dossier.example.com",
+          id: "user-c"
+        }
+      }),
+      ok: true
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await onRequestPost({
+      env: {
+        VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-key",
+        VITE_SUPABASE_URL: "https://project.supabase.co"
+      },
+      request: createRequest({ password: "secret-pass", username: "Casey" })
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      message:
+        "Account created, but Supabase did not return a session. Disable Confirm email for playtests or add SUPABASE_SERVICE_ROLE_KEY to Cloudflare."
+    });
+  });
 });
 
 function createEnv() {

@@ -14,12 +14,22 @@ export async function onRequestPost({ request, env }) {
 
     const config = readConfig(env);
     const email = usernameToEmail(username);
-    const created = await createConfirmedUser(config, email, password, username);
-    if (!created.ok) {
-      return json({ message: created.message }, created.status);
+
+    if (config.serviceRoleKey) {
+      const created = await createConfirmedUser(config, email, password, username);
+      if (!created.ok) {
+        return json({ message: created.message }, created.status);
+      }
+
+      const session = await signIn(config, email, password);
+      if (!session.ok) {
+        return json({ message: session.message }, session.status);
+      }
+
+      return json(session.payload);
     }
 
-    const session = await signIn(config, email, password);
+    const session = await signUp(config, email, password, username);
     if (!session.ok) {
       return json({ message: session.message }, session.status);
     }
@@ -35,14 +45,54 @@ function readConfig(env) {
   const publishableKey = clean(env.SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_ANON_KEY);
   const serviceRoleKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
 
-  if (!url || !publishableKey || !serviceRoleKey) {
-    throw new Error("Username signup is not configured. Add SUPABASE_SERVICE_ROLE_KEY to Cloudflare.");
+  if (!url || !publishableKey) {
+    throw new Error("Username signup is not configured. Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY to Cloudflare.");
   }
 
   return {
     publishableKey,
     serviceRoleKey,
     url: normalizeSupabaseUrl(url)
+  };
+}
+
+async function signUp(config, email, password, username) {
+  const response = await fetch(new URL("/auth/v1/signup", config.url), {
+    body: JSON.stringify({
+      data: {
+        display_name: username,
+        username
+      },
+      email,
+      password
+    }),
+    headers: {
+      "Content-Type": "application/json",
+      apikey: config.publishableKey
+    },
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    return { ok: false, message: await readAuthError(response), status: response.status };
+  }
+
+  const payload = await response.json();
+  if (!payload.access_token || !payload.user?.id) {
+    return {
+      ok: false,
+      message: "Account created, but Supabase did not return a session. Disable Confirm email for playtests or add SUPABASE_SERVICE_ROLE_KEY to Cloudflare.",
+      status: 409
+    };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      accessToken: payload.access_token,
+      email: payload.user.email ?? null,
+      userId: payload.user.id
+    }
   };
 }
 
