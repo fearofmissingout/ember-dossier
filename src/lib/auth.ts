@@ -14,9 +14,7 @@ export async function requestMagicLink(email: string) {
   }
 
   const endpoint = new URL("/auth/v1/otp", supabaseConfig.url);
-  if (typeof window !== "undefined") {
-    endpoint.searchParams.set("redirect_to", window.location.href);
-  }
+  addCurrentPageRedirect(endpoint);
 
   const response = await fetch(endpoint, {
     body: JSON.stringify({
@@ -37,7 +35,10 @@ export async function signUpWithPassword(email: string, password: string): Promi
     throw new Error("Supabase is not configured.");
   }
 
-  const response = await fetch(new URL("/auth/v1/signup", supabaseConfig.url), {
+  const endpoint = new URL("/auth/v1/signup", supabaseConfig.url);
+  addCurrentPageRedirect(endpoint);
+
+  const response = await fetch(endpoint, {
     body: JSON.stringify({ email, password }),
     headers: authHeaders(),
     method: "POST"
@@ -149,6 +150,12 @@ function authHeaders() {
     "Content-Type": "application/json",
     apikey: supabaseConfig.publishableKey
   };
+}
+
+function addCurrentPageRedirect(endpoint: URL) {
+  if (typeof window !== "undefined") {
+    endpoint.searchParams.set("redirect_to", window.location.href);
+  }
 }
 
 async function readAuthSessionResponse(response: Response, emptySessionMessage: string): Promise<AuthSession> {
