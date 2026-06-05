@@ -58,6 +58,8 @@ describe("journey route generation", () => {
     expect(combat?.attack).toBeGreaterThan(6);
     expect(combat?.reward.ammo).toBe(1);
     expect(combat?.enemyTraitLabel).toBe("Swarm");
+    expect(combat?.intentLabel).toBe("Prowl");
+    expect(combat?.intentText).toContain("interrupt");
   });
 
   test("facility support adds field supplies and combat endurance", () => {
@@ -229,6 +231,64 @@ describe("journey route generation", () => {
     expect(exposed.combat?.exposed).toBeGreaterThan(0);
     expect(afterStrike.combat?.enemyHp).toBeLessThan(exposed.combat?.enemyHp ?? 999);
     expect(afterStrike.logs.join("\n")).toContain("leads a strike");
+  });
+
+  test("combat intent rewards matching counters", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "intent-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.enemyHp = journey.combat.enemyMaxHp;
+      journey.combat.intent = "windup";
+      journey.combat.intentLabel = "Wind-up";
+      journey.combat.intentText = "A heavy hit is building. Guard can punish it.";
+    }
+
+    const guarded = resolveCombatRound(journey, "guard", squad, 60);
+    const struck = resolveCombatRound(journey, "strike", squad, 60);
+
+    expect(guarded.combat?.squadHp).toBeGreaterThan(struck.combat?.squadHp ?? 0);
+    expect(guarded.logs.join("\n")).toContain("guard catches the wind-up");
+  });
+
+  test("tactic breaks brace intent", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "brace-intent-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "brace";
+      journey.combat.intentLabel = "Brace";
+      journey.combat.intentText = "Armor rises this round. Tactic breaks the posture.";
+    }
+
+    const resolved = resolveCombatRound(journey, "tactic", squad, 60);
+
+    expect(resolved.combat?.exposed).toBeGreaterThan(1);
+    expect(resolved.logs.join("\n")).toContain("tactic breaks the brace");
   });
 
   test("bleeder enemies add persistent bleed until patched", () => {

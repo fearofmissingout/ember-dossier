@@ -1090,14 +1090,35 @@ button:disabled {
   background: #fffdf5;
 }
 
+.combat-intent {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #c98a74;
+  border-radius: 8px;
+  background: #fff1ea;
+}
+
 .combat-trait strong {
   color: #783924;
   font-size: 12px;
   text-transform: uppercase;
 }
 
+.combat-intent strong {
+  color: #8a3524;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
 .combat-trait span {
   color: #667267;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.combat-intent span {
+  color: #765645;
   font-size: 12px;
   line-height: 1.35;
 }

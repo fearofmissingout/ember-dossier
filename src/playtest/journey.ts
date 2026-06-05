@@ -16,6 +16,7 @@ export type JourneyAction =
   | "plan-rush"
   | "plan-sneak";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
+export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 
@@ -97,6 +98,9 @@ export type JourneyCombat = {
   enemyTraitLabel: string;
   enemyTraitText: string;
   exposed: number;
+  intent: JourneyCombatIntent;
+  intentLabel: string;
+  intentText: string;
   squadHp: number;
   squadMaxHp: number;
   attack: number;
@@ -615,6 +619,7 @@ export function createCombatForNode(
   const enemy = node.enemy ?? materializeEnemy(familyEnemies.urban[0]);
   const enemyMaxHp = 22 + riskIndex * 6 + enemy.hpBonus;
   const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5) + support.maxHp;
+  const intent = nextCombatIntent(enemy.trait, 1, 0);
 
   return {
     armor: enemy.armor,
@@ -627,6 +632,9 @@ export function createCombatForNode(
     enemyTraitLabel: enemy.traitLabel,
     enemyTraitText: enemy.traitText,
     exposed: 0,
+    intent: intent.id,
+    intentLabel: intent.label,
+    intentText: intent.text,
     reward: { ...enemy.reward },
     round: 1,
     squadHp: squadMaxHp,
@@ -653,35 +661,56 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     return next;
   }
 
-  let incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(next.pressure / 20) : 0);
+  const intent = combatIntentDetails[combat.intent] ?? combatIntentDetails.maul;
+  let incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(next.pressure / 20) : 0) + intent.incoming;
   const lead = bestBy(squad, "willpower");
   const striker = bestBy(squad, "agility");
   const tactician = bestBy(squad, "technical");
   const medic = bestBy(squad, "medical");
   const pressureLog: string[] = [];
+  const counterLog: string[] = [];
   let patchedThisRound = false;
 
   if (action === "strike") {
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
-    const armorPenalty = Math.max(0, combat.armor - combat.exposed - (ammoSpent ? 2 : 0));
+    const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (ammoSpent ? 2 : 0));
     const fieldRunnerBonus = hasPerk(striker, "field_runner") ? 2 : 0;
+    const interruptBonus = combat.intent === "prowl" ? 3 : 0;
     const damage = Math.max(
       3,
-      Math.round(readiness / 14) + Math.floor(striker.attributes.agility / 18) + fieldRunnerBonus + (ammoSpent ? 5 + next.support.ammoDamage : 0) - armorPenalty
+      Math.round(readiness / 14) +
+        Math.floor(striker.attributes.agility / 18) +
+        fieldRunnerBonus +
+        interruptBonus +
+        (ammoSpent ? 5 + next.support.ammoDamage : 0) -
+        armorPenalty
     );
+    if (combat.intent === "prowl") {
+      incoming = Math.max(1, incoming - 3);
+      counterLog.push("strike interrupts the prowl");
+    }
     combat.enemyHp = Math.max(0, combat.enemyHp - damage);
     next.logs.push(
       `${node.title}: round ${combat.round}, ${striker.name} leads a strike for ${damage} damage${ammoSpent ? " and spends 1 ammo" : ""}${
         armorPenalty > 0 ? ` (${combat.enemyTraitLabel} absorbs ${armorPenalty})` : ""
-      }.`
+      }${counterLog.length ? `, ${counterLog.join(", ")}` : ""}.`
     );
   } else if (action === "guard") {
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock;
-    incoming = Math.max(1, Math.floor(incoming / 2) - guardValue);
+    const windupBlock = combat.intent === "windup" ? 6 : 0;
+    incoming = Math.max(1, Math.floor(incoming / 2) - guardValue - windupBlock);
     combat.exposed = Math.min(3, combat.exposed + 1);
+    if (combat.intent === "windup") {
+      combat.exposed = Math.min(4, combat.exposed + 1);
+      counterLog.push("guard catches the wind-up");
+    }
     next.pressure = clampPercent(next.pressure - 3);
     next.rollShift -= 0.02;
-    next.logs.push(`${node.title}: round ${combat.round}, ${lead.name} holds guard. Incoming damage drops, enemy exposed +1, pressure -3%.`);
+    next.logs.push(
+      `${node.title}: round ${combat.round}, ${lead.name} holds guard. Incoming damage drops, enemy exposed +${combat.intent === "windup" ? 2 : 1}, pressure -3%${
+        counterLog.length ? `, ${counterLog.join(", ")}` : ""
+      }.`
+    );
   } else if (action === "patch") {
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
@@ -691,16 +720,37 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     if (combat.bleed > 0) {
       combat.bleed = Math.max(0, combat.bleed - (medicineSpent ? 2 : 1));
     }
+    if (combat.intent === "prowl") {
+      incoming += 4;
+      next.pressure = clampPercent(next.pressure + 3);
+      counterLog.push("patching under a prowl leaves the line open");
+    }
     next.rollShift -= medicineSpent ? 0.02 : 0.01;
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${medic.name} patches the line for ${heal} stamina${medicineSpent ? " and spends 1 medicine" : ""}.`
+      `${node.title}: round ${combat.round}, ${medic.name} patches the line for ${heal} stamina${medicineSpent ? " and spends 1 medicine" : ""}${
+        counterLog.length ? `, ${counterLog.join(", ")}` : ""
+      }.`
     );
   } else if (action === "tactic") {
-    const expose = 1 + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
+    const braceBreak = combat.intent === "brace" ? 2 : 0;
+    const prowlRead = combat.intent === "prowl" ? 1 : 0;
+    const expose = 1 + braceBreak + prowlRead + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
     combat.exposed = Math.min(4, combat.exposed + expose);
+    if (combat.intent === "brace") {
+      incoming = Math.max(1, incoming - 2);
+      counterLog.push("tactic breaks the brace");
+    }
+    if (combat.intent === "prowl") {
+      incoming = Math.max(1, incoming - 4);
+      counterLog.push("tactic reads the prowl");
+    }
     next.pressure = clampPercent(next.pressure - Math.floor(tactician.attributes.luck / 25) - next.support.pressureRelief);
     next.rollShift -= 0.04;
-    next.logs.push(`${node.title}: round ${combat.round}, ${tactician.name} calls the pattern. Enemy exposed +${expose}, pressure softens.`);
+    next.logs.push(
+      `${node.title}: round ${combat.round}, ${tactician.name} calls the pattern. Enemy exposed +${expose}, pressure softens${
+        counterLog.length ? `, ${counterLog.join(", ")}` : ""
+      }.`
+    );
   }
 
   if (combat.enemyHp > 0) {
@@ -719,6 +769,11 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       next.rollShift += 0.04;
       pressureLog.push("pressure +5%");
     }
+    if (combat.intent === "windup" && action !== "guard") {
+      next.pressure = clampPercent(next.pressure + 4);
+      next.rollShift += 0.03;
+      pressureLog.push("wind-up pressure +4%");
+    }
 
     next.logs.push(`${combat.enemyName} hits back for ${incoming}${pressureLog.length ? ` (${pressureLog.join(", ")})` : ""}.`);
     if (combat.squadHp <= 0) {
@@ -730,6 +785,10 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     } else {
       combat.round += 1;
       combat.exposed = Math.max(0, combat.exposed - 1);
+      const nextIntent = nextCombatIntent(combat.enemyTrait, combat.round, next.pressure);
+      combat.intent = nextIntent.id;
+      combat.intentLabel = nextIntent.label;
+      combat.intentText = nextIntent.text;
     }
   } else {
     addResources(next.bonusReward, combat.reward);
@@ -1024,6 +1083,37 @@ const travelPlanOptions: Record<JourneyTravelPlan, JourneyTravelPlanOption> = Ob
   travelPlanList.map((option) => [option.id, option])
 ) as Record<JourneyTravelPlan, JourneyTravelPlanOption>;
 
+const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: JourneyCombatIntent; incoming: number; label: string; text: string }> = {
+  brace: {
+    armor: 2,
+    id: "brace",
+    incoming: -1,
+    label: "Brace",
+    text: "Armor rises this round. Tactic breaks the posture."
+  },
+  maul: {
+    armor: 0,
+    id: "maul",
+    incoming: 0,
+    label: "Maul",
+    text: "A direct hit is coming. Guard softens it."
+  },
+  prowl: {
+    armor: 0,
+    id: "prowl",
+    incoming: 2,
+    label: "Prowl",
+    text: "It hunts for a weak line. Strike or Tactic can interrupt."
+  },
+  windup: {
+    armor: 0,
+    id: "windup",
+    incoming: 5,
+    label: "Wind-up",
+    text: "A heavy hit is building. Guard can punish it."
+  }
+};
+
 function emptySupport(): ExpeditionSupport {
   return {
     ammoDamage: 0,
@@ -1086,6 +1176,22 @@ function planScavengeBonus(plan: JourneyTravelPlan) {
     steady: 0
   };
   return bonuses[plan];
+}
+
+function nextCombatIntent(trait: JourneyEnemy["trait"], round: number, pressure: number) {
+  const pressureIntent: JourneyCombatIntent | null = pressure >= 70 ? "windup" : pressure >= 50 ? "prowl" : null;
+  if (pressureIntent && round > 1) {
+    return combatIntentDetails[pressureIntent];
+  }
+
+  const sequenceByTrait: Record<JourneyEnemy["trait"], JourneyCombatIntent[]> = {
+    armored: ["brace", "windup", "maul"],
+    bleeder: ["prowl", "maul", "windup"],
+    dread: ["windup", "prowl", "maul"],
+    swarm: ["prowl", "maul", "brace"]
+  };
+  const sequence = sequenceByTrait[trait];
+  return combatIntentDetails[sequence[(round - 1) % sequence.length]];
 }
 
 function bestBy(squad: Survivor[], stat: keyof Survivor["attributes"]) {

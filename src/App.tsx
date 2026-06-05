@@ -1568,6 +1568,10 @@ function JourneyPanel({
               <strong>{journey.combat.enemyTraitLabel}</strong>
               <span>{journey.combat.enemyTraitText}</span>
             </div>
+            <div className="combat-intent">
+              <strong>Intent: {journey.combat.intentLabel}</strong>
+              <span>{journey.combat.intentText}</span>
+            </div>
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
               <CombatBar label="Squad" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
