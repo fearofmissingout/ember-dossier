@@ -27,10 +27,12 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseRecoveryPlan,
   resolvePlaytestExpedition,
   setBaseAssignment,
   treatSurvivor,
-  upgradeFacility
+  upgradeFacility,
+  type BaseRecoveryPlan
 } from "./playtest/sim";
 import {
   addResources,
@@ -1055,6 +1057,7 @@ export default function App() {
             selectedIds={draft.squadIds}
             canTreat={session.room.base.resources.medicine > 0}
             baseAssignments={session.room.baseAssignments}
+            recoveryPlan={baseRecoveryPlan(session)}
             onToggle={toggleSurvivor}
             onTreat={treatSelectedSurvivor}
             onWorkChange={assignBaseShift}
@@ -1274,6 +1277,7 @@ function Survivors({
   selectedIds,
   canTreat,
   baseAssignments,
+  recoveryPlan,
   onToggle,
   onTreat,
   onWorkChange
@@ -1283,6 +1287,7 @@ function Survivors({
   selectedIds: string[];
   canTreat: boolean;
   baseAssignments: PlaytestSession["room"]["baseAssignments"];
+  recoveryPlan: BaseRecoveryPlan;
   onToggle: (id: string) => void;
   onTreat: (id: string) => void;
   onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
@@ -1295,6 +1300,35 @@ function Survivors({
           <h2>幸存者档案</h2>
         </div>
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
+      </div>
+      <div className="recovery-plan-card" aria-label="Base recovery plan">
+        <div>
+          <span>Recovery plan</span>
+          <strong>{recoveryPlan.summary}</strong>
+          <small>
+            Clinic Lv.{recoveryPlan.clinicLevel} / Dorm Lv.{recoveryPlan.dormLevel} / {recoveryPlan.recoveringCount} recovering
+          </small>
+        </div>
+        <div className="recovery-plan-metrics">
+          <span>
+            Care shifts <b>{recoveryPlan.careShifts}</b>
+          </span>
+          <span>
+            Injury clears <b>{recoveryPlan.likelyInjuryClears}/{recoveryPlan.injuredCount}</b>
+          </span>
+          <span>
+            Daily rest <b>-{recoveryPlan.dailyRecovery}</b>
+          </span>
+        </div>
+        {recoveryPlan.priorityPatients.length > 0 && (
+          <div className="recovery-patient-row">
+            {recoveryPlan.priorityPatients.map((patient) => (
+              <span key={patient.name}>
+                {patient.name}: F{patient.fatigue} / I{patient.injuries}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="survivor-grid">
         {state.survivors.map((survivor) => {

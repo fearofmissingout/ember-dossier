@@ -12,6 +12,7 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseRecoveryPlan,
   resolvePlaytestExpedition,
   setBaseAssignment,
   treatSurvivor,
@@ -154,6 +155,37 @@ describe("playtest room loop", () => {
 
     expect(next.room.base.objective.repairedParts).toBeGreaterThanOrEqual(3);
     expect(next.room.feed[0]?.body).toContain("repaired the tower");
+  });
+
+  test("previews base recovery capacity from care shifts and facilities", () => {
+    let session = createStarterSession("user-a", "Alice", "recovery-plan-room");
+    session.account.survivors[0].injuries = ["cracked ribs"];
+    session.account.survivors[0].fatigue = 72;
+    session.account.survivors[1].attributes.medical = 10;
+    const clinic = session.room.base.facilities.find((facility) => facility.id === "clinic");
+    const dorm = session.room.base.facilities.find((facility) => facility.id === "dorm");
+    if (!clinic || !dorm) {
+      throw new Error("Missing recovery facilities");
+    }
+    clinic.level = 2;
+    dorm.level = 1;
+
+    session = setBaseAssignment(session, "user-a", session.account.survivors[1].id, "care");
+    const plan = baseRecoveryPlan(session);
+
+    expect(plan).toMatchObject({
+      careShifts: 1,
+      clinicLevel: 2,
+      dailyRecovery: 13,
+      injuredCount: 1,
+      likelyInjuryClears: 1
+    });
+    expect(plan.priorityPatients[0]).toMatchObject({
+      fatigue: 72,
+      injuries: 1,
+      name: session.account.survivors[0].name
+    });
+    expect(plan.summary).toContain("1 injury clear");
   });
 
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {

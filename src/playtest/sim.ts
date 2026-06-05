@@ -477,6 +477,62 @@ type BaseDayEventResult = {
   title: string;
 };
 
+export type BaseRecoveryPatientPreview = {
+  fatigue: number;
+  injuries: number;
+  name: string;
+  status: PlaytestSession["account"]["survivors"][number]["status"];
+};
+
+export type BaseRecoveryPlan = {
+  careShifts: number;
+  clinicLevel: number;
+  dailyRecovery: number;
+  dormLevel: number;
+  injuredCount: number;
+  likelyInjuryClears: number;
+  priorityPatients: BaseRecoveryPatientPreview[];
+  recoveringCount: number;
+  summary: string;
+};
+
+export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
+  const dormLevel = facilityLevel(session, "dorm");
+  const clinicLevel = facilityLevel(session, "clinic");
+  const dailyRecovery = 6 + dormLevel * 3 + clinicLevel * 2;
+  const careWorkers = session.room.baseAssignments
+    .filter((assignment) => assignment.type === "care")
+    .flatMap((assignment) => {
+      const survivor = session.account.survivors.find(
+        (candidate) => candidate.id === assignment.survivorId && candidate.ownerUserId === assignment.userId
+      );
+      return survivor && survivor.status !== "assigned" ? [survivor] : [];
+    });
+  const careWorkerIds = new Set(careWorkers.map((survivor) => survivor.id));
+  const priorityPatients = recoveryPriorityPatients(session, careWorkerIds);
+  const injuryClearCapacity = careWorkers.filter((survivor) => careHealScore(session, survivor) >= 10).length;
+  const injuredCount = session.account.survivors.filter((survivor) => survivor.injuries.length > 0).length;
+  const recoveringCount = session.account.survivors.filter((survivor) => survivor.status === "recovering").length;
+  const likelyInjuryClears = Math.min(
+    priorityPatients.filter((patient) => patient.injuries > 0).length,
+    injuryClearCapacity
+  );
+
+  return {
+    careShifts: careWorkers.length,
+    clinicLevel,
+    dailyRecovery,
+    dormLevel,
+    injuredCount,
+    likelyInjuryClears,
+    priorityPatients,
+    recoveringCount,
+    summary: `${careWorkers.length} care shift${careWorkers.length === 1 ? "" : "s"}, ${likelyInjuryClears} injury clear${
+      likelyInjuryClears === 1 ? "" : "s"
+    } likely, fatigue -${dailyRecovery} baseline.`
+  };
+}
+
 function buildProcess(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport): ProcessResult {
   const rolls = request.randomRolls ?? [Math.random(), Math.random(), Math.random(), Math.random(), Math.random()];
   const squad = request.survivorIds
@@ -770,10 +826,8 @@ function resolveBaseAssignments(session: PlaytestSession) {
     }
 
     if (assignment.type === "care") {
-      const healScore = Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2 + baseInstinctBonus * 3);
-      const patient = session.account.survivors
-        .filter((candidate) => candidate.id !== survivor.id && candidate.status !== "assigned")
-        .sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20))[0];
+      const healScore = careHealScore(session, survivor);
+      const patient = recoveryPrioritySurvivors(session, new Set([survivor.id]))[0];
       if (patient) {
         patient.fatigue = clamp(patient.fatigue - healScore, 0, 100);
         if (patient.injuries.length > 0 && healScore >= 10) {
@@ -797,6 +851,28 @@ function resolveBaseAssignments(session: PlaytestSession) {
     dangerReduction,
     logs
   };
+}
+
+function careHealScore(session: PlaytestSession, survivor: PlaytestSession["account"]["survivors"][number]): number {
+  const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
+  return Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2 + baseInstinctBonus * 3);
+}
+
+function recoveryPriorityPatients(session: PlaytestSession, excludedIds: Set<string>): BaseRecoveryPatientPreview[] {
+  return recoveryPrioritySurvivors(session, excludedIds)
+    .slice(0, 3)
+    .map((survivor) => ({
+      fatigue: survivor.fatigue,
+      injuries: survivor.injuries.length,
+      name: survivor.name,
+      status: survivor.status
+    }));
+}
+
+function recoveryPrioritySurvivors(session: PlaytestSession, excludedIds: Set<string>): PlaytestSession["account"]["survivors"] {
+  return session.account.survivors
+    .filter((candidate) => !excludedIds.has(candidate.id) && candidate.status !== "assigned")
+    .sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20));
 }
 
 function recoverSurvivors(session: PlaytestSession, recovery: number): number {

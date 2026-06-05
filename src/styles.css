@@ -516,6 +516,81 @@ button:disabled {
   font-size: 26px;
 }
 
+.recovery-plan-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #c8d1c2;
+  border-radius: 8px;
+  background: #f8fbf3;
+}
+
+.recovery-plan-card > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.recovery-plan-card > div:first-child span {
+  color: #55725f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.recovery-plan-card strong {
+  color: #26312c;
+  font-size: 17px;
+}
+
+.recovery-plan-card small {
+  color: #637065;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.recovery-plan-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.recovery-plan-metrics span {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid #d8c4a4;
+  border-radius: 7px;
+  background: #fffdf5;
+  color: #6e5f4f;
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.recovery-plan-metrics b {
+  color: #2d6348;
+}
+
+.recovery-patient-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recovery-patient-row span {
+  padding: 4px 7px;
+  border: 1px solid #9dbc9d;
+  border-radius: 999px;
+  background: #e2efe1;
+  color: #2d6348;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .survivor-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
@@ -2262,6 +2337,10 @@ button:disabled {
   .segment-tactic-strip,
   .segment-threat-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recovery-plan-metrics {
+    grid-template-columns: 1fr;
   }
 
   .combat-loot-grid {

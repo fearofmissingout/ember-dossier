@@ -31,6 +31,17 @@
 
 The spec touches auth, account progression, room state, expeditions, UI, deployment, and tests. These are coupled by the playable vertical loop, so this is one plan with milestone tasks. Each task must leave the app buildable and either preserve the old demo path or replace it with a tested playtest path.
 
+## Expedition Direction
+
+Expedition play should follow a Home Behind-like road-trip survival shape, adapted for async friends-at-work sessions:
+
+- Dispatch creates a short route, not an instant result.
+- Each route has visible distance, fatigue, hunger, thirst, carry burden, pressure, and extraction progress.
+- Every stop should ask for a small tactical choice: event response, road tactic, turn-based combat action, camp option, shop trade, or early extraction.
+- Road pressure and survival conditions should create consequences that come back to the room base: injuries, recovery needs, morale shifts, resource shortages, and facility value.
+- Locations should feel like route families with repeatable rules and varied authored beats, so content can scale without changing the core engine.
+- The v1 target is a compact five-stop route: event -> combat -> camp -> shop -> extraction, with road forks and hardships between stops.
+
 ---
 
 ### Task 1: Formal Playtest Domain Model
