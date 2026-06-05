@@ -1,6 +1,5 @@
 export async function onRequestPost({ request, env }) {
   try {
-    const config = readConfig(env);
     const body = await request.json();
     const username = normalizeUsername(body.username);
     const password = typeof body.password === "string" ? body.password : "";
@@ -13,6 +12,7 @@ export async function onRequestPost({ request, env }) {
       return json({ message: "Password needs at least 6 characters." }, 400);
     }
 
+    const config = readConfig(env);
     const email = usernameToEmail(username);
     const created = await createConfirmedUser(config, email, password, username);
     if (!created.ok) {

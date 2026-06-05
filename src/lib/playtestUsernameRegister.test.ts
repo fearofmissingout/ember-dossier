@@ -22,6 +22,18 @@ describe("playtest username register function", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test("validates input before requiring Cloudflare secrets", async () => {
+    const response = await onRequestPost({
+      env: {},
+      request: createRequest({ password: "secret-pass", username: "!" })
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      message: "Username must be 3-20 letters, numbers, or underscores."
+    });
+  });
+
   test("creates a confirmed Supabase user and returns a session", async () => {
     const fetchMock = vi
       .fn()
