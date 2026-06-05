@@ -2,6 +2,16 @@ import type { Facility, ResourceBundle } from "../game/types";
 import type { AccountSurvivor } from "./types";
 
 export type SurvivorPerkId = "field_runner" | "steady_hands" | "base_instinct";
+export type ExpeditionDoctrineId =
+  | "breach-drill"
+  | "field-triage"
+  | "hold-formation"
+  | "hot-magazines"
+  | "overwatch-route"
+  | "road-rations"
+  | "salvage-rig"
+  | "shield-line"
+  | "signal-map";
 
 export type SurvivorPerk = {
   id: SurvivorPerkId;
@@ -26,6 +36,14 @@ export type ExpeditionSupport = {
   shopRations: number;
   shopService: number;
   startingSupplies: Partial<ResourceBundle>;
+};
+
+export type ExpeditionDoctrineOption = {
+  effect: string;
+  facilityId: string;
+  id: ExpeditionDoctrineId;
+  label: string;
+  text: string;
 };
 
 export const survivorPerks: Record<SurvivorPerkId, SurvivorPerk> = {
@@ -69,7 +87,77 @@ export function xpForNextLevel(survivor: AccountSurvivor) {
   return survivor.level * 20;
 }
 
-export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport {
+const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
+  {
+    effect: "Max HP +6 / Guard +1",
+    facilityId: "dorm",
+    id: "hold-formation",
+    label: "Hold Formation",
+    text: "Dorm shifts send the squad out rested and drilled around a tighter marching line."
+  },
+  {
+    effect: "Medicine +1 / Patch +3",
+    facilityId: "clinic",
+    id: "field-triage",
+    label: "Field Triage",
+    text: "The clinic pre-packs a treatment roll and assigns a clear casualty protocol."
+  },
+  {
+    effect: "Ammo +1 / Ammo damage +2",
+    facilityId: "generator",
+    id: "hot-magazines",
+    label: "Hot Magazines",
+    text: "Generator time charges tools and keeps the first magazines dry and ready."
+  },
+  {
+    effect: "Pressure -4 / Camp scout +1",
+    facilityId: "watchtower",
+    id: "overwatch-route",
+    label: "Overwatch Route",
+    text: "Lookouts mark the first blind turns before the squad leaves the gate."
+  },
+  {
+    effect: "Food +1 / Water +1",
+    facilityId: "kitchen",
+    id: "road-rations",
+    label: "Road Rations",
+    text: "The kitchen turns base stores into compact travel meals and clean canteens."
+  },
+  {
+    effect: "Guard +2 / Evade +1",
+    facilityId: "barricade",
+    id: "shield-line",
+    label: "Shield Line",
+    text: "The barricade crew sends planks, shields, and gate drills with the squad."
+  },
+  {
+    effect: "Max HP +4 / Guard +1",
+    facilityId: "training",
+    id: "breach-drill",
+    label: "Breach Drill",
+    text: "The training room rehearses contact roles before the route starts."
+  },
+  {
+    effect: "Salvage +2 / Ammo damage +1",
+    facilityId: "workshop",
+    id: "salvage-rig",
+    label: "Salvage Rig",
+    text: "The workshop bolts together pry kits and impact tools for the return haul."
+  },
+  {
+    effect: "Pressure -3 / Intel +1",
+    facilityId: "radio",
+    id: "signal-map",
+    label: "Signal Map",
+    text: "The radio bench turns static into a marked route and better clue recovery."
+  }
+];
+
+export function expeditionDoctrineOptions(facilities: Facility[]): ExpeditionDoctrineOption[] {
+  return expeditionDoctrineDefinitions.filter((doctrine) => facilityLevel(facilities, doctrine.facilityId) > 0);
+}
+
+export function supportFromFacilities(facilities: Facility[], doctrineId?: ExpeditionDoctrineId | null): ExpeditionSupport {
   const dorm = facilityLevel(facilities, "dorm");
   const clinic = facilityLevel(facilities, "clinic");
   const generator = facilityLevel(facilities, "generator");
@@ -80,7 +168,7 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
   const training = facilityLevel(facilities, "training");
   const workshop = facilityLevel(facilities, "workshop");
 
-  return {
+  const support: ExpeditionSupport = {
     ammoDamage: Math.max(0, generator - 1) + workshop,
     campCook: kitchen,
     campRest: Math.max(0, dorm - 1) + Math.max(0, clinic - 1),
@@ -101,6 +189,56 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
       medicine: clinic >= 3 ? 1 : 0
     }
   };
+
+  if (!doctrineId || !expeditionDoctrineOptions(facilities).some((doctrine) => doctrine.id === doctrineId)) {
+    return support;
+  }
+
+  return applyExpeditionDoctrine(support, doctrineId);
+}
+
+function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: ExpeditionDoctrineId): ExpeditionSupport {
+  const next: ExpeditionSupport = {
+    ...support,
+    startingSupplies: { ...support.startingSupplies }
+  };
+
+  if (doctrineId === "hold-formation") {
+    next.maxHp += 6;
+    next.guardBlock += 1;
+  } else if (doctrineId === "field-triage") {
+    next.patchHeal += 3;
+    next.lootMedicine += 1;
+    next.startingSupplies.medicine = (next.startingSupplies.medicine ?? 0) + 1;
+  } else if (doctrineId === "hot-magazines") {
+    next.ammoDamage += 2;
+    next.startingSupplies.ammo = (next.startingSupplies.ammo ?? 0) + 1;
+  } else if (doctrineId === "overwatch-route") {
+    next.pressureRelief += 4;
+    next.campScout += 1;
+    next.lootEvade += 1;
+  } else if (doctrineId === "road-rations") {
+    next.campCook += 1;
+    next.shopRations += 1;
+    next.startingSupplies.food = (next.startingSupplies.food ?? 0) + 1;
+    next.startingSupplies.water = (next.startingSupplies.water ?? 0) + 1;
+  } else if (doctrineId === "shield-line") {
+    next.guardBlock += 2;
+    next.lootEvade += 1;
+  } else if (doctrineId === "breach-drill") {
+    next.maxHp += 4;
+    next.guardBlock += 1;
+  } else if (doctrineId === "salvage-rig") {
+    next.ammoDamage += 1;
+    next.lootSalvage += 2;
+    next.shopService += 1;
+  } else if (doctrineId === "signal-map") {
+    next.pressureRelief += 3;
+    next.campScout += 1;
+    next.lootIntel += 1;
+  }
+
+  return next;
 }
 
 function primaryPerkFor(survivor: AccountSurvivor): SurvivorPerkId {

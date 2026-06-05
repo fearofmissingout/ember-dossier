@@ -62,7 +62,13 @@ import {
   type JourneyState,
   type JourneyTravelPlan
 } from "./playtest/journey";
-import { supportFromFacilities, survivorPerkDetails, xpForNextLevel } from "./playtest/progression";
+import {
+  expeditionDoctrineOptions,
+  supportFromFacilities,
+  survivorPerkDetails,
+  xpForNextLevel,
+  type ExpeditionDoctrineId
+} from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
@@ -106,6 +112,7 @@ import { hasSupabaseConfig } from "./lib/supabase";
 type ViewKey = "overview" | "survivors" | "expedition" | "reports" | "facilities" | "members" | "archive";
 
 type ExpeditionDraft = {
+  doctrineId: ExpeditionDoctrineId;
   squadIds: string[];
   locationId: string;
   risk: RiskStrategy;
@@ -178,6 +185,7 @@ export default function App() {
   const applyingRemoteState = useRef(false);
   const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
+    doctrineId: "hold-formation",
     squadIds: ["lin", "mara", "otto"],
     locationId: "water-plant",
     risk: "standard",
@@ -708,7 +716,7 @@ export default function App() {
         preparedSession,
         {
           ...draft,
-          support: supportFromFacilities(preparedSession.room.base.facilities)
+          support: supportFromFacilities(preparedSession.room.base.facilities, draft.doctrineId)
         },
         selectedLocation.id,
         readiness
@@ -864,6 +872,7 @@ export default function App() {
     setLatestReportId(null);
     setView("overview");
     setDraft({
+      doctrineId: "hold-formation",
       squadIds: ["lin", "mara", "otto"],
       locationId: "water-plant",
       risk: "standard",
@@ -1045,6 +1054,7 @@ export default function App() {
               setDraft((current) => ({ ...current, risk }));
             }}
             onLoadoutChange={updateLoadout}
+            onDoctrineChange={(doctrineId) => setDraft((current) => ({ ...current, doctrineId }))}
             onCombatAction={resolveCombatAction}
             onDispatch={dispatchExpedition}
             onJourneyAction={resolveJourneyAction}
@@ -1361,6 +1371,7 @@ function ExpeditionPrep({
   onLocationChange,
   onRiskChange,
   onLoadoutChange,
+  onDoctrineChange,
   onCombatAction,
   onDispatch,
   onJourneyAction
@@ -1377,12 +1388,15 @@ function ExpeditionPrep({
   onLocationChange: (locationId: string) => void;
   onRiskChange: (risk: RiskStrategy) => void;
   onLoadoutChange: (key: ResourceKey, delta: number) => void;
+  onDoctrineChange: (doctrineId: ExpeditionDoctrineId) => void;
   onCombatAction: (action: CombatAction) => void;
   onDispatch: () => void;
   onJourneyAction: (action: JourneyAction) => void;
 }) {
   const activeNode = journey?.nodes[journey.currentNodeIndex];
-  const support = supportFromFacilities(state.facilities);
+  const doctrineOptions = expeditionDoctrineOptions(state.facilities);
+  const selectedDoctrine = doctrineOptions.find((doctrine) => doctrine.id === draft.doctrineId) ?? doctrineOptions[0];
+  const support = supportFromFacilities(state.facilities, selectedDoctrine?.id);
   const supportItems = [
     ["Max HP", support.maxHp],
     ["Patch", support.patchHeal],
@@ -1481,6 +1495,25 @@ function ExpeditionPrep({
         </div>
       </section>
 
+      <section className="panel">
+        <p className="eyebrow">Step 5</p>
+        <h2>Expedition doctrine</h2>
+        <div className="doctrine-grid">
+          {doctrineOptions.map((doctrine) => (
+            <button
+              className={selectedDoctrine?.id === doctrine.id ? "doctrine-card selected" : "doctrine-card"}
+              key={doctrine.id}
+              type="button"
+              onClick={() => onDoctrineChange(doctrine.id)}
+            >
+              <strong>{doctrine.label}</strong>
+              <span>{doctrine.text}</span>
+              <small>{doctrine.effect}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="panel summary-panel">
         <div className="panel-heading">
           <div>
@@ -1513,6 +1546,8 @@ function ExpeditionPrep({
           ) : (
             <strong>No facility combat bonuses yet</strong>
           )}
+          {(support.startingSupplies.food ?? 0) > 0 && <strong>Start Food +{support.startingSupplies.food}</strong>}
+          {(support.startingSupplies.water ?? 0) > 0 && <strong>Start Water +{support.startingSupplies.water}</strong>}
           {(support.startingSupplies.ammo ?? 0) > 0 && <strong>Start Ammo +{support.startingSupplies.ammo}</strong>}
           {(support.startingSupplies.medicine ?? 0) > 0 && <strong>Start Medicine +{support.startingSupplies.medicine}</strong>}
         </div>
