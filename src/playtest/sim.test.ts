@@ -379,6 +379,39 @@ describe("playtest room loop", () => {
     expect(result.report.logs.join("\n")).toContain("Combat trophies recovered");
   });
 
+  test("combat scar targets are applied to named survivors first", () => {
+    let session = createStarterSession("user-a", "Alice", "named-scar-room");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+    const markedSurvivorId = squad[1];
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      battleScars: 1,
+      combatScarSurvivorIds: [markedSurvivorId],
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    const marked = result.session.account.survivors.find((survivor) => survivor.id === markedSurvivorId);
+
+    expect(marked?.injuries.length).toBeGreaterThan(0);
+    expect(result.report.logs.join("\n")).toContain(marked?.name);
+  });
+
   test("journey fatigue carries into survivor settlement", () => {
     let session = createStarterSession("user-a", "Alice", "fatigue-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);

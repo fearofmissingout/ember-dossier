@@ -7,6 +7,7 @@ import type { BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   battleScars?: number;
+  combatScarSurvivorIds?: string[];
   extractionStatus?: "early" | "complete";
   journeyLogs?: string[];
   routeObjectiveBonus?: number;
@@ -566,8 +567,13 @@ function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpedit
     .map((survivorId) => session.account.survivors.find((survivor) => survivor.id === survivorId))
     .filter(Boolean) as PlaytestSession["account"]["survivors"];
   const sorted = squad.sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20));
+  const targeted = (request.combatScarSurvivorIds ?? [])
+    .map((survivorId) => squad.find((survivor) => survivor.id === survivorId))
+    .filter(Boolean) as PlaytestSession["account"]["survivors"];
+  const fallback = sorted.filter((survivor) => !targeted.some((target) => target.id === survivor.id));
+  const scarTargets = [...targeted, ...fallback, ...sorted];
   for (let index = 0; index < scars; index += 1) {
-    const target = sorted[index % Math.max(1, sorted.length)];
+    const target = scarTargets[index % Math.max(1, scarTargets.length)];
     if (!target) {
       continue;
     }

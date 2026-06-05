@@ -821,6 +821,7 @@ export default function App() {
     );
     const result = resolvePlaytestExpedition(session, {
       battleScars: completedJourney.battleScars,
+      combatScarSurvivorIds: completedJourney.woundedSurvivorIds,
       extractionStatus: completedJourney.extractionStatus === "early" ? "early" : "complete",
       journeyLogs: completedJourney.logs,
       loadout: completedJourney.loadout,
@@ -1677,6 +1678,27 @@ function JourneyPanel({
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
               <CombatBar label="Squad" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
+            </div>
+            <div className="frontline-grid">
+              {journey.combat.frontline.map((line) => (
+                <div className={`frontline-row ${line.status}`} key={line.survivorId}>
+                  <div>
+                    <strong>{line.name}</strong>
+                    <span>
+                      {line.role} {line.lastAction ? `/ ${line.lastAction}` : ""}
+                    </span>
+                  </div>
+                  <div className="frontline-meter">
+                    <i style={{ width: `${Math.round((line.stamina / line.maxStamina) * 100)}%` }} />
+                  </div>
+                  <small>
+                    {line.stamina}/{line.maxStamina}
+                    {line.guard > 0 ? ` | Guard ${line.guard}` : ""}
+                    {line.wounds > 0 ? ` | Wounds ${line.wounds}` : ""}
+                    {line.status === "down" ? " | Down" : line.status === "strained" ? " | Strained" : ""}
+                  </small>
+                </div>
+              ))}
             </div>
             <div className="combat-stats">
               <span>Atk {journey.combat.attack}</span>

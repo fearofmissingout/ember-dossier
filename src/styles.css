@@ -1280,6 +1280,78 @@ button:disabled {
   color: #2f5f43;
 }
 
+.frontline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.frontline-row {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #d6c4a3;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.frontline-row > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.frontline-row strong,
+.frontline-row span,
+.frontline-row small {
+  overflow-wrap: anywhere;
+}
+
+.frontline-row strong {
+  color: #473a2b;
+  font-size: 12px;
+}
+
+.frontline-row span,
+.frontline-row small {
+  color: #776751;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.frontline-row.strained {
+  border-color: #d3974a;
+  background: #fff3d7;
+}
+
+.frontline-row.down {
+  border-color: #bd715d;
+  background: #fff0ea;
+}
+
+.frontline-meter {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2d5bd;
+}
+
+.frontline-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #4d8a67;
+}
+
+.frontline-row.strained .frontline-meter i {
+  background: #c68134;
+}
+
+.frontline-row.down .frontline-meter i {
+  background: #a84935;
+}
+
 .combat-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1498,6 +1570,7 @@ button:disabled {
   .expedition-layout,
   .survivor-grid,
   .facility-grid,
+  .frontline-grid,
   .journey-status-grid,
   .road-event-strip {
     grid-template-columns: 1fr 1fr;
@@ -1576,6 +1649,7 @@ button:disabled {
   .expedition-layout,
   .survivor-grid,
   .facility-grid,
+  .frontline-grid,
   .archive-grid,
   .journey-status-grid,
   .road-event-strip,

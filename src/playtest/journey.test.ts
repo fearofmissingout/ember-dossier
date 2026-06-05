@@ -461,6 +461,43 @@ describe("journey route generation", () => {
     expect(afterStrike.logs.join("\n")).toContain("leads a strike");
   });
 
+  test("combat tracks individual survivor stamina and marks downed fighters", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "frontline-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const striker = squad.reduce((best, survivor) => (survivor.attributes.agility > best.attributes.agility ? survivor : best), squad[0]);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      const strikerLine = journey.combat.frontline.find((line) => line.survivorId === striker.id);
+      expect(strikerLine?.maxStamina).toBeGreaterThan(0);
+      if (strikerLine) {
+        strikerLine.stamina = 2;
+      }
+      journey.combat.squadHp = journey.combat.frontline.reduce((sum, line) => sum + line.stamina, 0);
+      journey.combat.attack = 18;
+      journey.combat.enemyHp = journey.combat.enemyMaxHp;
+    }
+
+    const resolved = resolveCombatRound(journey, "strike", squad, 60);
+    const resolvedStriker = resolved.combat?.frontline.find((line) => line.survivorId === striker.id);
+
+    expect(resolvedStriker?.status).toBe("down");
+    expect(resolved.woundedSurvivorIds).toContain(striker.id);
+    expect(resolved.battleScars).toBeGreaterThan(journey.battleScars);
+    expect(resolved.logs.join("\n")).toContain(`${striker.name} is knocked down`);
+  });
+
   test("combat intent rewards matching counters", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "intent-room");

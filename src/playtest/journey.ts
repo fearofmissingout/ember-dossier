@@ -28,6 +28,7 @@ export type JourneyAction =
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade";
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
+export type JourneyCombatantStatus = "steady" | "strained" | "down";
 export type JourneyRoadEncounterAction = "secure" | "search" | "push";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
@@ -161,6 +162,18 @@ export type JourneyPendingRoadEncounter = {
   tone: JourneyRoadEventTone;
 };
 
+export type JourneyCombatant = {
+  guard: number;
+  lastAction: string | null;
+  maxStamina: number;
+  name: string;
+  role: string;
+  stamina: number;
+  status: JourneyCombatantStatus;
+  survivorId: string;
+  wounds: number;
+};
+
 export type JourneyCombat = {
   armor: number;
   bleed: number;
@@ -174,6 +187,7 @@ export type JourneyCombat = {
   intent: JourneyCombatIntent;
   intentLabel: string;
   intentText: string;
+  frontline: JourneyCombatant[];
   squadHp: number;
   squadMaxHp: number;
   attack: number;
@@ -219,6 +233,7 @@ export type JourneyState = {
   support: ExpeditionSupport;
   trophies: string[];
   travelPlan: JourneyTravelPlan;
+  woundedSurvivorIds: string[];
 };
 
 export type JourneyTravelPlanOption = {
@@ -895,7 +910,8 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     objectiveBonus: 0,
     support,
     trophies: [],
-    travelPlan: "steady"
+    travelPlan: "steady",
+    woundedSurvivorIds: []
   };
 }
 
@@ -912,7 +928,8 @@ export function createCombatForNode(
   const riskIndex = squad.length > 4 ? 2 : squad.length > 3 ? 1 : 0;
   const enemy = node.enemy ?? materializeEnemy(familyEnemies.urban[0]);
   const enemyMaxHp = 22 + riskIndex * 6 + enemy.hpBonus;
-  const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5) + support.maxHp;
+  const frontline = createCombatFrontline(squad, readiness, support);
+  const squadMaxHp = frontline.reduce((sum, combatant) => sum + combatant.maxStamina, 0);
   const intent = nextCombatIntent(enemy.trait, 1, 0);
 
   return {
@@ -929,6 +946,7 @@ export function createCombatForNode(
     intent: intent.id,
     intentLabel: intent.label,
     intentText: intent.text,
+    frontline,
     reward: { ...enemy.reward },
     round: 1,
     squadHp: squadMaxHp,
@@ -944,8 +962,13 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     return next;
   }
 
+  const lead = bestBy(squad, "willpower");
+  const striker = bestBy(squad, "agility");
+  const tactician = bestBy(squad, "technical");
+  const medic = bestBy(squad, "medical");
+
   if (action === "retreat") {
-    combat.squadHp = Math.max(0, combat.squadHp - Math.max(3, Math.ceil(combat.attack / 2)));
+    applyCombatDamage(next, combat, Math.max(3, Math.ceil(combat.attack / 2)), lead.id);
     const retreatPressure = Math.max(8, 18 - next.support.pressureRelief);
     next.pressure = clampPercent(next.pressure + retreatPressure);
     next.rollShift += retreatPressure / 100;
@@ -957,15 +980,13 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
   const intent = combatIntentDetails[combat.intent] ?? combatIntentDetails.maul;
   let incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(next.pressure / 20) : 0) + intent.incoming;
-  const lead = bestBy(squad, "willpower");
-  const striker = bestBy(squad, "agility");
-  const tactician = bestBy(squad, "technical");
-  const medic = bestBy(squad, "medical");
   const pressureLog: string[] = [];
   const counterLog: string[] = [];
   let patchedThisRound = false;
+  let incomingFocusId: string | null = striker.id;
 
   if (action === "strike") {
+    markCombatantAction(combat, striker.id, "Strike");
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
     const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (ammoSpent ? 2 : 0));
     const fieldRunnerBonus = hasPerk(striker, "field_runner") ? 2 : 0;
@@ -990,9 +1011,12 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }${counterLog.length ? `, ${counterLog.join(", ")}` : ""}.`
     );
   } else if (action === "guard") {
+    markCombatantAction(combat, lead.id, "Guard");
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock;
     const windupBlock = combat.intent === "windup" ? 6 : 0;
     incoming = Math.max(1, Math.floor(incoming / 2) - guardValue - windupBlock);
+    braceCombatant(combat, lead.id, guardValue + windupBlock + 2);
+    incomingFocusId = lead.id;
     combat.exposed = Math.min(3, combat.exposed + 1);
     if (combat.intent === "windup") {
       combat.exposed = Math.min(4, combat.exposed + 1);
@@ -1006,11 +1030,12 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }.`
     );
   } else if (action === "patch") {
+    markCombatantAction(combat, medic.id, "Patch");
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
     const steadyHandsBonus = hasPerk(medic, "steady_hands") ? 3 : 0;
     const heal = Math.floor(medic.attributes.medical / 9) + steadyHandsBonus + next.support.patchHeal + (medicineSpent ? 12 : 4);
-    combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
+    const patient = healWeakestCombatant(combat, heal, medic.id);
     if (combat.bleed > 0) {
       combat.bleed = Math.max(0, combat.bleed - (medicineSpent ? 2 : 1));
     }
@@ -1021,11 +1046,14 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     }
     next.rollShift -= medicineSpent ? 0.02 : 0.01;
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${medic.name} patches the line for ${heal} stamina${medicineSpent ? " and spends 1 medicine" : ""}${
+      `${node.title}: round ${combat.round}, ${medic.name} patches ${patient?.name ?? "the line"} for ${heal} stamina${
+        medicineSpent ? " and spends 1 medicine" : ""
+      }${
         counterLog.length ? `, ${counterLog.join(", ")}` : ""
       }.`
     );
   } else if (action === "tactic") {
+    markCombatantAction(combat, tactician.id, "Tactic");
     const braceBreak = combat.intent === "brace" ? 2 : 0;
     const prowlRead = combat.intent === "prowl" ? 1 : 0;
     const expose = 1 + braceBreak + prowlRead + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
@@ -1049,11 +1077,11 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
   if (combat.enemyHp > 0) {
     if (combat.bleed > 0) {
-      combat.squadHp = Math.max(0, combat.squadHp - combat.bleed);
+      applyCombatDamage(next, combat, combat.bleed, incomingFocusId);
       pressureLog.push(`bleed deals ${combat.bleed}`);
     }
 
-    combat.squadHp = Math.max(0, combat.squadHp - incoming);
+    applyCombatDamage(next, combat, incoming, incomingFocusId);
     if (combat.enemyTrait === "bleeder" && action !== "guard" && !patchedThisRound) {
       combat.bleed = Math.min(6, combat.bleed + 2);
       pressureLog.push("bleed +2");
@@ -1091,12 +1119,14 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     next.trophies.push(trophy);
     if (hpRatio < 0.35) {
       next.battleScars += 2;
+      markCombatScarTargetsFromFrontline(next, combat, 2);
       next.condition.fatigue = clampPercent(next.condition.fatigue + 14);
       next.pressure = clampPercent(next.pressure + 8);
       next.rollShift += 0.08;
       next.logs.push(`${node.title}: the victory is ugly. Battle scars +2, fatigue +14, pressure +8%.`);
     } else if (hpRatio < 0.65) {
       next.battleScars += 1;
+      markCombatScarTargetsFromFrontline(next, combat, 1);
       next.condition.fatigue = clampPercent(next.condition.fatigue + 7);
       next.logs.push(`${node.title}: the squad wins but has to drag each other clear. Battle scars +1, fatigue +7.`);
     } else {
@@ -1986,6 +2016,162 @@ function planScavengeBonus(plan: JourneyTravelPlan) {
     steady: 0
   };
   return bonuses[plan];
+}
+
+function createCombatFrontline(squad: Survivor[], readiness: number, support: ExpeditionSupport): JourneyCombatant[] {
+  const readinessBonus = Math.floor(readiness / 18);
+  const supportShare = Math.floor(support.maxHp / Math.max(1, squad.length));
+  const supportRemainder = support.maxHp % Math.max(1, squad.length);
+  return squad.map((survivor, index) => {
+    const supportBonus = supportShare + (index < supportRemainder ? 1 : 0);
+    const injuryPenalty = survivor.injuries.length * 3;
+    const fatiguePenalty = Math.floor(survivor.fatigue / 18);
+    const maxStamina = Math.max(
+      10,
+      12 +
+        Math.floor(survivor.attributes.stamina / 10) +
+        Math.floor(survivor.attributes.willpower / 18) +
+        readinessBonus +
+        supportBonus -
+        injuryPenalty -
+        fatiguePenalty
+    );
+
+    return {
+      guard: 0,
+      lastAction: null,
+      maxStamina,
+      name: survivor.name,
+      role: survivor.profession,
+      stamina: maxStamina,
+      status: "steady",
+      survivorId: survivor.id,
+      wounds: 0
+    };
+  });
+}
+
+function markCombatantAction(combat: JourneyCombat, survivorId: string, action: string) {
+  const combatant = combat.frontline.find((line) => line.survivorId === survivorId);
+  if (combatant) {
+    combatant.lastAction = action;
+  }
+}
+
+function braceCombatant(combat: JourneyCombat, survivorId: string, guard: number) {
+  const combatant = combat.frontline.find((line) => line.survivorId === survivorId);
+  if (combatant && combatant.status !== "down") {
+    combatant.guard = Math.max(combatant.guard, guard);
+  }
+}
+
+function healWeakestCombatant(combat: JourneyCombat, amount: number, fallbackSurvivorId: string) {
+  const damaged = [...combat.frontline]
+    .filter((line) => line.stamina < line.maxStamina)
+    .sort((left, right) => {
+      if (left.status === "down" && right.status !== "down") {
+        return -1;
+      }
+      if (left.status !== "down" && right.status === "down") {
+        return 1;
+      }
+      return left.stamina / left.maxStamina - right.stamina / right.maxStamina;
+    });
+  const patient = damaged[0] ?? combat.frontline.find((line) => line.survivorId === fallbackSurvivorId) ?? combat.frontline[0];
+  if (!patient) {
+    return null;
+  }
+
+  patient.stamina = Math.min(patient.maxStamina, patient.stamina + Math.max(0, Math.floor(amount)));
+  refreshCombatantStatus(patient);
+  syncCombatSquadHp(combat);
+  return patient;
+}
+
+function applyCombatDamage(journey: JourneyState, combat: JourneyCombat, amount: number, focusSurvivorId: string | null) {
+  let remaining = Math.max(0, Math.floor(amount));
+  const targets = orderedCombatTargets(combat, focusSurvivorId);
+
+  for (const target of targets) {
+    if (remaining <= 0) {
+      break;
+    }
+
+    if (target.status === "down") {
+      continue;
+    }
+
+    const blocked = Math.min(target.guard, remaining);
+    target.guard -= blocked;
+    remaining -= blocked;
+    if (remaining <= 0) {
+      refreshCombatantStatus(target);
+      break;
+    }
+
+    const before = target.stamina;
+    const dealt = Math.min(before, remaining);
+    target.stamina = Math.max(0, before - dealt);
+    remaining -= dealt;
+    if (before > 0 && target.stamina === 0) {
+      target.wounds += 1;
+      target.status = "down";
+      journey.battleScars += 1;
+      markCombatScarTarget(journey, target.survivorId);
+      journey.logs.push(`${target.name} is knocked down and marked for treatment.`);
+    } else {
+      refreshCombatantStatus(target);
+    }
+  }
+
+  syncCombatSquadHp(combat);
+}
+
+function orderedCombatTargets(combat: JourneyCombat, focusSurvivorId: string | null) {
+  const living = combat.frontline.filter((line) => line.status !== "down");
+  const focused = focusSurvivorId ? living.find((line) => line.survivorId === focusSurvivorId) : null;
+  const rest = living
+    .filter((line) => line.survivorId !== focused?.survivorId)
+    .sort((left, right) => left.stamina / left.maxStamina - right.stamina / right.maxStamina);
+  return focused ? [focused, ...rest] : rest;
+}
+
+function markCombatScarTargetsFromFrontline(journey: JourneyState, combat: JourneyCombat, count: number) {
+  const candidates = [...combat.frontline].sort((left, right) => {
+    if (left.status === "down" && right.status !== "down") {
+      return -1;
+    }
+    if (left.status !== "down" && right.status === "down") {
+      return 1;
+    }
+    if (right.wounds !== left.wounds) {
+      return right.wounds - left.wounds;
+    }
+    return left.stamina / left.maxStamina - right.stamina / right.maxStamina;
+  });
+
+  for (const candidate of candidates.slice(0, count)) {
+    markCombatScarTarget(journey, candidate.survivorId);
+  }
+}
+
+function markCombatScarTarget(journey: JourneyState, survivorId: string) {
+  if (!journey.woundedSurvivorIds.includes(survivorId)) {
+    journey.woundedSurvivorIds.push(survivorId);
+  }
+}
+
+function refreshCombatantStatus(combatant: JourneyCombatant) {
+  if (combatant.stamina <= 0) {
+    combatant.status = "down";
+    return;
+  }
+
+  combatant.status = combatant.stamina / combatant.maxStamina < 0.35 ? "strained" : "steady";
+}
+
+function syncCombatSquadHp(combat: JourneyCombat) {
+  combat.squadHp = combat.frontline.reduce((sum, line) => sum + line.stamina, 0);
 }
 
 function nextCombatIntent(trait: JourneyEnemy["trait"], round: number, pressure: number) {
