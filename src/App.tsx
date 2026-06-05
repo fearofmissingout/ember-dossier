@@ -18,7 +18,7 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
-import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition } from "./playtest/sim";
+import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./playtest/sim";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { PlaytestSession } from "./playtest/types";
 import {
@@ -34,6 +34,7 @@ import {
   loadPlaytestSession as loadRemotePlaytestSession,
   saveAssignment,
   saveContribution,
+  savePlaytestProgress,
   saveSettlement
 } from "./lib/playtestRemote";
 import {
@@ -562,6 +563,39 @@ export default function App() {
     });
   }
 
+  function persistPlaytestProgress(nextSession: PlaytestSession) {
+    if (!authSession) {
+      return;
+    }
+
+    void savePlaytestProgress(authSession.accessToken, nextSession).catch((error) => {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    });
+  }
+
+  function treatSelectedSurvivor(survivorId: string) {
+    try {
+      const nextSession = treatSurvivor(session, session.account.profile.userId, survivorId);
+      applySession(nextSession);
+      persistPlaytestProgress(nextSession);
+    } catch (error) {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    }
+  }
+
+  function upgradeRoomFacility(facilityId: string) {
+    try {
+      const nextSession = upgradeFacility(session, session.account.profile.userId, facilityId);
+      applySession(nextSession);
+      persistPlaytestProgress(nextSession);
+    } catch (error) {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    }
+  }
+
   function dispatchExpedition() {
     if (!squadReady || !canAffordLoadout) {
       return;
@@ -581,7 +615,7 @@ export default function App() {
       ...draft,
       survivorIds: draft.squadIds,
       userId: preparedSession.account.profile.userId,
-      randomRolls: [Math.random(), Math.random(), Math.random()]
+      randomRolls: [Math.random(), Math.random(), Math.random(), Math.random(), Math.random()]
     });
 
     applySession(result.session);
@@ -756,7 +790,15 @@ export default function App() {
             onContribute={submitContribution}
           />
         )}
-        {view === "survivors" && <Survivors state={state} selectedIds={draft.squadIds} onToggle={toggleSurvivor} />}
+        {view === "survivors" && (
+          <Survivors
+            state={state}
+            selectedIds={draft.squadIds}
+            canTreat={session.room.base.resources.medicine > 0}
+            onToggle={toggleSurvivor}
+            onTreat={treatSelectedSurvivor}
+          />
+        )}
         {view === "expedition" && (
           <ExpeditionPrep
             state={state}
@@ -773,7 +815,7 @@ export default function App() {
           />
         )}
         {view === "reports" && <Reports state={state} latestReportId={latestReportId} />}
-        {view === "facilities" && <Facilities state={state} />}
+        {view === "facilities" && <Facilities state={state} onUpgrade={upgradeRoomFacility} />}
         {view === "members" && (
           <RoomMembers
             player={player}
@@ -943,11 +985,15 @@ function Overview({
 function Survivors({
   state,
   selectedIds,
-  onToggle
+  canTreat,
+  onToggle,
+  onTreat
 }: {
   state: GameState;
   selectedIds: string[];
+  canTreat: boolean;
   onToggle: (id: string) => void;
+  onTreat: (id: string) => void;
 }) {
   return (
     <section className="panel">
@@ -993,6 +1039,17 @@ function Survivors({
                 </div>
                 <strong>{survivor.fatigue}</strong>
               </div>
+              {(survivor.injuries.length > 0 || survivor.fatigue >= 35) && (
+                <button
+                  className="ghost-button compact-action"
+                  type="button"
+                  disabled={!canTreat}
+                  onClick={() => onTreat(survivor.id)}
+                >
+                  <Shield size={16} aria-hidden="true" />
+                  Treat
+                </button>
+              )}
             </div>
           </article>
         ))}
@@ -1083,6 +1140,15 @@ function ExpeditionPrep({
             </div>
           ))}
         </div>
+        <div className="resource-preview-grid">
+          {resourceKeys.map((key) => (
+            <div className="resource-preview-row" key={key}>
+              <span>{resourceLabels[key]}</span>
+              <strong>{state.resources[key]}</strong>
+              <small>Carry {draft.loadout[key]} / Left {state.resources[key] - draft.loadout[key]}</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="panel">
@@ -1155,7 +1221,7 @@ function Reports({ state, latestReportId }: { state: GameState; latestReportId: 
   );
 }
 
-function Facilities({ state }: { state: GameState }) {
+function Facilities({ state, onUpgrade }: { state: GameState; onUpgrade: (id: string) => void }) {
   return (
     <section className="panel">
       <p className="eyebrow">Facilities</p>
@@ -1166,6 +1232,15 @@ function Facilities({ state }: { state: GameState }) {
             <h3>{facility.name}</h3>
             <span>等级 {facility.level}</span>
             <p>{facility.effect}</p>
+            <button
+              className="ghost-button compact-action"
+              type="button"
+              disabled={state.resources.materials < facility.level * 5}
+              onClick={() => onUpgrade(facility.id)}
+            >
+              <Wrench size={16} aria-hidden="true" />
+              Upgrade: {facility.level * 5} materials
+            </button>
           </article>
         ))}
       </div>

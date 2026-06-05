@@ -7,7 +7,7 @@ import {
   loadPlaytestSession,
   savePlaytestSession
 } from "./state";
-import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition } from "./sim";
+import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./sim";
 
 describe("playtest state constructors", () => {
   test("creates account-bound assets separately from a room-bound base", () => {
@@ -124,5 +124,62 @@ describe("playtest room loop", () => {
     expect(result.session.account.survivors[0].fatigue).toBeGreaterThan(session.account.survivors[0].fatigue);
     expect(result.session.room.base.objective.repairedParts).toBeGreaterThanOrEqual(1);
     expect(result.session.room.feed[0]?.kind).toBe("report");
+  });
+
+  test("expedition reports include process beats and random encounters", () => {
+    let session = createStarterSession("user-a", "Alice", "room-a");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.92, 0.12, 0.54, 0.12, 0.77],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.report.logs.length).toBeGreaterThanOrEqual(5);
+    expect(result.report.logs.some((line) => line.includes("Encounter"))).toBe(true);
+    expect(result.session.account.survivors[0].injuries).toContain("擦伤");
+    expect(result.session.room.feed[0]?.body).toContain("Encounter");
+  });
+
+  test("treats injured survivors by spending medicine", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    const survivorId = session.account.survivors[0].id;
+    session.account.survivors[0].injuries = ["深度割伤"];
+    session.account.survivors[0].fatigue = 44;
+    session.room.base.resources.medicine = 4;
+
+    const next = treatSurvivor(session, "user-a", survivorId);
+
+    expect(next.room.base.resources.medicine).toBe(3);
+    expect(next.account.survivors[0].injuries).toEqual([]);
+    expect(next.account.survivors[0].fatigue).toBeLessThan(44);
+    expect(next.room.feed[0]?.title).toContain("Treatment");
+  });
+
+  test("upgrades room facilities by spending materials", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    const facility = session.room.base.facilities[0];
+    session.room.base.resources.materials = 20;
+
+    const next = upgradeFacility(session, "user-a", facility.id);
+
+    expect(next.room.base.resources.materials).toBeLessThan(20);
+    expect(next.room.base.facilities[0].level).toBe(facility.level + 1);
+    expect(next.room.feed[0]?.title).toContain("Facility upgraded");
   });
 });

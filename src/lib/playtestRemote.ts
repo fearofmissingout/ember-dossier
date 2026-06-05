@@ -140,7 +140,7 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
     feed:
       reports.length > 0
         ? reports.map((report) => ({
-            body: report.logs.join(" "),
+            body: report.logs.join("\n"),
             id: report.id,
             kind: "report",
             timestamp: new Date(report.created_at).toLocaleString(),
@@ -193,7 +193,26 @@ export async function saveAssignment(accessToken: string, assignment: RoomAssign
   );
 }
 
+export async function savePlaytestProgress(accessToken: string, session: PlaytestSession) {
+  await saveCoreProgress(accessToken, session);
+}
+
 export async function saveSettlement(accessToken: string, session: PlaytestSession, report: ExpeditionReport) {
+  await Promise.all([
+    saveCoreProgress(accessToken, session),
+    upsert(accessToken, "playtest_reports", {
+      expedition_id: null,
+      logs: report.logs,
+      outcome: report.outcome,
+      penalties: report.penalties,
+      reward: report.reward,
+      room_id: session.room.id,
+      title: `${report.locationName} expedition complete`
+    })
+  ]);
+}
+
+async function saveCoreProgress(accessToken: string, session: PlaytestSession) {
   await Promise.all([
     patchRows(accessToken, "account_resources", { user_id: `eq.${session.account.profile.userId}` }, { resources: session.account.resources }),
     patchRows(
@@ -210,16 +229,7 @@ export async function saveSettlement(accessToken: string, session: PlaytestSessi
     ),
     ...session.account.survivors.map((survivor) =>
       upsert(accessToken, "account_survivors", serializeAccountSurvivor(survivor), "user_id,content_id")
-    ),
-    upsert(accessToken, "playtest_reports", {
-      expedition_id: null,
-      logs: report.logs,
-      outcome: report.outcome,
-      penalties: report.penalties,
-      reward: report.reward,
-      room_id: session.room.id,
-      title: `${report.locationName} expedition complete`
-    })
+    )
   ]);
 }
 
