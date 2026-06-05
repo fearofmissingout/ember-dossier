@@ -7,10 +7,18 @@ const { Client } = pg;
 
 loadEnvFile(".env.local");
 
-const dbUrl = process.env.SUPABASE_DB_URL;
+const dbUrl = normalizeDatabaseUrl(process.env.SUPABASE_DB_URL);
 
 if (!dbUrl) {
   console.error("Missing SUPABASE_DB_URL. Put it in .env.local or set it in the current shell.");
+  process.exit(1);
+}
+
+try {
+  validateDatabaseUrl(dbUrl);
+} catch (error) {
+  console.error("Invalid SUPABASE_DB_URL.");
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }
 
@@ -63,5 +71,34 @@ function loadEnvFile(path) {
     if (!process.env[key]) {
       process.env[key] = value;
     }
+  }
+}
+
+function normalizeDatabaseUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith("jdbc:postgresql://")) {
+    return `postgresql://${trimmed.slice("jdbc:postgresql://".length)}`;
+  }
+
+  return trimmed;
+}
+
+function validateDatabaseUrl(value) {
+  const url = new URL(value);
+
+  if (!["postgres:", "postgresql:"].includes(url.protocol)) {
+    throw new Error("Use a PostgreSQL connection string that starts with postgresql:// or postgres://.");
+  }
+
+  if (!url.hostname || url.hostname === "base") {
+    throw new Error("The database host looks wrong. Use the Supabase pooler or database host, not a placeholder.");
+  }
+
+  if (url.password.includes("YOUR-PASSWORD")) {
+    throw new Error("Replace [YOUR-PASSWORD] with the real database password before saving the secret.");
   }
 }
