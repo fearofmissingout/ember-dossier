@@ -6,7 +6,7 @@ const defaultRoomSlug = "ember-demo";
 loadEnvFile(".env.local");
 loadEnvFile("../../.env.local");
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseUrl = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
 const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
 
 await checkProductionBundle();
@@ -35,6 +35,16 @@ function loadEnvFile(path) {
       process.env[key] = value;
     }
   }
+}
+
+function normalizeSupabaseUrl(value) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return new URL(withProtocol).origin;
 }
 
 async function checkProductionBundle() {
