@@ -82,6 +82,7 @@ export type JourneyCampOption = {
   thirst: number;
   rollShift: number;
   objectiveBonus: number;
+  supportText?: string;
   successLog: string;
   fallbackLog: string;
 };
@@ -1149,10 +1150,11 @@ export function setJourneyTravelPlan(journey: JourneyState, plan: JourneyTravelP
 export function resolveCampAction(journey: JourneyState, action: JourneyCampAction): JourneyState {
   const node = journey.nodes[journey.currentNodeIndex];
   const next = structuredClone(journey) as JourneyState;
-  const option = node?.type === "camp" ? node.camp?.[action] : null;
-  if (!option || !node) {
+  const baseOption = node?.type === "camp" ? node.camp?.[action] : null;
+  if (!baseOption || !node) {
     return next;
   }
+  const option = campOptionOutcome(action, baseOption, next.support);
 
   const spentKey = spendFieldSupplyFromPriority(next, option.supplyPriority, 1);
   if (spentKey) {
@@ -1167,7 +1169,7 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
         option.hunger
       )}, thirst ${formatSignedNumber(option.thirst)}, pressure ${formatSignedPercent(option.pressure)}${
         option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""
-      }.`
+      }${option.supportText ? `. ${option.supportText}` : ""}.`
     );
     return next;
   }
@@ -1178,7 +1180,7 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
   next.condition.thirst = clampPercent(next.condition.thirst + Math.max(5, option.thirst + 16));
   next.pressure = clampPercent(next.pressure + fallbackPressure);
   next.rollShift += Math.max(0.03, option.rollShift / 2);
-  next.logs.push(`${node.title}: ${option.fallbackLog} Pressure ${formatSignedPercent(fallbackPressure)}.`);
+  next.logs.push(`${node.title}: ${option.fallbackLog} Pressure ${formatSignedPercent(fallbackPressure)}${option.supportText ? `. ${option.supportText}` : ""}.`);
   return next;
 }
 
@@ -1494,6 +1496,55 @@ export function combatLootOutcome(option: JourneyCombatLootOption, support: Expe
   };
 }
 
+export function campOptionOutcome(
+  action: JourneyCampAction,
+  option: JourneyCampOption,
+  support: ExpeditionSupport = emptySupport()
+): JourneyCampOption {
+  let fatigue = option.fatigue;
+  let hunger = option.hunger;
+  let objectiveBonus = option.objectiveBonus;
+  let pressure = option.pressure;
+  let rollShift = option.rollShift;
+  let thirst = option.thirst;
+  const notes: string[] = [];
+
+  if (action === "cook" && support.campCook > 0) {
+    fatigue -= support.campCook;
+    hunger -= support.campCook * 6;
+    pressure -= support.campCook;
+    rollShift -= support.campCook * 0.01;
+    thirst -= support.campCook * 3;
+    notes.push(`Kitchen +${support.campCook} ration quality`);
+  }
+
+  if (action === "rest" && support.campRest > 0) {
+    fatigue -= support.campRest * 6;
+    pressure -= support.campRest * 2;
+    rollShift -= support.campRest * 0.02;
+    notes.push(`Clinic/Dorm +${support.campRest} recovery`);
+  }
+
+  if (action === "scout" && support.campScout > 0) {
+    fatigue -= support.campScout;
+    objectiveBonus += support.campScout;
+    pressure -= support.campScout * 3;
+    rollShift -= support.campScout * 0.02;
+    notes.push(`Radio/Lookout +${support.campScout} route read`);
+  }
+
+  return {
+    ...option,
+    fatigue,
+    hunger,
+    objectiveBonus,
+    pressure,
+    rollShift,
+    supportText: notes.length > 0 ? `Camp support: ${notes.join(", ")}` : "",
+    thirst
+  };
+}
+
 const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: JourneyCombatIntent; incoming: number; label: string; text: string }> = {
   brace: {
     armor: 2,
@@ -1528,6 +1579,9 @@ const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: Jour
 function emptySupport(): ExpeditionSupport {
   return {
     ammoDamage: 0,
+    campCook: 0,
+    campRest: 0,
+    campScout: 0,
     guardBlock: 0,
     lootEvade: 0,
     lootIntel: 0,

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   advanceJourneyTravel,
+  campOptionOutcome,
   createJourney,
   createCombatForNode,
   resolveCampAction,
@@ -70,6 +71,9 @@ describe("journey route generation", () => {
     const squad = session.account.survivors.slice(0, 3);
     const support = {
       ammoDamage: 1,
+      campCook: 0,
+      campRest: 0,
+      campScout: 0,
       guardBlock: 1,
       lootEvade: 0,
       lootIntel: 0,
@@ -271,6 +275,71 @@ describe("journey route generation", () => {
     expect(scouted.objectiveBonus).toBe(1);
     expect(scouted.pressure).toBeLessThan(journey.pressure);
     expect(scouted.logs.join("\n")).toContain("objective +1");
+  });
+
+  test("base facility support strengthens camp recovery choices", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "supported-camp-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const baseJourney = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    baseJourney.currentNodeIndex = 2;
+    baseJourney.condition.fatigue = 54;
+    baseJourney.condition.hunger = 18;
+    baseJourney.condition.thirst = 18;
+
+    const supportedJourney = structuredClone(baseJourney);
+    supportedJourney.support = {
+      ...supportedJourney.support,
+      campCook: 2,
+      campRest: 2,
+      campScout: 1
+    };
+
+    const unsupported = resolveCampAction(baseJourney, "rest");
+    const supported = resolveCampAction(supportedJourney, "rest");
+
+    expect(supported.condition.fatigue).toBeLessThan(unsupported.condition.fatigue);
+    expect(supported.pressure).toBeLessThan(unsupported.pressure);
+    expect(supported.logs.join("\n")).toContain("Camp support");
+  });
+
+  test("camp option previews include facility support notes", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "camp-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 2;
+
+    const scout = journey.nodes[2].camp?.scout;
+    expect(scout).toBeDefined();
+    const preview = campOptionOutcome("scout", scout!, {
+      ...journey.support,
+      campCook: 0,
+      campRest: 0,
+      campScout: 2
+    });
+
+    expect(preview.objectiveBonus).toBeGreaterThan(scout!.objectiveBonus);
+    expect(preview.pressure).toBeLessThan(scout!.pressure);
+    expect(preview.supportText).toContain("Radio");
   });
 
   test("tactics expose armored enemies and improve later strike damage", () => {

@@ -35,6 +35,7 @@ import {
 import {
   addResources,
   advanceJourneyTravel,
+  campOptionOutcome,
   combatLootOutcome,
   combatLootList,
   createCombatForNode,
@@ -48,6 +49,7 @@ import {
   resolveCombatRound,
   type CombatAction,
   type JourneyAction,
+  type JourneyCampAction,
   type JourneyCombatLootAction,
   type JourneyChoice,
   type JourneyNode,
@@ -134,6 +136,8 @@ const defaultLoadout: ResourceBundle = {
   fuel: 1,
   ammo: 1
 };
+
+const campActionList: JourneyCampAction[] = ["rest", "cook", "scout"];
 
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "Rest" },
@@ -1395,7 +1399,10 @@ function ExpeditionPrep({
     ["Loot", support.lootSalvage],
     ["Clinic loot", support.lootMedicine],
     ["Intel", support.lootIntel],
-    ["Evade", support.lootEvade]
+    ["Evade", support.lootEvade],
+    ["Camp meal", support.campCook],
+    ["Camp rest", support.campRest],
+    ["Camp scout", support.campScout]
   ].filter(([, value]) => Number(value) > 0);
   return (
     <div className="expedition-layout">
@@ -1634,7 +1641,7 @@ function JourneyPanel({
                   <span>{choice.text}</span>
                   <small>
                     {choice.supplyPriority.length > 0 ? `Cost ${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}; ` : ""}
-                    {formatResourceDelta(choice.reward)} 路 F{formatSignedNumber(choice.fatigue)} H{formatSignedNumber(choice.hunger)} T
+                    {formatResourceDelta(choice.reward)} | F{formatSignedNumber(choice.fatigue)} H{formatSignedNumber(choice.hunger)} T
                     {formatSignedNumber(choice.thirst)} P{formatSignedPercent(choice.pressure)}
                   </small>
                 </button>
@@ -1655,9 +1662,9 @@ function JourneyPanel({
                     <strong>{option.label}</strong>
                     <span>{option.text}</span>
                     <small>
-                      {formatResourceDelta(outcome.reward)} · F{formatSignedNumber(outcome.fatigue)} · P{formatSignedPercent(outcome.pressure)}
-                      {outcome.objectiveBonus > 0 ? ` · Obj +${outcome.objectiveBonus}` : ""}
-                      {outcome.battleScarRelief > 0 ? ` · Scar -${outcome.battleScarRelief}` : ""}
+                      {formatResourceDelta(outcome.reward)} | F{formatSignedNumber(outcome.fatigue)} | P{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
+                      {outcome.battleScarRelief > 0 ? ` | Scar -${outcome.battleScarRelief}` : ""}
                     </small>
                     {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                   </button>
@@ -1726,16 +1733,32 @@ function JourneyPanel({
             </button>
           </div>
         ) : activeNode.type === "camp" ? (
-          <div className="journey-actions">
-            <button className="primary-button" type="button" onClick={() => onJourneyAction("rest")}>
-              {activeNode.camp?.rest.label ?? "Rest wounds"}
-            </button>
-            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("cook")}>
-              {activeNode.camp?.cook.label ?? "Cook rations"}
-            </button>
-            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("scout")}>
-              {activeNode.camp?.scout.label ?? "Scout ahead"}
-            </button>
+          <div className="camp-choice-card">
+            <div>
+              <strong>Camp decision</strong>
+              <span>Use field supplies and base support to recover, eat, or map the next leg.</span>
+            </div>
+            <div className="combat-loot-grid">
+              {campActionList.map((action) => {
+                const option = activeNode.camp?.[action];
+                if (!option) {
+                  return null;
+                }
+                const outcome = campOptionOutcome(action, option, journey.support);
+                return (
+                  <button key={action} type="button" onClick={() => onJourneyAction(action)}>
+                    <strong>{outcome.label}</strong>
+                    <span>{outcome.successLog}</span>
+                    <small>
+                      Cost {outcome.supplyPriority.map((key) => resourceLabels[key]).join("/") || "none"} | F{formatSignedNumber(outcome.fatigue)} H
+                      {formatSignedNumber(outcome.hunger)} T{formatSignedNumber(outcome.thirst)} P{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
+                    </small>
+                    {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <button className="primary-button full-width" type="button" onClick={() => onJourneyAction("extract")}>

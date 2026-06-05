@@ -1144,6 +1144,7 @@ button:disabled {
 
 .combat-card,
 .combat-loot-card,
+.camp-choice-card,
 .road-choice-card,
 .combat-bars,
 .journey-log {
@@ -1211,12 +1212,23 @@ button:disabled {
   background: #f3f8fa;
 }
 
+.camp-choice-card > div:first-child {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #b8c9a9;
+  border-radius: 8px;
+  background: #f5fbef;
+}
+
 .combat-loot-card strong,
+.camp-choice-card strong,
 .road-choice-card strong {
   color: #783924;
 }
 
 .combat-loot-card span,
+.camp-choice-card span,
 .road-choice-card span {
   color: #667267;
   font-size: 12px;

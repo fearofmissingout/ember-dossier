@@ -11,6 +11,9 @@ export type SurvivorPerk = {
 
 export type ExpeditionSupport = {
   ammoDamage: number;
+  campCook: number;
+  campRest: number;
+  campScout: number;
   guardBlock: number;
   lootEvade: number;
   lootIntel: number;
@@ -69,12 +72,16 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
   const generator = facilityLevel(facilities, "generator");
   const watchtower = facilityLevel(facilities, "watchtower");
   const barricade = facilityLevel(facilities, "barricade");
+  const kitchen = facilityLevel(facilities, "kitchen");
   const radio = facilityLevel(facilities, "radio");
   const training = facilityLevel(facilities, "training");
   const workshop = facilityLevel(facilities, "workshop");
 
   return {
     ammoDamage: Math.max(0, generator - 1) + workshop,
+    campCook: kitchen,
+    campRest: Math.max(0, dorm - 1) + Math.max(0, clinic - 1),
+    campScout: Math.max(0, watchtower - 1) + radio,
     guardBlock: Math.max(0, dorm - 1) + barricade,
     lootEvade: Math.max(0, watchtower - 1) + barricade,
     lootIntel: radio,
