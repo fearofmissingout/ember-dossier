@@ -1172,6 +1172,10 @@ button:disabled {
   line-height: 1.25;
 }
 
+.combat-loot-grid small.facility-support-note {
+  color: #2f5f43;
+}
+
 .combat-stats {
   display: flex;
   flex-wrap: wrap;

@@ -70,6 +70,10 @@ describe("journey route generation", () => {
     const support = {
       ammoDamage: 1,
       guardBlock: 1,
+      lootEvade: 0,
+      lootIntel: 0,
+      lootMedicine: 0,
+      lootSalvage: 0,
       maxHp: 8,
       patchHeal: 3,
       pressureRelief: 2,
@@ -398,6 +402,42 @@ describe("journey route generation", () => {
     expect(intel.objectiveBonus).toBe(won.objectiveBonus + 1);
     expect(intel.logs.join("\n")).toContain("Search for clues");
     expect(salvage.bonusReward.materials).toBeGreaterThan(won.bonusReward.materials);
+  });
+
+  test("facility support improves matching combat loot choices", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "loot-facility-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    journey.support = {
+      ...journey.support,
+      lootIntel: 1,
+      lootSalvage: 2
+    };
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+    }
+
+    const won = resolveCombatRound(journey, "strike", squad, 75);
+    const salvage = resolveCombatLootChoice(won, "salvage");
+    const intel = resolveCombatLootChoice(won, "intel");
+
+    expect(salvage.bonusReward.materials - won.bonusReward.materials).toBe(4);
+    expect(salvage.bonusReward.fuel - won.bonusReward.fuel).toBe(2);
+    expect(salvage.logs.join("\n")).toContain("Workshop +2 salvage");
+    expect(intel.objectiveBonus - won.objectiveBonus).toBe(2);
+    expect(intel.logs.join("\n")).toContain("Radio +1 objective");
   });
 
   test("field dress loot choice reduces battle scars", () => {

@@ -12,6 +12,10 @@ export type SurvivorPerk = {
 export type ExpeditionSupport = {
   ammoDamage: number;
   guardBlock: number;
+  lootEvade: number;
+  lootIntel: number;
+  lootMedicine: number;
+  lootSalvage: number;
   maxHp: number;
   patchHeal: number;
   pressureRelief: number;
@@ -72,6 +76,10 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
   return {
     ammoDamage: Math.max(0, generator - 1) + workshop,
     guardBlock: Math.max(0, dorm - 1) + barricade,
+    lootEvade: Math.max(0, watchtower - 1) + barricade,
+    lootIntel: radio,
+    lootMedicine: Math.max(0, clinic - 1),
+    lootSalvage: workshop,
     maxHp: Math.max(0, dorm - 1) * 4 + training * 2,
     patchHeal: Math.max(0, clinic - 1) * 3,
     pressureRelief: Math.max(0, watchtower - 1) * 2 + radio,

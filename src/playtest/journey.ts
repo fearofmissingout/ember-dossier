@@ -161,6 +161,7 @@ export type JourneyTravelPlanOption = {
 };
 
 export type JourneyCombatLootOption = {
+  battleScarRelief: number;
   fatigue: number;
   id: JourneyCombatLootAction;
   label: string;
@@ -168,6 +169,7 @@ export type JourneyCombatLootOption = {
   pressure: number;
   reward: ResourceBundle;
   rollShift: number;
+  supportText?: string;
   text: string;
 };
 
@@ -944,10 +946,11 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
 export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCombatLootAction): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const pending = next.pendingCombatLoot;
-  const option = combatLootOptions[action];
-  if (!pending || !option) {
+  const baseOption = combatLootOptions[action];
+  if (!pending || !baseOption) {
     return next;
   }
+  const option = combatLootOutcome(baseOption, next.support);
 
   addResources(next.bonusReward, option.reward);
   next.condition.fatigue = clampPercent(next.condition.fatigue + option.fatigue);
@@ -956,8 +959,8 @@ export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCo
   next.objectiveBonus += option.objectiveBonus;
 
   const scarsBefore = next.battleScars;
-  if (action === "medicine") {
-    next.battleScars = Math.max(0, next.battleScars - 1);
+  if (option.battleScarRelief > 0) {
+    next.battleScars = Math.max(0, next.battleScars - option.battleScarRelief);
   }
   const scarsDelta = scarsBefore - next.battleScars;
 
@@ -966,7 +969,7 @@ export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCo
       option.fatigue
     )}, pressure ${formatSignedPercent(option.pressure)}${option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""}${
       scarsDelta > 0 ? `, battle scars -${scarsDelta}` : ""
-    }. Trophy secured: ${pending.trophy}.`
+    }${option.supportText ? `, ${option.supportText}` : ""}. Trophy secured: ${pending.trophy}.`
   );
   next.pendingCombatLoot = null;
   return next;
@@ -1151,6 +1154,7 @@ const travelPlanOptions: Record<JourneyTravelPlan, JourneyTravelPlanOption> = Ob
 
 export const combatLootList: JourneyCombatLootOption[] = [
   {
+    battleScarRelief: 0,
     fatigue: 4,
     id: "salvage",
     label: "Strip the carcass",
@@ -1161,6 +1165,7 @@ export const combatLootList: JourneyCombatLootOption[] = [
     text: "Slow work, better parts."
   },
   {
+    battleScarRelief: 1,
     fatigue: -8,
     id: "medicine",
     label: "Field dress wounds",
@@ -1171,6 +1176,7 @@ export const combatLootList: JourneyCombatLootOption[] = [
     text: "Patch the worst damage before moving."
   },
   {
+    battleScarRelief: 0,
     fatigue: 2,
     id: "intel",
     label: "Search for clues",
@@ -1181,6 +1187,7 @@ export const combatLootList: JourneyCombatLootOption[] = [
     text: "Spend time reading the scene."
   },
   {
+    battleScarRelief: 0,
     fatigue: -3,
     id: "evade",
     label: "Leave fast",
@@ -1195,6 +1202,58 @@ export const combatLootList: JourneyCombatLootOption[] = [
 const combatLootOptions: Record<JourneyCombatLootAction, JourneyCombatLootOption> = Object.fromEntries(
   combatLootList.map((option) => [option.id, option])
 ) as Record<JourneyCombatLootAction, JourneyCombatLootOption>;
+
+export function combatLootOutcome(option: JourneyCombatLootOption, support: ExpeditionSupport = emptySupport()): JourneyCombatLootOption {
+  const reward = { ...option.reward };
+  const notes: string[] = [];
+  let battleScarRelief = option.battleScarRelief;
+  let fatigue = option.fatigue;
+  let objectiveBonus = option.objectiveBonus;
+  let pressure = option.pressure;
+  let rollShift = option.rollShift;
+
+  if (option.id === "salvage" && support.lootSalvage > 0) {
+    reward.materials += support.lootSalvage;
+    if (support.lootSalvage >= 2) {
+      reward.fuel += Math.floor(support.lootSalvage / 2);
+    }
+    notes.push(`Workshop +${support.lootSalvage} salvage`);
+  }
+
+  if (option.id === "medicine" && support.lootMedicine > 0) {
+    battleScarRelief += support.lootMedicine;
+    fatigue -= support.lootMedicine * 2;
+    if (support.lootMedicine >= 2) {
+      reward.medicine += 1;
+    }
+    notes.push(`Clinic +${support.lootMedicine} scar relief`);
+  }
+
+  if (option.id === "intel" && support.lootIntel > 0) {
+    objectiveBonus += support.lootIntel;
+    pressure -= support.lootIntel * 2;
+    rollShift -= support.lootIntel * 0.03;
+    notes.push(`Radio +${support.lootIntel} objective`);
+  }
+
+  if (option.id === "evade" && support.lootEvade > 0) {
+    fatigue -= support.lootEvade;
+    pressure -= support.lootEvade * 3;
+    rollShift -= support.lootEvade * 0.02;
+    notes.push(`Lookout +${support.lootEvade} extraction`);
+  }
+
+  return {
+    ...option,
+    battleScarRelief,
+    fatigue,
+    objectiveBonus,
+    pressure,
+    reward,
+    rollShift,
+    supportText: notes.join(", ")
+  };
+}
 
 const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: JourneyCombatIntent; incoming: number; label: string; text: string }> = {
   brace: {
@@ -1231,6 +1290,10 @@ function emptySupport(): ExpeditionSupport {
   return {
     ammoDamage: 0,
     guardBlock: 0,
+    lootEvade: 0,
+    lootIntel: 0,
+    lootMedicine: 0,
+    lootSalvage: 0,
     maxHp: 0,
     patchHeal: 0,
     pressureRelief: 0,

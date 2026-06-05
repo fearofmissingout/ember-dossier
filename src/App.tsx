@@ -35,6 +35,7 @@ import {
 import {
   addResources,
   advanceJourneyTravel,
+  combatLootOutcome,
   combatLootList,
   createCombatForNode,
   createJourney,
@@ -1368,7 +1369,11 @@ function ExpeditionPrep({
     ["Patch", support.patchHeal],
     ["Guard", support.guardBlock],
     ["Ammo", support.ammoDamage],
-    ["Pressure", support.pressureRelief]
+    ["Pressure", support.pressureRelief],
+    ["Loot", support.lootSalvage],
+    ["Clinic loot", support.lootMedicine],
+    ["Intel", support.lootIntel],
+    ["Evade", support.lootEvade]
   ].filter(([, value]) => Number(value) > 0);
   return (
     <div className="expedition-layout">
@@ -1586,16 +1591,21 @@ function JourneyPanel({
               <span>Trophy secured: {journey.pendingCombatLoot.trophy}</span>
             </div>
             <div className="combat-loot-grid">
-              {combatLootList.map((option) => (
-                <button key={option.id} type="button" onClick={() => onJourneyAction(`loot-${option.id}` as JourneyAction)}>
-                  <strong>{option.label}</strong>
-                  <span>{option.text}</span>
-                  <small>
-                    {formatResourceDelta(option.reward)} · F{formatSignedNumber(option.fatigue)} · P{formatSignedPercent(option.pressure)}
-                    {option.objectiveBonus > 0 ? ` · Obj +${option.objectiveBonus}` : ""}
-                  </small>
-                </button>
-              ))}
+              {combatLootList.map((option) => {
+                const outcome = combatLootOutcome(option, journey.support);
+                return (
+                  <button key={option.id} type="button" onClick={() => onJourneyAction(`loot-${option.id}` as JourneyAction)}>
+                    <strong>{option.label}</strong>
+                    <span>{option.text}</span>
+                    <small>
+                      {formatResourceDelta(outcome.reward)} · F{formatSignedNumber(outcome.fatigue)} · P{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` · Obj +${outcome.objectiveBonus}` : ""}
+                      {outcome.battleScarRelief > 0 ? ` · Scar -${outcome.battleScarRelief}` : ""}
+                    </small>
+                    {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : journey.combat ? (
