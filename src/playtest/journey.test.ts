@@ -366,6 +366,32 @@ describe("journey route generation", () => {
     expect(countered.logs.join("\n")).toContain("Threat counter: Open ditch");
   });
 
+  test("facility route support softens matching segment threats", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "facility-threat-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const draft = {
+      loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+      risk: "standard" as const,
+      squadIds: squad.map((survivor) => survivor.id)
+    };
+    const supportedDraft = {
+      ...draft,
+      support: {
+        ...supportFromFacilities([]),
+        guardBlock: 1,
+        roadSecure: 2
+      }
+    };
+
+    const exposed = advanceJourneyTravel(createJourney(session, draft, "farm", 55), squad, 55);
+    const supported = advanceJourneyTravel(createJourney(session, supportedDraft, "farm", 55), squad, 55);
+
+    expect(supported.pressure).toBeLessThan(exposed.pressure);
+    expect(supported.travelHistory[0].effects).toEqual(expect.arrayContaining(["Facility mitigation -6%", "Facility fatigue -1"]));
+    expect(supported.logs.join("\n")).toContain("Facility mitigation: Open ditch");
+  });
+
   test("prospecting a segment spends gear and can turn the road into a find", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const session = createStarterSession("user-a", "Alice", "prospect-room");

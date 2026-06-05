@@ -50,6 +50,7 @@ import {
   routePaceFor,
   segmentTacticList,
   segmentThreatFor,
+  segmentThreatMitigationFor,
   setJourneySegmentTactic,
   setJourneyTravelPlan,
   shopOfferOutcome,
@@ -1667,9 +1668,14 @@ function JourneyPanel({
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
   const segmentThreat = segmentThreatFor(journey);
+  const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
+  const mitigationLabel =
+    segmentMitigation.value > 0
+      ? `Facility: P-${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / F-${segmentMitigation.fatigue}` : ""}`
+      : "No facility cover";
 
   return (
     <div className="journey-panel">
@@ -1794,6 +1800,7 @@ function JourneyPanel({
           <small>
             F+{segmentThreat.fatigue} H+{segmentThreat.hunger} T+{segmentThreat.thirst} P+{segmentThreat.pressure}%
           </small>
+          <small>{mitigationLabel}</small>
         </div>
       </div>
       <div className="segment-tactic-strip" aria-label="Next segment tactic">

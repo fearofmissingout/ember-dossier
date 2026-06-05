@@ -341,6 +341,14 @@ export type JourneySegmentThreat = {
   thirst: number;
 };
 
+export type JourneySegmentThreatMitigation = {
+  fatigue: number;
+  pressure: number;
+  scavengePenalty: number;
+  source: string;
+  value: number;
+};
+
 export type JourneyCombatLootOption = {
   battleScarRelief: number;
   fatigue: number;
@@ -2126,6 +2134,33 @@ export function segmentThreatFor(journey: Pick<JourneyState, "condition" | "loca
   return pool[(nextSegment - 1) % pool.length];
 }
 
+export function segmentThreatMitigationFor(threat: JourneySegmentThreat, support: ExpeditionSupport): JourneySegmentThreatMitigation {
+  const sourceScores: { label: string; value: number }[] = [];
+  if (threat.counterTactics.includes("brace")) {
+    sourceScores.push({ label: "route cover", value: support.roadSecure + support.guardBlock });
+  }
+  if (threat.counterTactics.includes("prospect")) {
+    sourceScores.push({ label: "salvage tools", value: support.roadSearch + support.lootSalvage + support.shopService });
+  }
+  if (threat.counterTactics.includes("ration")) {
+    sourceScores.push({ label: "road stores", value: support.shopRations + support.campCook });
+  }
+  if (threat.counterTactics.includes("observe")) {
+    sourceScores.push({ label: "route intel", value: support.pressureRelief + support.lootIntel + support.campScout });
+  }
+
+  const activeSources = sourceScores.filter((source) => source.value > 0);
+  const value = activeSources.reduce((total, source) => total + source.value, 0);
+
+  return {
+    fatigue: Math.min(threat.fatigue, Math.floor(value / 3)),
+    pressure: Math.min(threat.pressure, value * 2),
+    scavengePenalty: Math.min(threat.scavengePenalty, value * 0.02),
+    source: activeSources.map((source) => source.label).join(" + ") || "none",
+    value
+  };
+}
+
 const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
   resources: [
     {
@@ -2692,13 +2727,26 @@ function applySegmentThreat(journey: JourneyState, threat: JourneySegmentThreat,
     };
   }
 
+  const mitigation = segmentThreatMitigationFor(threat, journey.support);
+  const fatigue = Math.max(0, threat.fatigue - mitigation.fatigue);
+  const pressure = Math.max(0, threat.pressure - mitigation.pressure);
+  const scavengePenalty = Math.max(0, threat.scavengePenalty - mitigation.scavengePenalty);
+  const mitigationEffects = [
+    ...(mitigation.pressure > 0 ? [`Facility mitigation -${mitigation.pressure}%`] : []),
+    ...(mitigation.fatigue > 0 ? [`Facility fatigue -${mitigation.fatigue}`] : [])
+  ];
+
   journey.logs.push(`Segment threat: ${threat.label}. ${threat.text}`);
+  if (mitigation.value > 0) {
+    journey.logs.push(`Facility mitigation: ${threat.label}. ${mitigation.source} softens the route.`);
+  }
+
   return {
-    effects: [`Threat: ${threat.label}`, `Threat pressure ${formatSignedPercent(threat.pressure)}`],
-    fatigue: threat.fatigue,
+    effects: [`Threat: ${threat.label}`, ...(pressure > 0 ? [`Threat pressure ${formatSignedPercent(pressure)}`] : []), ...mitigationEffects],
+    fatigue,
     hunger: threat.hunger,
-    pressure: threat.pressure,
-    scavengePenalty: threat.scavengePenalty,
+    pressure,
+    scavengePenalty,
     thirst: threat.thirst
   };
 }
