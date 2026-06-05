@@ -2026,14 +2026,14 @@ function JourneyPanel({
             </div>
             <div className="combat-rhythm">
               <div>
-                <span>Tempo</span>
+                <span>节奏</span>
                 <strong>{journey.combat.tempo ?? 0}/3</strong>
-                <small>Correct counters improve damage, guard, healing, and tactics.</small>
+                <small>正确反制会强化攻击、防守、包扎和战术。</small>
               </div>
               <div>
-                <span>Stagger</span>
+                <span>破势</span>
                 <strong>{journey.combat.stagger ?? 0}/3</strong>
-                <small>Three counter reads break posture: armor -1, exposed +2.</small>
+                <small>三次读对意图会击破架势：护甲 -1，暴露 +2。</small>
               </div>
             </div>
             <div className="combat-bars">
@@ -2066,8 +2066,8 @@ function JourneyPanel({
               <span>Armor {Math.max(0, journey.combat.armor - journey.combat.exposed)}</span>
               <span>Exposed {journey.combat.exposed}</span>
               <span>Bleed {journey.combat.bleed}</span>
-              <span>Tempo {journey.combat.tempo ?? 0}</span>
-              <span>Stagger {journey.combat.stagger ?? 0}</span>
+              <span>节奏 {journey.combat.tempo ?? 0}</span>
+              <span>破势 {journey.combat.stagger ?? 0}</span>
             </div>
             <div className="combat-action-grid">
               {combatActionList.map((action) => {

@@ -2928,7 +2928,7 @@ function combatActionRisksTempo(combat: JourneyCombat, action: CombatAction, pre
 
 function withCombatTempoPreview(combat: JourneyCombat, action: CombatAction, effect: string) {
   if (combatIntentCountersAction(combat, action) || enemyPulseCountersAction(combat, action)) {
-    return `${effect}, Tempo +1, Stagger +1`;
+    return `${effect}, 节奏 +1，破势 +1`;
   }
 
   return effect;
@@ -2942,7 +2942,7 @@ function applyCombatTempoResult(journey: JourneyState, combat: JourneyCombat, ac
     combat.tempo = Math.min(combatTempoMax, combat.tempo + 1);
     combat.stagger = Math.min(combatStaggerBreak, combat.stagger + 1);
     journey.rollShift -= 0.01;
-    journey.logs.push(`${title}: Combat tempo: +1 tempo, +1 stagger. Tempo ${combat.tempo}/${combatTempoMax}, stagger ${combat.stagger}/${combatStaggerBreak}.`);
+    journey.logs.push(`${title}: 战斗节奏：节奏 +1，破势 +1。节奏 ${combat.tempo}/${combatTempoMax}，破势 ${combat.stagger}/${combatStaggerBreak}。`);
 
     if (combat.stagger >= combatStaggerBreak) {
       combat.stagger = 0;
@@ -2950,7 +2950,7 @@ function applyCombatTempoResult(journey: JourneyState, combat: JourneyCombat, ac
       combat.armor = Math.max(0, combat.armor - 1);
       journey.pressure = clampPercent(journey.pressure - 4);
       journey.rollShift -= 0.03;
-      journey.logs.push(`${title}: Stagger break. The enemy posture cracks, armor -1, exposed +2, pressure -4%.`);
+      journey.logs.push(`${title}: 破势触发：敌人的架势被打裂，护甲 -1，暴露 +2，压力 -4%。`);
       return Math.max(1, incoming - 3);
     }
 
@@ -2961,7 +2961,7 @@ function applyCombatTempoResult(journey: JourneyState, combat: JourneyCombat, ac
     combat.tempo = Math.max(0, combat.tempo - 1);
     journey.pressure = clampPercent(journey.pressure + 2);
     journey.rollShift += 0.02;
-    journey.logs.push(`${title}: Combat tempo slips under pressure. Tempo -1, pressure +2%.`);
+    journey.logs.push(`${title}: 战斗节奏受挫：节奏 -1，压力 +2%。`);
   }
 
   return incoming;

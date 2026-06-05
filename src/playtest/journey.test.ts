@@ -1176,11 +1176,11 @@ describe("journey route generation", () => {
     const preview = combatActionPreview(journey, "guard", squad, 60);
     const guarded = resolveCombatRound(journey, "guard", squad, 60);
 
-    expect(preview?.effect).toContain("Tempo +1");
-    expect(preview?.effect).toContain("Stagger +1");
+    expect(preview?.effect).toContain("节奏 +1");
+    expect(preview?.effect).toContain("破势 +1");
     expect(guarded.combat?.tempo).toBe(1);
     expect(guarded.combat?.stagger).toBe(1);
-    expect(guarded.logs.join("\n")).toContain("Combat tempo: +1 tempo, +1 stagger");
+    expect(guarded.logs.join("\n")).toContain("战斗节奏：节奏 +1，破势 +1");
   });
 
   test("repeated counters can break enemy posture", () => {
@@ -1222,7 +1222,7 @@ describe("journey route generation", () => {
     expect(broken.combat?.stagger).toBe(0);
     expect(broken.combat?.tempo).toBe(3);
     expect(broken.combat?.exposed).toBeGreaterThan(second.combat?.exposed ?? 0);
-    expect(broken.logs.join("\n")).toContain("Stagger break");
+    expect(broken.logs.join("\n")).toContain("破势触发");
   });
 
   test("combat action previews show damage, costs, and wind-up counters", () => {

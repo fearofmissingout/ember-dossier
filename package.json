@@ -11,7 +11,10 @@
     "supabase:init": "node scripts/init-supabase.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "supabase:check": "node scripts/check-supabase-demo.mjs",
-    "playtest:check": "node scripts/check-production-playtest.mjs"
+    "playtest:check": "node scripts/check-production-playtest.mjs",
+    "iteration:check": "node scripts/check-iteration-gates.mjs",
+    "release:preflight": "node scripts/check-iteration-gates.mjs --release",
+    "release:verify": "node scripts/check-iteration-gates.mjs --production"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
