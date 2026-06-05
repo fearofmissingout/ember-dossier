@@ -31,6 +31,18 @@ import {
   treatSurvivor,
   upgradeFacility
 } from "./playtest/sim";
+import {
+  addResources,
+  createCombatForNode,
+  createJourney,
+  spendFieldSupply,
+  spendFieldSupplyFromPriority,
+  type CombatAction,
+  type JourneyAction,
+  type JourneyChoice,
+  type JourneyNode,
+  type JourneyState
+} from "./playtest/journey";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
@@ -78,42 +90,6 @@ type ExpeditionDraft = {
   locationId: string;
   risk: RiskStrategy;
   loadout: ResourceBundle;
-};
-
-type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract";
-type CombatAction = "strike" | "guard" | "patch";
-
-type JourneyNode = {
-  id: string;
-  type: "event" | "combat" | "shop" | "extraction";
-  title: string;
-  body: string;
-};
-
-type JourneyCombat = {
-  enemyName: string;
-  enemyHp: number;
-  enemyMaxHp: number;
-  squadHp: number;
-  squadMaxHp: number;
-  attack: number;
-  round: number;
-};
-
-type JourneyState = {
-  bonusReward: ResourceBundle;
-  combat: JourneyCombat | null;
-  currentNodeIndex: number;
-  fieldSupplies: ResourceBundle;
-  id: string;
-  loadout: ResourceBundle;
-  locationId: string;
-  logs: string[];
-  nodes: JourneyNode[];
-  pressure: number;
-  risk: RiskStrategy;
-  rollShift: number;
-  squadIds: string[];
 };
 
 type SyncStatus = "local" | "loading" | "initialized" | "saving" | "synced" | "error";
@@ -722,42 +698,30 @@ export default function App() {
 
     const next = structuredClone(journey) as JourneyState;
     if (node.type === "event") {
-      if (action === "careful") {
-        const spent = spendFieldSupply(next, next.fieldSupplies.water > 0 ? "water" : "food", 1);
-        const found = Math.random() > 0.5 ? "materials" : "food";
-        next.bonusReward[found] += 1;
-        next.pressure = Math.max(0, next.pressure - (spent ? 12 : 5));
-        next.rollShift -= spent ? 0.12 : 0.05;
-        next.logs.push(
-          spent
-            ? `${node.title}: slow search spends 1 supply, finds ${resourceLabels[found]} +1, pressure -12%.`
-            : `${node.title}: slow search finds ${resourceLabels[found]} +1, but no spare supply keeps pressure high.`
-        );
-      } else {
-        const spentAmmo = spendFieldSupply(next, "ammo", 1);
-        next.pressure = Math.min(100, next.pressure + (spentAmmo ? 4 : 10));
-        next.rollShift += spentAmmo ? 0.04 : 0.1;
-        next.logs.push(
-          spentAmmo
-            ? `${node.title}: forced route burns 1 ammo to clear the lane. Pressure +4%.`
-            : `${node.title}: forced route saves time but raises noise. Pressure +10%.`
-        );
+      const choice = action === "careful" ? node.careful : node.force;
+      if (choice) {
+        applyJourneyChoice(next, node.title, choice);
       }
     }
 
     if (node.type === "shop") {
       if (action === "trade") {
-        const paid = spendFieldSupply(next, "materials", 1) || spendFieldSupply(next, "fuel", 1);
-        if (paid) {
-          next.bonusReward.medicine += 1;
-          next.bonusReward.ammo += 1;
-          next.pressure = Math.max(0, next.pressure - 6);
-          next.rollShift -= 0.06;
-          next.logs.push(`${node.title}: trade succeeds. Medicine +1, Ammo +1, pressure -6%.`);
+        const shop = node.shop;
+        const paidKey = shop ? spendFieldSupplyFromPriority(next, shop.costPriority, 1) : null;
+        if (shop && paidKey) {
+          addResources(next.bonusReward, shop.reward);
+          next.pressure = clampPercent(next.pressure + shop.pressureSuccess);
+          next.rollShift += shop.rollShiftSuccess;
+          next.logs.push(
+            `${node.title}: ${shop.successLog} ${resourceLabels[paidKey]} -1, ${formatResourceDelta(shop.reward)}, pressure ${formatSignedPercent(
+              shop.pressureSuccess
+            )}.`
+          );
         } else {
-          next.pressure = Math.min(100, next.pressure + 3);
-          next.rollShift += 0.03;
-          next.logs.push(`${node.title}: no trade goods left. The squad leaves empty-handed, pressure +3%.`);
+          const pressureFail = shop?.pressureFail ?? 3;
+          next.pressure = clampPercent(next.pressure + pressureFail);
+          next.rollShift += shop?.rollShiftFail ?? 0.03;
+          next.logs.push(`${node.title}: ${shop?.failLog ?? "No trade goods left."} Pressure ${formatSignedPercent(pressureFail)}.`);
         }
       } else {
         next.logs.push(`${node.title}: the squad keeps moving and saves its bargaining power.`);
@@ -819,10 +783,10 @@ export default function App() {
         combat.round += 1;
       }
     } else {
-      next.bonusReward.materials += 1;
+      addResources(next.bonusReward, combat.reward);
       next.pressure = Math.max(0, next.pressure - 12);
       next.rollShift -= 0.12;
-      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. Materials +1, pressure -12%.`);
+      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatResourceDelta(combat.reward)}, pressure -12%.`);
       next.currentNodeIndex += 1;
       next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
     }
@@ -1542,17 +1506,17 @@ function JourneyPanel({
         ) : activeNode.type === "event" ? (
           <div className="journey-actions">
             <button className="primary-button" type="button" onClick={() => onJourneyAction("careful")}>
-              Careful search
+              {activeNode.careful?.label ?? "Careful search"}
             </button>
             <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("force")}>
-              Force route
+              {activeNode.force?.label ?? "Force route"}
             </button>
           </div>
         ) : activeNode.type === "shop" ? (
           <div className="journey-actions">
             <button className="primary-button" type="button" onClick={() => onJourneyAction("trade")}>
               <ShoppingCart size={17} aria-hidden="true" />
-              Trade rumor
+              {activeNode.shop?.label ?? "Trade rumor"}
             </button>
             <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
               Skip
@@ -1780,75 +1744,6 @@ function calculateReadiness(squad: GameState["survivors"], recommendedStats: Gam
   return total / squad.length;
 }
 
-function createJourney(session: PlaytestSession, draft: ExpeditionDraft, locationId: string, readiness: number): JourneyState {
-  const location = session.room.locations.find((candidate) => candidate.id === locationId);
-  const nodes: JourneyNode[] = [
-    {
-      body: `The squad reaches the edge of ${location?.name ?? "the site"} and must decide how loudly to move.`,
-      id: "route-event",
-      title: "Broken Approach",
-      type: "event"
-    },
-    {
-      body: "A hostile shape blocks the safest corridor. The team has to win space or retreat through the noise.",
-      id: "route-combat",
-      title: "Close Quarters",
-      type: "combat"
-    },
-    {
-      body: "A quiet trader has supplies, rumors, and a very strict no-refunds policy.",
-      id: "route-shop",
-      title: "Roadside Broker",
-      type: "shop"
-    },
-    {
-      body: "The exit is visible. One last signal check before the base opens the gate.",
-      id: "route-extraction",
-      title: "Extraction Window",
-      type: "extraction"
-    }
-  ];
-
-  return {
-    bonusReward: createEmptyResourceBundle(),
-    combat: null,
-    currentNodeIndex: 0,
-    fieldSupplies: { ...draft.loadout },
-    id: `journey-${Date.now()}`,
-    loadout: { ...draft.loadout },
-    locationId,
-    logs: [
-      `Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`,
-      `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`
-    ],
-    nodes,
-    pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
-    risk: draft.risk,
-    rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
-    squadIds: [...draft.squadIds]
-  };
-}
-
-function createEmptyResourceBundle(): ResourceBundle {
-  return {
-    ammo: 0,
-    food: 0,
-    fuel: 0,
-    materials: 0,
-    medicine: 0,
-    water: 0
-  };
-}
-
-function spendFieldSupply(journey: JourneyState, key: ResourceKey, amount: number) {
-  if (journey.fieldSupplies[key] < amount) {
-    return false;
-  }
-
-  journey.fieldSupplies[key] -= amount;
-  return true;
-}
-
 function applyJourneyBonus(session: PlaytestSession, report: { logs: string[]; reward: ResourceBundle }, bonusReward: ResourceBundle) {
   const claimed = resourceKeys.filter((key) => bonusReward[key] > 0);
   if (claimed.length === 0) {
@@ -1870,6 +1765,27 @@ function applyJourneyBonus(session: PlaytestSession, report: { logs: string[]; r
   }
 }
 
+function applyJourneyChoice(journey: JourneyState, title: string, choice: JourneyChoice) {
+  const spentKey = spendFieldSupplyFromPriority(journey, choice.supplyPriority, 1);
+  addResources(journey.bonusReward, choice.reward);
+
+  if (spentKey) {
+    journey.pressure = clampPercent(journey.pressure + choice.pressure);
+    journey.rollShift += choice.rollShift;
+    journey.logs.push(
+      `${title}: ${choice.successLog} ${resourceLabels[spentKey]} -1, ${formatResourceDelta(choice.reward)}, pressure ${formatSignedPercent(
+        choice.pressure
+      )}.`
+    );
+    return;
+  }
+
+  const fallbackPressure = choice.pressure < 0 ? 5 : Math.max(8, choice.pressure);
+  journey.pressure = clampPercent(journey.pressure + fallbackPressure);
+  journey.rollShift += choice.rollShift < 0 ? choice.rollShift / 2 : choice.rollShift;
+  journey.logs.push(`${title}: ${choice.fallbackLog} ${formatResourceDelta(choice.reward)}, pressure ${formatSignedPercent(fallbackPressure)}.`);
+}
+
 function formatResourceDelta(resources: ResourceBundle) {
   const entries = resourceKeys.filter((key) => resources[key] > 0);
   if (entries.length === 0) {
@@ -1879,28 +1795,12 @@ function formatResourceDelta(resources: ResourceBundle) {
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
 }
 
-function createCombatForNode(
-  node: JourneyNode | undefined,
-  squad: GameState["survivors"],
-  readiness: number
-): JourneyCombat | null {
-  if (!node || node.type !== "combat") {
-    return null;
-  }
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
 
-  const riskIndex = squad.length > 4 ? 2 : squad.length > 3 ? 1 : 0;
-  const enemyMaxHp = 22 + riskIndex * 6;
-  const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5);
-
-  return {
-    attack: 6 + riskIndex * 2,
-    enemyHp: enemyMaxHp,
-    enemyMaxHp,
-    enemyName: squad.length > 3 ? "Signal Nest" : "Relay Ghoul",
-    round: 1,
-    squadHp: squadMaxHp,
-    squadMaxHp
-  };
+function formatSignedPercent(value: number) {
+  return `${value >= 0 ? "+" : ""}${value}%`;
 }
 
 function loadGuestMode() {
