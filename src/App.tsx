@@ -1398,22 +1398,25 @@ function ExpeditionPrep({
   const selectedDoctrine = doctrineOptions.find((doctrine) => doctrine.id === draft.doctrineId) ?? doctrineOptions[0];
   const support = supportFromFacilities(state.facilities, selectedDoctrine?.id);
   const supportItems = [
-    ["Max HP", support.maxHp],
-    ["Patch", support.patchHeal],
-    ["Guard", support.guardBlock],
-    ["Ammo", support.ammoDamage],
-    ["Pressure", support.pressureRelief],
-    ["Loot", support.lootSalvage],
-    ["Clinic loot", support.lootMedicine],
-    ["Intel", support.lootIntel],
-    ["Evade", support.lootEvade],
-    ["Camp meal", support.campCook],
-    ["Camp rest", support.campRest],
-    ["Camp scout", support.campScout],
-    ["Shop rations", support.shopRations],
-    ["Shop intel", support.shopIntel],
-    ["Shop service", support.shopService]
-  ].filter(([, value]) => Number(value) > 0);
+    { label: "Max HP", sign: "+", value: support.maxHp },
+    { label: "Patch", sign: "+", value: support.patchHeal },
+    { label: "Guard", sign: "+", value: support.guardBlock },
+    { label: "Ammo", sign: "+", value: support.ammoDamage },
+    { label: "Pressure", sign: "-", value: support.pressureRelief },
+    { label: "Road secure", sign: "+", value: support.roadSecure },
+    { label: "Road search", sign: "+", value: support.roadSearch },
+    { label: "Road push", sign: "+", value: support.roadPush },
+    { label: "Loot", sign: "+", value: support.lootSalvage },
+    { label: "Clinic loot", sign: "+", value: support.lootMedicine },
+    { label: "Intel", sign: "+", value: support.lootIntel },
+    { label: "Evade", sign: "+", value: support.lootEvade },
+    { label: "Camp meal", sign: "+", value: support.campCook },
+    { label: "Camp rest", sign: "+", value: support.campRest },
+    { label: "Camp scout", sign: "+", value: support.campScout },
+    { label: "Shop rations", sign: "+", value: support.shopRations },
+    { label: "Shop intel", sign: "+", value: support.shopIntel },
+    { label: "Shop service", sign: "+", value: support.shopService }
+  ].filter((item) => item.value > 0);
   return (
     <div className="expedition-layout">
       <section className="panel">
@@ -1538,9 +1541,10 @@ function ExpeditionPrep({
         <div className="support-grid">
           <span>Base support</span>
           {supportItems.length ? (
-            supportItems.map(([label, value]) => (
-              <strong key={label}>
-                {label} +{value}
+            supportItems.map((item) => (
+              <strong key={item.label}>
+                {item.label} {item.sign}
+                {item.value}
               </strong>
             ))
           ) : (
@@ -1682,6 +1686,7 @@ function JourneyPanel({
                     {formatResourceDelta(choice.reward)} | F{formatSignedNumber(choice.fatigue)} H{formatSignedNumber(choice.hunger)} T
                     {formatSignedNumber(choice.thirst)} P{formatSignedPercent(choice.pressure)}
                   </small>
+                  {choice.supportText && <small className="facility-support-note">{choice.supportText}</small>}
                 </button>
               ))}
             </div>
@@ -2185,7 +2190,8 @@ function roadEncounterActionFromJourneyAction(action: JourneyAction): JourneyRoa
   const roadByAction: Partial<Record<JourneyAction, JourneyRoadEncounterAction>> = {
     "road-push": "push",
     "road-search": "search",
-    "road-secure": "secure"
+    "road-secure": "secure",
+    "road-support": "support"
   };
   return roadByAction[action] ?? null;
 }

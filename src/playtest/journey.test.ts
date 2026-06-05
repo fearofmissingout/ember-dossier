@@ -14,6 +14,7 @@ import {
   shopOfferOutcome,
   spendFieldSupplyFromPriority
 } from "./journey";
+import { supportFromFacilities } from "./progression";
 import { createStarterSession } from "./state";
 
 describe("journey route generation", () => {
@@ -85,6 +86,9 @@ describe("journey route generation", () => {
       maxHp: 8,
       patchHeal: 3,
       pressureRelief: 2,
+      roadPush: 0,
+      roadSearch: 0,
+      roadSecure: 0,
       shopIntel: 0,
       shopRations: 0,
       shopService: 0,
@@ -209,6 +213,38 @@ describe("journey route generation", () => {
     expect(secured.fieldSupplies.materials).toBe(0);
     expect(secured.roadEvents[0].outcome).toContain("Materials -1");
     expect(secured.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
+  });
+
+  test("facility route support adds a road tactic that preserves field supplies", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "road-support-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support: {
+          ...supportFromFacilities(session.room.base.facilities),
+          roadSecure: 2
+        }
+      },
+      "hospital",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+    const supportChoice = advanced.pendingRoadEvent?.choices.find((choice) => choice.id === "support");
+    const supported = resolveRoadEncounterChoice(advanced, "support");
+
+    expect(supportChoice).toMatchObject({
+      label: "Base route support",
+      supplyPriority: []
+    });
+    expect(supported.fieldSupplies.materials).toBe(1);
+    expect(supported.roadEvents[0].outcome).toContain("Base route support");
+    expect(supported.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
   });
 
   test("travel plans change road risk and salvage rhythm", () => {

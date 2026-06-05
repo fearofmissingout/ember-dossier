@@ -33,4 +33,13 @@ describe("expedition doctrines", () => {
     expect(magazines.startingSupplies.ammo).toBe((passive.startingSupplies.ammo ?? 0) + 1);
     expect(passive.startingSupplies.ammo).toBe(0);
   });
+
+  test("route doctrines convert base facilities into road tactics", () => {
+    const facilities = completeFacilities(starterRoomFacilities());
+    const passive = supportFromFacilities(facilities);
+    const overwatch = supportFromFacilities(facilities, "overwatch-route");
+
+    expect(overwatch.roadSearch).toBe(passive.roadSearch + 2);
+    expect(overwatch.roadPush).toBe(passive.roadPush + 1);
+  });
 });

@@ -20,6 +20,7 @@ export type JourneyAction =
   | "loot-evade"
   | "road-secure"
   | "road-search"
+  | "road-support"
   | "road-push"
   | "plan-steady"
   | "plan-scavenge"
@@ -29,7 +30,7 @@ export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade";
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
 export type JourneyCombatantStatus = "steady" | "strained" | "down";
-export type JourneyRoadEncounterAction = "secure" | "search" | "push";
+export type JourneyRoadEncounterAction = "secure" | "search" | "support" | "push";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 export type JourneyRoadEventTone = "find" | "hazard" | "road";
@@ -155,6 +156,7 @@ export type JourneyRoadEncounterChoice = {
   rollShift: number;
   successLog: string;
   supplyPriority: ResourceKey[];
+  supportText?: string;
   text: string;
   thirst: number;
 };
@@ -2089,6 +2091,9 @@ function emptySupport(): ExpeditionSupport {
     maxHp: 0,
     patchHeal: 0,
     pressureRelief: 0,
+    roadPush: 0,
+    roadSearch: 0,
+    roadSecure: 0,
     shopIntel: 0,
     shopRations: 0,
     shopService: 0,
@@ -2164,7 +2169,7 @@ function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: Jour
 
   journey.pendingRoadEvent = {
     body,
-    choices: createRoadEncounterChoices(beat, tone, plan),
+    choices: createRoadEncounterChoices(beat, tone, plan, journey.support),
     id: `road-${journey.condition.distance}-${beat.title.replace(/\s+/g, "-").toLowerCase()}`,
     nextNodeIndex,
     segment: journey.condition.distance,
@@ -2174,13 +2179,18 @@ function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: Jour
   journey.logs.push(`Road fork: ${beat.title}. ${body}`);
 }
 
-function createRoadEncounterChoices(beat: JourneyRoadBeatTemplate, tone: JourneyRoadEventTone, plan: JourneyTravelPlan): JourneyRoadEncounterChoice[] {
+function createRoadEncounterChoices(
+  beat: JourneyRoadBeatTemplate,
+  tone: JourneyRoadEventTone,
+  plan: JourneyTravelPlan,
+  support: ExpeditionSupport
+): JourneyRoadEncounterChoice[] {
   const securePressure = tone === "hazard" ? Math.max(2, beat.pressure - 7) : tone === "find" ? 1 : 2;
   const searchRewardKeys = beat.rewardKeys.slice(0, tone === "find" ? 2 : 1);
   const searchPressure = tone === "find" ? (plan === "scavenge" ? -6 : -4) : tone === "hazard" ? Math.ceil(beat.pressure / 2) + 4 : 5;
   const pushPressure = tone === "hazard" ? beat.pressure + (plan === "rush" ? 2 : 0) : tone === "find" ? 2 : plan === "steady" ? 1 : 3;
 
-  return [
+  const choices: JourneyRoadEncounterChoice[] = [
     {
       fallbackLog: `${beat.hazardLog} No matching gear is ready, so the squad has to improvise.`,
       fatigue: Math.max(1, Math.ceil(beat.fatigue / 2)),
@@ -2222,6 +2232,52 @@ function createRoadEncounterChoices(beat: JourneyRoadBeatTemplate, tone: Journey
       thirst: tone === "hazard" ? Math.ceil(beat.thirst / 2) : 0
     }
   ];
+  const supportChoice = createRoadSupportChoice(beat, tone, support);
+  if (supportChoice) {
+    choices.push(supportChoice);
+  }
+  return choices;
+}
+
+function createRoadSupportChoice(
+  beat: JourneyRoadBeatTemplate,
+  tone: JourneyRoadEventTone,
+  support: ExpeditionSupport
+): JourneyRoadEncounterChoice | null {
+  const supportLevel =
+    tone === "hazard"
+      ? support.roadSecure
+      : tone === "find"
+        ? support.roadSearch
+        : Math.max(support.roadSecure, support.roadSearch, support.roadPush);
+  if (supportLevel <= 0) {
+    return null;
+  }
+
+  const rewardKeys = tone === "find" ? beat.rewardKeys.slice(0, Math.min(2, supportLevel)) : tone === "road" ? beat.rewardKeys.slice(0, 1) : [];
+  const pressure = tone === "hazard" ? -2 - supportLevel * 2 : tone === "find" ? -3 - supportLevel : -1 - supportLevel;
+  const fatigue = Math.max(0, Math.ceil(beat.fatigue / 3) - Math.max(0, supportLevel - 1));
+  const text =
+    tone === "hazard"
+      ? "Use facility prep to clear the danger without spending packed field gear."
+      : tone === "find"
+        ? "Call in mapped route notes and turn the opening into cleaner salvage."
+        : "Follow the prepared detour and keep the squad moving under base guidance.";
+
+  return {
+    fatigue,
+    hunger: 0,
+    id: "support",
+    label: "Base route support",
+    pressure,
+    reward: bundleFromKeys(rewardKeys),
+    rollShift: tone === "find" ? -0.08 : tone === "hazard" ? -0.04 : -0.03,
+    successLog: `Base route support resolves ${beat.title.toLowerCase()} before the squad has to burn field gear`,
+    supplyPriority: [],
+    supportText: `Facility road tactic +${supportLevel}`,
+    text,
+    thirst: 0
+  };
 }
 
 export function resolveRoadEncounterChoice(journey: JourneyState, action: JourneyRoadEncounterAction): JourneyState {

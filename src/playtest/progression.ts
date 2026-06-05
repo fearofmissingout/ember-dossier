@@ -32,6 +32,9 @@ export type ExpeditionSupport = {
   maxHp: number;
   patchHeal: number;
   pressureRelief: number;
+  roadPush: number;
+  roadSearch: number;
+  roadSecure: number;
   shopIntel: number;
   shopRations: number;
   shopService: number;
@@ -110,7 +113,7 @@ const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
     text: "Generator time charges tools and keeps the first magazines dry and ready."
   },
   {
-    effect: "Pressure -4 / Camp scout +1",
+    effect: "Pressure -4 / Road search +2",
     facilityId: "watchtower",
     id: "overwatch-route",
     label: "Overwatch Route",
@@ -124,7 +127,7 @@ const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
     text: "The kitchen turns base stores into compact travel meals and clean canteens."
   },
   {
-    effect: "Guard +2 / Evade +1",
+    effect: "Guard +2 / Road secure +2",
     facilityId: "barricade",
     id: "shield-line",
     label: "Shield Line",
@@ -138,14 +141,14 @@ const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
     text: "The training room rehearses contact roles before the route starts."
   },
   {
-    effect: "Salvage +2 / Ammo damage +1",
+    effect: "Salvage +2 / Road secure +1",
     facilityId: "workshop",
     id: "salvage-rig",
     label: "Salvage Rig",
     text: "The workshop bolts together pry kits and impact tools for the return haul."
   },
   {
-    effect: "Pressure -3 / Intel +1",
+    effect: "Pressure -3 / Road search +1",
     facilityId: "radio",
     id: "signal-map",
     label: "Signal Map",
@@ -181,6 +184,9 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
     maxHp: Math.max(0, dorm - 1) * 4 + training * 2,
     patchHeal: Math.max(0, clinic - 1) * 3,
     pressureRelief: Math.max(0, watchtower - 1) * 2 + radio,
+    roadPush: Math.max(0, watchtower - 1),
+    roadSearch: Math.max(0, watchtower - 1) + radio,
+    roadSecure: barricade + Math.floor(workshop / 2),
     shopIntel: radio,
     shopRations: kitchen,
     shopService: workshop,
@@ -217,25 +223,32 @@ function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: Expedit
     next.pressureRelief += 4;
     next.campScout += 1;
     next.lootEvade += 1;
+    next.roadSearch += 2;
+    next.roadPush += 1;
   } else if (doctrineId === "road-rations") {
     next.campCook += 1;
+    next.roadPush += 1;
     next.shopRations += 1;
     next.startingSupplies.food = (next.startingSupplies.food ?? 0) + 1;
     next.startingSupplies.water = (next.startingSupplies.water ?? 0) + 1;
   } else if (doctrineId === "shield-line") {
     next.guardBlock += 2;
     next.lootEvade += 1;
+    next.roadSecure += 2;
   } else if (doctrineId === "breach-drill") {
     next.maxHp += 4;
     next.guardBlock += 1;
+    next.roadSecure += 1;
   } else if (doctrineId === "salvage-rig") {
     next.ammoDamage += 1;
     next.lootSalvage += 2;
+    next.roadSecure += 1;
     next.shopService += 1;
   } else if (doctrineId === "signal-map") {
     next.pressureRelief += 3;
     next.campScout += 1;
     next.lootIntel += 1;
+    next.roadSearch += 1;
   }
 
   return next;
