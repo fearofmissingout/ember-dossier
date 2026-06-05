@@ -221,6 +221,7 @@ async function saveCoreProgress(accessToken: string, session: PlaytestSession) {
       { room_id: `eq.${session.room.id}` },
       {
         danger: session.room.base.danger,
+        day: session.room.base.day,
         facilities: session.room.base.facilities,
         morale: session.room.base.morale,
         objective: session.room.base.objective,

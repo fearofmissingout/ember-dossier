@@ -192,6 +192,66 @@ export function upgradeFacility(session: PlaytestSession, userId: string, facili
   return next;
 }
 
+export function advanceRoomDay(session: PlaytestSession, userId: string): PlaytestSession {
+  const next = clone(session);
+  ensureUser(next, userId);
+
+  if (next.room.base.objective.status !== "active") {
+    throw new Error("This room objective is already resolved.");
+  }
+
+  const previousDay = next.room.base.day;
+  const nextDay = previousDay + 1;
+  const foodNeed = Math.max(2, next.room.members.length * 2);
+  const waterNeed = Math.max(2, next.room.members.length * 2);
+  const foodShortage = spendWithShortage(next.room.base.resources, "food", foodNeed);
+  const waterShortage = spendWithShortage(next.room.base.resources, "water", waterNeed);
+  const shortagePressure = foodShortage + waterShortage;
+  const dormLevel = facilityLevel(next, "dorm");
+  const clinicLevel = facilityLevel(next, "clinic");
+  const watchtowerLevel = facilityLevel(next, "watchtower");
+  const recovery = 6 + dormLevel * 3 + clinicLevel * 2;
+  const recoveredCount = recoverSurvivors(next, recovery);
+
+  next.room.base.day = nextDay;
+  next.room.base.morale = clamp(next.room.base.morale + (shortagePressure > 0 ? -shortagePressure * 6 : 2), 0, 100);
+  next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel, 0, 100);
+
+  const logs = [
+    `Upkeep: food -${foodNeed - foodShortage}/${foodNeed}, water -${waterNeed - waterShortage}/${waterNeed}.`,
+    shortagePressure > 0
+      ? `Pressure: shortages hit morale and make the base louder. Morale -${shortagePressure * 6}, danger +${shortagePressure * 3}.`
+      : "Pressure: the base makes it through the night without ration panic. Morale +2.",
+    `Recovery: ${recoveredCount} survivor${recoveredCount === 1 ? "" : "s"} rested. Fatigue -${recovery} before injuries.`
+  ];
+
+  if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
+    next.room.base.objective.status = "won";
+    logs.push("Objective: the communications tower is stable. The room survives this scenario.");
+  } else if (next.room.base.day > next.room.base.objective.deadlineDay) {
+    next.room.base.objective.status = "lost";
+    logs.push("Objective: the repair deadline passed before the tower came online.");
+  } else {
+    logs.push(
+      `Objective: ${next.room.base.objective.repairedParts}/${next.room.base.objective.requiredParts} repaired, ${Math.max(
+        0,
+        next.room.base.objective.deadlineDay - next.room.base.day + 1
+      )} day(s) remain.`
+    );
+  }
+
+  next.room.feed.unshift({
+    body: logs.join("\n"),
+    id: `feed-day-${Date.now()}`,
+    kind: "system",
+    timestamp: `Day ${nextDay}`,
+    title: next.room.base.objective.status === "lost" ? "Objective failed" : `Day ${nextDay} settlement`
+  });
+
+  refreshUiState(next);
+  return next;
+}
+
 const resourceKeys = ["food", "water", "materials", "medicine", "fuel", "ammo"] as const;
 
 function ensureUser(session: PlaytestSession, userId: string) {
@@ -288,6 +348,36 @@ function applyProcessEffects(session: PlaytestSession, request: PlaytestExpediti
       target.injuries = [...target.injuries, process.injury];
     }
   }
+}
+
+function spendWithShortage(resources: ResourceBundle, key: ResourceKey, amount: number): number {
+  const spent = Math.min(resources[key], amount);
+  resources[key] -= spent;
+  return amount - spent;
+}
+
+function facilityLevel(session: PlaytestSession, facilityId: string): number {
+  return session.room.base.facilities.find((facility) => facility.id === facilityId)?.level ?? 0;
+}
+
+function recoverSurvivors(session: PlaytestSession, recovery: number): number {
+  let count = 0;
+  for (const survivor of session.account.survivors) {
+    if (survivor.status === "assigned") {
+      continue;
+    }
+
+    const injuryPenalty = survivor.injuries.length * 4;
+    const actualRecovery = Math.max(1, recovery - injuryPenalty);
+    const before = survivor.fatigue;
+    survivor.fatigue = clamp(survivor.fatigue - actualRecovery, 0, 100);
+    survivor.status = survivor.injuries.length > 0 ? "recovering" : "available";
+    if (survivor.fatigue < before) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 function refreshUiState(session: PlaytestSession) {

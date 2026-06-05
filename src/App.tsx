@@ -3,6 +3,7 @@ import {
   Activity,
   Archive,
   BookOpen,
+  CalendarDays,
   ClipboardList,
   Copy,
   Home,
@@ -18,7 +19,7 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
-import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./playtest/sim";
+import { advanceRoomDay, applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./playtest/sim";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { PlaytestSession } from "./playtest/types";
 import {
@@ -491,6 +492,7 @@ export default function App() {
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const squadReady = draft.squadIds.length >= 3 && draft.squadIds.length <= 5;
   const canAffordLoadout = resourceKeys.every((key) => state.resources[key] >= draft.loadout[key]);
+  const objectiveActive = session.room.base.objective.status === "active";
   const readiness = useMemo(() => calculateReadiness(selectedSquad, selectedLocation.recommendedStats), [selectedLocation, selectedSquad]);
   const roomPlayers = useMemo(
     () => Object.values(roomMeta.players).sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt)),
@@ -596,8 +598,19 @@ export default function App() {
     }
   }
 
+  function endRoomDay() {
+    try {
+      const nextSession = advanceRoomDay(session, session.account.profile.userId);
+      applySession(nextSession);
+      persistPlaytestProgress(nextSession);
+    } catch (error) {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    }
+  }
+
   function dispatchExpedition() {
-    if (!squadReady || !canAffordLoadout) {
+    if (!squadReady || !canAffordLoadout || !objectiveActive) {
       return;
     }
 
@@ -788,6 +801,7 @@ export default function App() {
             goExpedition={() => setView("expedition")}
             onContributionChange={updateContribution}
             onContribute={submitContribution}
+            onEndDay={endRoomDay}
           />
         )}
         {view === "survivors" && (
@@ -806,7 +820,8 @@ export default function App() {
             selectedLocation={selectedLocation}
             readiness={readiness}
             squadReady={squadReady}
-            canAffordLoadout={canAffordLoadout}
+            canAffordLoadout={canAffordLoadout && objectiveActive}
+            objectiveActive={objectiveActive}
             onToggleSurvivor={toggleSurvivor}
             onLocationChange={(locationId) => setDraft((current) => ({ ...current, locationId }))}
             onRiskChange={(risk) => setDraft((current) => ({ ...current, risk }))}
@@ -839,7 +854,8 @@ function Overview({
   contributionDraft,
   goExpedition,
   onContributionChange,
-  onContribute
+  onContribute,
+  onEndDay
 }: {
   state: GameState;
   session: PlaytestSession;
@@ -847,9 +863,11 @@ function Overview({
   goExpedition: () => void;
   onContributionChange: (key: ResourceKey, delta: number) => void;
   onContribute: () => void;
+  onEndDay: () => void;
 }) {
   const objective = session.room.base.objective;
   const objectiveProgress = Math.round((objective.repairedParts / objective.requiredParts) * 100);
+  const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
 
   return (
     <div className="view-grid">
@@ -873,6 +891,10 @@ function Overview({
       <section className="panel objective-band">
         <p className="eyebrow">Room Objective</p>
         <h2>{objective.title}</h2>
+        <div className={`objective-status ${objective.status}`}>
+          <span>Day {session.room.base.day}</span>
+          <strong>{objective.status.toUpperCase()}</strong>
+        </div>
         <div className="readiness-meter">
           <span>Repair Progress</span>
           <div>
@@ -882,8 +904,12 @@ function Overview({
         </div>
         <div className="metric-pair">
           <span>Deadline</span>
-          <strong>Day {objective.deadlineDay}</strong>
+          <strong>{daysRemaining} day(s)</strong>
         </div>
+        <button className="primary-button full-width" type="button" disabled={objective.status !== "active"} onClick={onEndDay}>
+          <CalendarDays size={18} aria-hidden="true" />
+          End day
+        </button>
       </section>
 
       <section className="panel wide">
@@ -1065,6 +1091,7 @@ function ExpeditionPrep({
   readiness,
   squadReady,
   canAffordLoadout,
+  objectiveActive,
   onToggleSurvivor,
   onLocationChange,
   onRiskChange,
@@ -1077,6 +1104,7 @@ function ExpeditionPrep({
   readiness: number;
   squadReady: boolean;
   canAffordLoadout: boolean;
+  objectiveActive: boolean;
   onToggleSurvivor: (id: string) => void;
   onLocationChange: (locationId: string) => void;
   onRiskChange: (risk: RiskStrategy) => void;
@@ -1190,7 +1218,8 @@ function ExpeditionPrep({
           派遣远征
         </button>
         {!squadReady && <p className="warning-copy">需要选择 3-5 名幸存者。</p>}
-        {!canAffordLoadout && <p className="warning-copy">携带物资超过基地库存。</p>}
+        {objectiveActive && !canAffordLoadout && <p className="warning-copy">携带物资超过基地库存。</p>}
+        {!objectiveActive && <p className="warning-copy">This room objective is already resolved. Create a new room to start over.</p>}
       </section>
     </div>
   );

@@ -7,7 +7,14 @@ import {
   loadPlaytestSession,
   savePlaytestSession
 } from "./state";
-import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./sim";
+import {
+  advanceRoomDay,
+  applyContribution,
+  assignSurvivorToRoom,
+  resolvePlaytestExpedition,
+  treatSurvivor,
+  upgradeFacility
+} from "./sim";
 
 describe("playtest state constructors", () => {
   test("creates account-bound assets separately from a room-bound base", () => {
@@ -181,5 +188,33 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.materials).toBeLessThan(20);
     expect(next.room.base.facilities[0].level).toBe(facility.level + 1);
     expect(next.room.feed[0]?.title).toContain("Facility upgraded");
+  });
+
+  test("advances a room day with upkeep, recovery, pressure, and feed", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    session.account.survivors[0].fatigue = 52;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.danger = 18;
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.base.day).toBe(2);
+    expect(next.room.base.resources.food).toBeLessThan(8);
+    expect(next.room.base.resources.water).toBeLessThan(8);
+    expect(next.account.survivors[0].fatigue).toBeLessThan(52);
+    expect(next.room.feed[0]?.title).toContain("Day 2");
+    expect(next.uiState.resources.food).toBe(next.room.base.resources.food);
+  });
+
+  test("marks the room objective lost when the deadline passes unfinished", () => {
+    const session = createStarterSession("user-a", "Alice", "room-a");
+    session.room.base.day = session.room.base.objective.deadlineDay;
+    session.room.base.objective.repairedParts = 0;
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.base.objective.status).toBe("lost");
+    expect(next.room.feed[0]?.title).toContain("Objective failed");
   });
 });

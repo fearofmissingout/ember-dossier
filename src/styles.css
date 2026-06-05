@@ -378,6 +378,39 @@ button:disabled {
   gap: 12px;
 }
 
+.objective-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #f5ead5;
+}
+
+.objective-status span {
+  color: #6a766f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.objective-status strong {
+  color: #563523;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.objective-status.won {
+  border-color: #2f756c;
+  background: #e6f0ea;
+}
+
+.objective-status.lost {
+  border-color: #a94731;
+  background: #fff0e5;
+}
+
 .contribution-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
