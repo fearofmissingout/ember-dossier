@@ -735,8 +735,10 @@ export default function App() {
         return;
       }
 
-      const next = resolveRoadEncounterChoice(journey, selectedRoadAction);
-      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      const next = resolveRoadEncounterChoice(journey, selectedRoadAction, selectedSquad, readiness);
+      if (!next.combat) {
+        next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      }
       setJourney(next);
       return;
     }

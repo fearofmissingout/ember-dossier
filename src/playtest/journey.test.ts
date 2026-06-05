@@ -247,6 +247,39 @@ describe("journey route generation", () => {
     expect(supported.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
   });
 
+  test("pushing through road hazards can trigger an ambush combat before the next stop", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "road-ambush-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+    const ambushed = resolveRoadEncounterChoice(advanced, "push", squad, 55);
+
+    expect(advanced.pendingRoadEvent).toMatchObject({
+      title: "Collapsed Stairwell",
+      tone: "hazard"
+    });
+    expect(ambushed.currentNodeIndex).toBe(1);
+    expect(ambushed.nodes[1]).toMatchObject({
+      title: "Road Ambush",
+      type: "combat"
+    });
+    expect(ambushed.nodes[2].title).toBe("Contact");
+    expect(ambushed.combat?.enemyName).toBe("Hallway Pack");
+    expect(ambushed.pendingRoadEvent).toBeNull();
+    expect(ambushed.logs.join("\n")).toContain("Road ambush: Collapsed Stairwell");
+  });
+
   test("travel plans change road risk and salvage rhythm", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.6);
     const session = createStarterSession("user-a", "Alice", "travel-plan-room");

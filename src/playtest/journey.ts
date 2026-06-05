@@ -2280,7 +2280,7 @@ function createRoadSupportChoice(
   };
 }
 
-export function resolveRoadEncounterChoice(journey: JourneyState, action: JourneyRoadEncounterAction): JourneyState {
+export function resolveRoadEncounterChoice(journey: JourneyState, action: JourneyRoadEncounterAction, squad: Survivor[] = [], readiness = 50): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const pending = next.pendingRoadEvent;
   const choice = pending?.choices.find((candidate) => candidate.id === action);
@@ -2297,6 +2297,7 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     next.pressure = clampPercent(next.pressure + fallbackPressure);
     next.rollShift += Math.max(0.04, choice.rollShift);
     outcome = `${withoutTerminalPunctuation(choice.fallbackLog ?? choice.successLog)}. Fatigue +${fallbackFatigue}, pressure ${formatSignedPercent(fallbackPressure)}.`;
+    queueRoadAmbush(next, pending, squad, readiness);
   } else {
     addResources(next.bonusReward, choice.reward);
     next.condition.fatigue = clampPercent(next.condition.fatigue + choice.fatigue);
@@ -2310,12 +2311,41 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     }, fatigue ${formatSignedNumber(choice.fatigue)}, hunger ${formatSignedNumber(choice.hunger)}, thirst ${formatSignedNumber(
       choice.thirst
     )}, pressure ${formatSignedPercent(choice.pressure)}.`;
+    if (pending.tone === "hazard" && choice.id === "push") {
+      queueRoadAmbush(next, pending, squad, readiness);
+    }
   }
 
   pushRoadEvent(next, pending.title, pending.tone, outcome, pending.segment);
   next.pendingRoadEvent = null;
-  next.currentNodeIndex = pending.nextNodeIndex;
+  if (!next.combat) {
+    next.currentNodeIndex = pending.nextNodeIndex;
+  }
   return next;
+}
+
+function queueRoadAmbush(next: JourneyState, pending: JourneyPendingRoadEncounter, squad: Survivor[], readiness: number) {
+  if (squad.length === 0 || next.combat) {
+    return;
+  }
+
+  const enemy = materializeRoadAmbushEnemy(next.locationFamily, pending.segment);
+  const ambushNode: JourneyNode = {
+    body: `${pending.title} turns loud enough to pull something off the route before the next stop.`,
+    enemy,
+    id: `${pending.id}-ambush`,
+    title: "Road Ambush",
+    type: "combat"
+  };
+  next.nodes.splice(pending.nextNodeIndex, 0, ambushNode);
+  next.currentNodeIndex = pending.nextNodeIndex;
+  next.combat = createCombatForNode(ambushNode, squad, readiness, next.support);
+  next.logs.push(`Road ambush: ${pending.title}. The bad route decision turns into contact before the next stop.`);
+}
+
+function materializeRoadAmbushEnemy(family: LocationFamily, segment: number): JourneyEnemy {
+  const table = familyEnemies[family] ?? familyEnemies.urban;
+  return materializeEnemy(table[Math.max(0, segment - 1) % table.length]);
 }
 
 function pushRoadEvent(journey: JourneyState, title: string, tone: JourneyRoadEventTone, outcome: string, segment = journey.condition.distance) {
