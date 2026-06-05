@@ -154,6 +154,14 @@ describe("journey route generation", () => {
     expect(advanced.fieldSupplies.water).toBe(0);
     expect(advanced.pendingRoadEvent?.title).toBe("Thorn Wire Ditch");
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
+    expect(advanced.travelHistory[0]).toMatchObject({
+      effects: expect.arrayContaining(["Food -1", "Water -1", "Fatigue +7", "Pressure -1%"]),
+      planLabel: "Steady march",
+      segment: 1,
+      title: "Field Hush",
+      tone: "safe"
+    });
+    expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 12");
   });
 
   test("travel segments pause on road encounters before the next node", () => {

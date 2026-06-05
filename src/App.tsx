@@ -1597,7 +1597,7 @@ function JourneyPanel({
   const outlook = getJourneyOutlook(journey);
   const pendingRoad = journey.pendingRoadEvent;
   const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction";
-  const nodeTypeLabel = pendingRoad ? `road ${pendingRoad.tone}` : activeNode.type;
+  const nodeTypeLabel = pendingRoad ? (pendingRoad.tone === "road" ? "road fork" : `road ${pendingRoad.tone}`) : activeNode.type;
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
@@ -1635,6 +1635,26 @@ function JourneyPanel({
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
       </div>
+      {journey.travelHistory.length > 0 && (
+        <div className="travel-record-strip" aria-label="Road diary">
+          {journey.travelHistory.slice(-3).map((record) => (
+            <div className={`travel-record-card ${record.tone}`} key={`${journey.id}-travel-${record.segment}`}>
+              <div>
+                <span>Segment {record.segment}</span>
+                <strong>{record.title}</strong>
+              </div>
+              <p>{record.body}</p>
+              <small>{record.planLabel}</small>
+              <small>{record.conditionText}</small>
+              <div>
+                {record.effects.map((effect) => (
+                  <b key={`${record.segment}-${effect}`}>{effect}</b>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {journey.roadEvents.length > 0 && (
         <div className="road-event-strip" aria-label="Recent road events">
           {journey.roadEvents.slice(-3).map((event) => (

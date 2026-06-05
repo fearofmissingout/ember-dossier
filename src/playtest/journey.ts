@@ -145,6 +145,19 @@ export type JourneyRoadEventRecord = {
   tone: JourneyRoadEventTone;
 };
 
+export type JourneyTravelTone = "safe" | "warning" | "danger";
+
+export type JourneyTravelRecord = {
+  body: string;
+  conditionText: string;
+  effects: string[];
+  planLabel: string;
+  pressureDelta: number;
+  segment: number;
+  title: string;
+  tone: JourneyTravelTone;
+};
+
 export type JourneyRoadEncounterChoice = {
   fallbackLog?: string;
   fatigue: number;
@@ -242,6 +255,7 @@ export type JourneyState = {
   objectiveBonus: number;
   support: ExpeditionSupport;
   trophies: string[];
+  travelHistory: JourneyTravelRecord[];
   travelPlan: JourneyTravelPlan;
   woundedSurvivorIds: string[];
 };
@@ -669,6 +683,65 @@ const familyCamps: Record<LocationFamily, { body: string; title: string }> = {
   }
 };
 
+const familyTravelMoods: Record<LocationFamily, Array<{ body: string; title: string }>> = {
+  resources: [
+    {
+      body: "Water ticks behind the walls and every drip makes the squad count its bottles again.",
+      title: "Concrete Drip"
+    },
+    {
+      body: "A service map is still bolted to the wall, warped but useful enough for one careful turn.",
+      title: "Service Map"
+    },
+    {
+      body: "Old machinery breathes heat into the corridor and turns backpacks into anchors.",
+      title: "Boiler Heat"
+    }
+  ],
+  urban: [
+    {
+      body: "Window glass clicks in an empty office block, one pane at a time, like someone taking attendance.",
+      title: "Window Static"
+    },
+    {
+      body: "The squad cuts through an apartment landing where every closed door has a different smell.",
+      title: "Tenant Row"
+    },
+    {
+      body: "A stairwell sign points both up and down. The fastest path is still a guess.",
+      title: "Wrong Floor"
+    }
+  ],
+  weird: [
+    {
+      body: "The route echoes half a second late, forcing the squad to move by sight instead of sound.",
+      title: "Wrong Echo"
+    },
+    {
+      body: "A corridor repeats the same painted number until the map stops being funny.",
+      title: "Loop Mark"
+    },
+    {
+      body: "Something polite watches from the walls and never quite interrupts.",
+      title: "Quiet Witness"
+    }
+  ],
+  wilds: [
+    {
+      body: "The fields go quiet enough that boots in the grass sound like a bad decision.",
+      title: "Field Hush"
+    },
+    {
+      body: "Dust hangs low across the lane, hiding fences, ditches, and the first useful scrap.",
+      title: "Dry Lane"
+    },
+    {
+      body: "A line of old scare tape snaps in the wind and measures the squad's patience.",
+      title: "Tape Wind"
+    }
+  ]
+};
+
 const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
   resources: [
     {
@@ -930,6 +1003,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     objectiveBonus: 0,
     support,
     trophies: [],
+    travelHistory: [],
     travelPlan: "steady",
     woundedSurvivorIds: []
   };
@@ -1351,6 +1425,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number, nextNodeIndex = journey.currentNodeIndex + 1): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
+  const beforePressure = next.pressure;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
@@ -1369,6 +1444,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
   next.rollShift += (rationPressure + planPressure) / 100 + next.condition.fatigue / 350;
 
+  const pressureDelta = next.pressure - beforePressure;
   const rationLog = [
     foodSpent ? "food -1" : "no food: hunger rises",
     waterSpent ? "water -1" : "no water: thirst rises"
@@ -1376,7 +1452,19 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   next.logs.push(
     `Road: segment ${next.condition.distance}, ${plan.label}. ${rationLog}${planSupplyResult.log ? `, ${planSupplyResult.log}` : ""}. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
       rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
-    )}.`
+      )}.`
+  );
+  next.travelHistory.push(
+    createTravelRecord(next, plan, {
+      effects: [
+        foodSpent ? "Food -1" : "No food",
+        waterSpent ? "Water -1" : "No water",
+        ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
+        `Fatigue +${fatigueGain}`,
+        `Pressure ${formatSignedPercent(pressureDelta)}`
+      ],
+      pressureDelta
+    })
   );
 
   queueRoadEncounter(next, squad, plan.id, routeSkill, nextNodeIndex);
@@ -2142,6 +2230,47 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
     log: "",
     pressure: 0
   };
+}
+
+function createTravelRecord(
+  journey: JourneyState,
+  plan: JourneyTravelPlanOption,
+  result: {
+    effects: string[];
+    pressureDelta: number;
+  }
+): JourneyTravelRecord {
+  const moodTable = familyTravelMoods[journey.locationFamily] ?? familyTravelMoods.urban;
+  const mood = moodTable[Math.max(0, journey.condition.distance - 1) % moodTable.length];
+  const conditionText = `Fatigue ${journey.condition.fatigue} / Hunger ${journey.condition.hunger} / Thirst ${journey.condition.thirst}`;
+
+  return {
+    body: `${mood.body} ${plan.text}`,
+    conditionText,
+    effects: result.effects,
+    planLabel: plan.label,
+    pressureDelta: result.pressureDelta,
+    segment: journey.condition.distance,
+    title: mood.title,
+    tone: travelToneFor(journey)
+  };
+}
+
+function travelToneFor(journey: JourneyState): JourneyTravelTone {
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  if (journey.pressure >= 78 || worstCondition >= 82) {
+    return "danger";
+  }
+
+  if (journey.pressure >= 52 || worstCondition >= 58) {
+    return "warning";
+  }
+
+  return "safe";
+}
+
+function sentenceCase(text: string) {
+  return text.length ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
 }
 
 function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: JourneyTravelPlan, routeSkill: number, nextNodeIndex: number) {

@@ -993,6 +993,104 @@ button:disabled {
   color: #8a3524;
 }
 
+.travel-record-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.travel-record-card {
+  display: grid;
+  min-width: 0;
+  min-height: 148px;
+  gap: 6px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #c8d1c2;
+  border-radius: 8px;
+  background: #f8fbf3;
+}
+
+.travel-record-card > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.travel-record-card span {
+  color: #4d6d54;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.travel-record-card strong {
+  color: #334a38;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.travel-record-card p {
+  margin: 0;
+  color: #5f6e62;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.travel-record-card small {
+  color: #6c755f;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.travel-record-card > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.travel-record-card b {
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: #e4eddb;
+  color: #355f43;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.travel-record-card.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.travel-record-card.warning span,
+.travel-record-card.warning strong,
+.travel-record-card.warning b {
+  color: #7b5a13;
+}
+
+.travel-record-card.warning b {
+  background: #f4e7b8;
+}
+
+.travel-record-card.danger {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.travel-record-card.danger span,
+.travel-record-card.danger strong,
+.travel-record-card.danger b {
+  color: #8a3524;
+}
+
+.travel-record-card.danger b {
+  background: #f3d1c4;
+}
+
 .road-event-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1745,6 +1843,7 @@ button:disabled {
   .facility-grid,
   .frontline-grid,
   .journey-status-grid,
+  .travel-record-strip,
   .road-event-strip {
     grid-template-columns: 1fr 1fr;
   }
@@ -1825,6 +1924,7 @@ button:disabled {
   .frontline-grid,
   .archive-grid,
   .journey-status-grid,
+  .travel-record-strip,
   .road-event-strip,
   .resource-grid {
     grid-template-columns: 1fr;
