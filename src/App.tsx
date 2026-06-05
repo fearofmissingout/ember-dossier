@@ -33,6 +33,7 @@ import {
 } from "./playtest/sim";
 import {
   addResources,
+  advanceJourneyTravel,
   createCombatForNode,
   createJourney,
   spendFieldSupplyFromPriority,
@@ -707,7 +708,7 @@ export default function App() {
       return;
     }
 
-    const next = structuredClone(journey) as JourneyState;
+    let next = structuredClone(journey) as JourneyState;
     if (node.type === "event") {
       const choice = action === "careful" ? node.careful : node.force;
       if (choice) {
@@ -739,6 +740,7 @@ export default function App() {
       }
     }
 
+    next = advanceJourneyTravel(next, selectedSquad, readiness);
     next.currentNodeIndex += 1;
     next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
     setJourney(next);
@@ -749,7 +751,13 @@ export default function App() {
       return;
     }
 
-    setJourney(resolveCombatRound(journey, action, selectedSquad, readiness));
+    const resolved = resolveCombatRound(journey, action, selectedSquad, readiness);
+    if (resolved.currentNodeIndex !== journey.currentNodeIndex) {
+      setJourney(advanceJourneyTravel(resolved, selectedSquad, readiness));
+      return;
+    }
+
+    setJourney(resolved);
   }
 
   function finishJourney(completedJourney: JourneyState) {
@@ -763,6 +771,7 @@ export default function App() {
       randomRolls: adjustedRolls,
       risk: completedJourney.risk,
       survivorIds: completedJourney.squadIds,
+      travelFatigue: completedJourney.condition.fatigue,
       userId: session.account.profile.userId
     });
     applyJourneyBonus(result.session, result.report, completedJourney.bonusReward);
@@ -1481,6 +1490,15 @@ function JourneyPanel({
           <i>
             <b style={{ width: `${Math.max(0, Math.min(100, journey.pressure))}%` }} />
           </i>
+        </div>
+        <div className="journey-condition">
+          <span>Road condition</span>
+          <div>
+            <strong>Dist {journey.condition.distance}</strong>
+            <strong>Fatigue {journey.condition.fatigue}</strong>
+            <strong>Hunger {journey.condition.hunger}</strong>
+            <strong>Thirst {journey.condition.thirst}</strong>
+          </div>
         </div>
         <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
         <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />

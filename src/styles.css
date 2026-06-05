@@ -824,11 +824,12 @@ button:disabled {
 
 .journey-status-grid {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) repeat(2, minmax(180px, 1fr));
+  grid-template-columns: minmax(130px, 0.8fr) repeat(3, minmax(160px, 1fr));
   gap: 8px;
 }
 
 .journey-pressure,
+.journey-condition,
 .journey-resource-strip {
   min-width: 0;
   padding: 9px;
@@ -843,6 +844,7 @@ button:disabled {
 }
 
 .journey-pressure span,
+.journey-condition > span,
 .journey-resource-strip > span {
   color: #7a5d3f;
   font-size: 11px;
@@ -893,6 +895,26 @@ button:disabled {
 .journey-resource-strip small.has-value {
   background: #e2efe1;
   color: #2d6348;
+}
+
+.journey-condition {
+  display: grid;
+  gap: 7px;
+}
+
+.journey-condition div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.journey-condition strong {
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: #efe4cf;
+  color: #5d4f3d;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .journey-node {

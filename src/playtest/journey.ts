@@ -74,6 +74,13 @@ export type JourneyCombat = {
   reward: ResourceBundle;
 };
 
+export type JourneyCondition = {
+  distance: number;
+  fatigue: number;
+  hunger: number;
+  thirst: number;
+};
+
 export type JourneyState = {
   bonusReward: ResourceBundle;
   combat: JourneyCombat | null;
@@ -88,6 +95,7 @@ export type JourneyState = {
   risk: RiskStrategy;
   rollShift: number;
   squadIds: string[];
+  condition: JourneyCondition;
   support: ExpeditionSupport;
 };
 
@@ -506,6 +514,12 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
     squadIds: [...draft.squadIds],
+    condition: {
+      distance: 0,
+      fatigue: draft.risk === "greedy" ? 8 : draft.risk === "cautious" ? 3 : 5,
+      hunger: 0,
+      thirst: 0
+    },
     support
   };
 }
@@ -652,6 +666,48 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   return next;
 }
 
+export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number): JourneyState {
+  const next = structuredClone(journey) as JourneyState;
+  const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
+  const pressureFatigue = Math.floor(next.pressure / 25);
+  const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
+  const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount;
+  const fatigueGain = Math.max(3, riskFatigue + pressureFatigue - routeSkill);
+  const foodSpent = spendFieldSupply(next, "food", 1);
+  const waterSpent = spendFieldSupply(next, "water", 1);
+  const rationPressure = (foodSpent ? 0 : 8) + (waterSpent ? 0 : 10);
+
+  next.condition.distance += 1;
+  next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
+  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18));
+  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22));
+  next.pressure = clampPercent(next.pressure + rationPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
+  next.rollShift += rationPressure / 100 + next.condition.fatigue / 350;
+
+  const rationLog = [
+    foodSpent ? "food -1" : "no food: hunger rises",
+    waterSpent ? "water -1" : "no water: thirst rises"
+  ].join(", ");
+  next.logs.push(
+    `Road: segment ${next.condition.distance}, ${rationLog}. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
+      rationPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
+    )}.`
+  );
+
+  const scavengeRoll = Math.random() + routeSkill * 0.04 - next.pressure / 250;
+  if (scavengeRoll > 0.72) {
+    const key = travelScavengeKeys[next.condition.distance % travelScavengeKeys.length];
+    next.bonusReward[key] += 1;
+    next.logs.push(`Road find: the squad spots a usable cache between stops. ${resourceLabels[key]} +1.`);
+  } else if (scavengeRoll < 0.12) {
+    next.pressure = clampPercent(next.pressure + 6);
+    next.rollShift += 0.04;
+    next.logs.push("Road snag: a bad detour costs time and makes the next contact feel closer. Pressure +6%.");
+  }
+
+  return next;
+}
+
 export function addResources(target: ResourceBundle, source: ResourceBundle) {
   for (const key of resourceKeys) {
     target[key] += source[key];
@@ -782,6 +838,12 @@ function formatBundle(resources: ResourceBundle) {
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
 }
 
+function formatSignedPercent(value: number) {
+  return `${value >= 0 ? "+" : ""}${value}%`;
+}
+
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length) % items.length];
 }
+
+const travelScavengeKeys: ResourceKey[] = ["materials", "food", "water", "medicine", "fuel", "ammo"];

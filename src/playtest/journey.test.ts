@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createJourney, createCombatForNode, resolveCombatRound, spendFieldSupplyFromPriority } from "./journey";
+import { advanceJourneyTravel, createJourney, createCombatForNode, resolveCombatRound, spendFieldSupplyFromPriority } from "./journey";
 import { createStarterSession } from "./state";
 
 describe("journey route generation", () => {
@@ -97,6 +97,30 @@ describe("journey route generation", () => {
 
     expect(spendFieldSupplyFromPriority(journey, ["ammo", "water", "food"], 1)).toBe("water");
     expect(journey.fieldSupplies.water).toBe(1);
+  });
+
+  test("travel segments consume rations and update road condition", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "road-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+
+    expect(advanced.condition.distance).toBe(1);
+    expect(advanced.condition.fatigue).toBeGreaterThan(journey.condition.fatigue);
+    expect(advanced.fieldSupplies.food).toBe(0);
+    expect(advanced.fieldSupplies.water).toBe(0);
+    expect(advanced.logs.join("\n")).toContain("Road: segment 1");
   });
 
   test("tactics expose armored enemies and improve later strike damage", () => {

@@ -275,6 +275,35 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("Journey: Close Quarters");
   });
 
+  test("journey fatigue carries into survivor settlement", () => {
+    let session = createStarterSession("user-a", "Alice", "fatigue-room");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      travelFatigue: 40,
+      userId: "user-a"
+    });
+
+    expect(result.session.account.survivors[0].fatigue).toBeGreaterThan(session.account.survivors[0].fatigue + 6);
+    expect(result.session.account.survivors[0].xp).toBeGreaterThan(8);
+  });
+
   test("treats injured survivors by spending medicine", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     const survivorId = session.account.survivors[0].id;

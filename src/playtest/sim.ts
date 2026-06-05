@@ -7,6 +7,7 @@ import type { BaseWorkType, PlaytestSession } from "./types";
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   journeyLogs?: string[];
   survivorIds: string[];
+  travelFatigue?: number;
   userId: string;
 };
 
@@ -156,7 +157,7 @@ export function resolvePlaytestExpedition(
     }
 
     const participated = request.survivorIds.includes(survivor.id);
-    const nextXp = participated ? survivor.xp + 8 : survivor.xp;
+    const nextXp = participated ? survivor.xp + 8 + Math.floor((request.travelFatigue ?? 0) / 25) : survivor.xp;
     const nextLevel = participated && nextXp >= survivor.level * 20 ? survivor.level + 1 : survivor.level;
     if (nextLevel > survivor.level) {
       const unlocked = survivorPerkDetails({ ...survivor, level: nextLevel, xp: nextXp }).filter(
@@ -169,7 +170,7 @@ export function resolvePlaytestExpedition(
 
     return {
       ...survivor,
-      fatigue: updated.fatigue,
+      fatigue: participated ? clamp(updated.fatigue + Math.floor((request.travelFatigue ?? 0) / 5), 0, 100) : updated.fatigue,
       injuries: updated.injuries,
       level: nextLevel,
       status: participated ? "available" : survivor.status,
