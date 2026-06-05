@@ -8,11 +8,12 @@ describe("supabase config", () => {
 
   test("normalizes a bare Supabase host from environment secrets", async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "project.supabase.co ");
-    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "\uFEFFpublishable-key ");
     vi.resetModules();
 
     const { supabaseConfig } = await import("./supabase");
 
     expect(supabaseConfig?.url).toBe("https://project.supabase.co");
+    expect(supabaseConfig?.publishableKey).toBe("publishable-key");
   });
 });

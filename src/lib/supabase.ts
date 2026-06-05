@@ -1,19 +1,20 @@
 const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined);
 const supabasePublishableKey = (
   (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined
-)?.trim();
+);
+const cleanSupabasePublishableKey = cleanEnvValue(supabasePublishableKey);
 
-export const hasSupabaseConfig = Boolean(supabaseUrl && supabasePublishableKey);
+export const hasSupabaseConfig = Boolean(supabaseUrl && cleanSupabasePublishableKey);
 
 export const supabaseConfig = hasSupabaseConfig
   ? {
-      publishableKey: supabasePublishableKey as string,
+      publishableKey: cleanSupabasePublishableKey,
       url: supabaseUrl as string
     }
   : null;
 
 function normalizeSupabaseUrl(value: string | undefined) {
-  const trimmed = value?.trim();
+  const trimmed = cleanEnvValue(value);
   if (!trimmed) {
     return "";
   }
@@ -25,4 +26,8 @@ function normalizeSupabaseUrl(value: string | undefined) {
   } catch {
     return trimmed;
   }
+}
+
+function cleanEnvValue(value: string | undefined) {
+  return value?.replace(/^\uFEFF/, "").trim() ?? "";
 }

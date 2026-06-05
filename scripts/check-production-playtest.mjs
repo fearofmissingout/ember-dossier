@@ -7,7 +7,7 @@ loadEnvFile(".env.local");
 loadEnvFile("../../.env.local");
 
 const supabaseUrl = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
-const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+const publishableKey = cleanEnvValue(process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY);
 
 await checkProductionBundle();
 await checkGuestRoomRoundTrip();
@@ -38,13 +38,17 @@ function loadEnvFile(path) {
 }
 
 function normalizeSupabaseUrl(value) {
-  const trimmed = value?.trim();
+  const trimmed = cleanEnvValue(value);
   if (!trimmed) {
     return "";
   }
 
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   return new URL(withProtocol).origin;
+}
+
+function cleanEnvValue(value) {
+  return value?.replace(/^\uFEFF/, "").trim() ?? "";
 }
 
 async function checkProductionBundle() {
