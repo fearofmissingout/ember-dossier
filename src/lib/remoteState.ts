@@ -27,8 +27,18 @@ export type RemoteRoomSnapshot = {
   room: RoomMeta;
 };
 
+type RemoteRoomEntry = {
+  gameState: GameState;
+  room: RoomMeta;
+};
+
+type RemoteRoomCollectionSnapshot = {
+  version: 3;
+  rooms: Record<string, RemoteRoomEntry>;
+};
+
 type DemoSnapshotRow = {
-  state: GameState | RemoteRoomSnapshot;
+  state: GameState | RemoteRoomSnapshot | RemoteRoomCollectionSnapshot;
   updated_at: string;
 };
 
@@ -47,7 +57,7 @@ export async function loadRemoteDemoState(
 
   const endpoint = createDemoSnapshotsUrl();
   endpoint.searchParams.set("select", "state,updated_at");
-  endpoint.searchParams.set("room_slug", `eq.${roomSlug}`);
+  endpoint.searchParams.set("room_slug", `eq.${defaultRoomSlug}`);
   endpoint.searchParams.set("limit", "1");
 
   const response = await fetch(endpoint, {
@@ -62,8 +72,13 @@ export async function loadRemoteDemoState(
   const row = rows[0];
 
   if (row?.state) {
-    const snapshot = normalizeSnapshot(row.state, player);
-    return { state: snapshot.gameState, mode: "remote", meta: snapshot.room, updatedAt: row.updated_at };
+    const collection = normalizeCollection(row.state, player);
+    const entry = collection.rooms[roomSlug];
+
+    if (entry) {
+      const preparedRoom = prepareRoomMeta(entry.room, player, false);
+      return { state: entry.gameState, mode: "remote", meta: preparedRoom, updatedAt: row.updated_at };
+    }
   }
 
   const meta = createRoomMeta(player);
@@ -85,15 +100,16 @@ export async function saveRemoteDemoState(
   const endpoint = createDemoSnapshotsUrl();
   endpoint.searchParams.set("on_conflict", "room_slug");
   const nextMeta = prepareRoomMeta(meta, player, options.incrementRevision !== false);
+  const collection = await loadRoomCollection();
+  collection.rooms[roomSlug] = {
+    gameState: state,
+    room: nextMeta
+  };
 
   const response = await fetch(endpoint, {
     body: JSON.stringify({
-      room_slug: roomSlug,
-      state: {
-        version: 2,
-        gameState: state,
-        room: nextMeta
-      } satisfies RemoteRoomSnapshot,
+      room_slug: defaultRoomSlug,
+      state: collection,
       updated_at: new Date().toISOString()
     }),
     headers: createSupabaseHeaders({
@@ -117,6 +133,52 @@ export function createRoomMeta(player?: RoomPlayer): RoomMeta {
   return prepareRoomMeta({ players: {}, revision: 0 }, player, false);
 }
 
+async function loadRoomCollection(): Promise<RemoteRoomCollectionSnapshot> {
+  const endpoint = createDemoSnapshotsUrl();
+  endpoint.searchParams.set("select", "state");
+  endpoint.searchParams.set("room_slug", `eq.${defaultRoomSlug}`);
+  endpoint.searchParams.set("limit", "1");
+
+  const response = await fetch(endpoint, {
+    headers: createSupabaseHeaders()
+  });
+
+  if (!response.ok) {
+    throw await createRemoteStateError(response);
+  }
+
+  const rows = (await response.json()) as Array<{ state: DemoSnapshotRow["state"] }>;
+  return normalizeCollection(rows[0]?.state ?? createInitialState());
+}
+
+function normalizeCollection(rawState: GameState | RemoteRoomSnapshot | RemoteRoomCollectionSnapshot, player?: RoomPlayer): RemoteRoomCollectionSnapshot {
+  if (isRemoteRoomCollectionSnapshot(rawState)) {
+    return {
+      version: 3,
+      rooms: Object.fromEntries(
+        Object.entries(rawState.rooms).map(([roomSlug, entry]) => [
+          roomSlug,
+          {
+            gameState: entry.gameState,
+            room: prepareRoomMeta(entry.room, roomSlug === defaultRoomSlug ? player : undefined, false)
+          }
+        ])
+      )
+    };
+  }
+
+  const snapshot = normalizeSnapshot(rawState, player);
+  return {
+    version: 3,
+    rooms: {
+      [defaultRoomSlug]: {
+        gameState: snapshot.gameState,
+        room: snapshot.room
+      }
+    }
+  };
+}
+
 function normalizeSnapshot(rawState: GameState | RemoteRoomSnapshot, player?: RoomPlayer): RemoteRoomSnapshot {
   if (isRemoteRoomSnapshot(rawState)) {
     return {
@@ -135,6 +197,12 @@ function normalizeSnapshot(rawState: GameState | RemoteRoomSnapshot, player?: Ro
 
 function isRemoteRoomSnapshot(value: GameState | RemoteRoomSnapshot): value is RemoteRoomSnapshot {
   return "version" in value && value.version === 2 && "gameState" in value && "room" in value;
+}
+
+function isRemoteRoomCollectionSnapshot(
+  value: GameState | RemoteRoomSnapshot | RemoteRoomCollectionSnapshot
+): value is RemoteRoomCollectionSnapshot {
+  return "version" in value && value.version === 3 && "rooms" in value;
 }
 
 function prepareRoomMeta(meta: RoomMeta, player: RoomPlayer | undefined, incrementRevision: boolean): RoomMeta {

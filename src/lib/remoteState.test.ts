@@ -26,12 +26,16 @@ describe("remote room state", () => {
       json: async () => [
         {
           state: {
-            gameState: state,
-            room: {
-              players: {},
-              revision: 4
+            rooms: {
+              "room-test": {
+                gameState: state,
+                room: {
+                  players: {},
+                  revision: 4
+                }
+              }
             },
-            version: 2
+            version: 3
           },
           updated_at: "2026-06-05T00:01:00.000Z"
         }
@@ -49,7 +53,7 @@ describe("remote room state", () => {
 
     const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
     expect(String(url)).toContain("/rest/v1/demo_snapshots");
-    expect(url.searchParams.get("room_slug")).toBe("eq.room-test");
+    expect(url.searchParams.get("room_slug")).toBe("eq.ember-demo");
     expect(init.headers).toMatchObject({
       Authorization: "Bearer publishable-key",
       apikey: "publishable-key"
@@ -61,10 +65,16 @@ describe("remote room state", () => {
     vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
     vi.resetModules();
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => ""
-    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => [],
+        ok: true
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => ""
+      });
     vi.stubGlobal("fetch", fetchMock);
 
     const { saveRemoteDemoState } = await import("./remoteState");
@@ -75,7 +85,7 @@ describe("remote room state", () => {
 
     await saveRemoteDemoState("room-test", createInitialState(), meta, player);
 
-    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    const [url, init] = fetchMock.mock.calls[1] as [URL, RequestInit];
     expect(url.searchParams.get("on_conflict")).toBe("room_slug");
     expect(init.method).toBe("POST");
 
@@ -87,9 +97,9 @@ describe("remote room state", () => {
     }
 
     const body = JSON.parse(init.body as string);
-    expect(body.room_slug).toBe("room-test");
-    expect(body.state.version).toBe(2);
-    expect(body.state.room.revision).toBe(3);
-    expect(body.state.room.players[player.id].name).toBe("Player");
+    expect(body.room_slug).toBe("ember-demo");
+    expect(body.state.version).toBe(3);
+    expect(body.state.rooms["room-test"].room.revision).toBe(3);
+    expect(body.state.rooms["room-test"].room.players[player.id].name).toBe("Player");
   });
 });
