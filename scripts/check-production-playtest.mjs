@@ -10,6 +10,7 @@ const supabaseUrl = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
 const publishableKey = cleanEnvValue(process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY);
 
 await checkProductionBundle();
+await checkPlaytestSignupEndpoint();
 await checkGuestRoomRoundTrip();
 
 function loadEnvFile(path) {
@@ -83,7 +84,14 @@ async function checkProductionBundle() {
   }
 
   const asset = await assetResponse.text();
-  const requiredStrings = ["Continue as guest", "Account login", "/rest/v1/demo_snapshots", "Room Objective", "Contribute"];
+  const requiredStrings = [
+    "Continue as guest",
+    "Create playtest account",
+    "/api/auth/register",
+    "/rest/v1/demo_snapshots",
+    "Room Objective",
+    "Contribute"
+  ];
   const missingStrings = requiredStrings.filter((text) => !asset.includes(text));
 
   if (missingStrings.length > 0) {
@@ -91,6 +99,27 @@ async function checkProductionBundle() {
   }
 
   console.log(`Production bundle is reachable and contains playtest entry points. asset=${assetPath}`);
+}
+
+async function checkPlaytestSignupEndpoint() {
+  const endpoint = new URL("/api/auth/register", productionUrl);
+  const response = await fetch(endpoint, {
+    body: JSON.stringify({
+      password: "short",
+      username: "!"
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+
+  const text = await response.text();
+  if (response.status === 404 || !text.includes("message")) {
+    throw new Error(`Playtest signup endpoint is not reachable. status=${response.status} body=${text.slice(0, 120)}`);
+  }
+
+  console.log(`Playtest signup endpoint is reachable. status=${response.status}`);
 }
 
 async function checkGuestRoomRoundTrip() {

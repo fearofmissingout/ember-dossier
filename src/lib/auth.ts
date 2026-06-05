@@ -6,6 +6,19 @@ export type AuthSession = {
   userId: string;
 };
 
+export function normalizePlaytestUsername(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  return /^[a-z0-9_]{3,20}$/.test(normalized) ? normalized : "";
+}
+
+export function isEmailLogin(value: string): boolean {
+  return value.includes("@");
+}
+
+export function usernameToPlaytestEmail(username: string): string {
+  return `${normalizePlaytestUsername(username)}@players.ember-dossier.example.com`;
+}
+
 const emailConfirmationRequiredMessage =
   "账号已创建，但 Supabase 仍要求邮箱确认。请去邮箱点击确认链接，或先点 Continue as guest 试玩；如果想注册后立刻进入，请在 Supabase Auth 里关闭 Confirm email。";
 
@@ -50,6 +63,26 @@ export async function signUpWithPassword(email: string, password: string): Promi
   return readAuthSessionResponse(response, emailConfirmationRequiredMessage);
 }
 
+export async function signUpWithUsername(username: string, password: string): Promise<AuthSession> {
+  const normalizedUsername = normalizePlaytestUsername(username);
+  if (!normalizedUsername) {
+    throw new Error("Username must be 3-20 letters, numbers, or underscores.");
+  }
+
+  const response = await fetch("/api/auth/register", {
+    body: JSON.stringify({
+      password,
+      username: normalizedUsername
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+
+  return readPlaytestSignupResponse(response);
+}
+
 export async function signInWithPassword(email: string, password: string): Promise<AuthSession> {
   if (!supabaseConfig) {
     throw new Error("Supabase is not configured.");
@@ -65,6 +98,15 @@ export async function signInWithPassword(email: string, password: string): Promi
   });
 
   return readAuthSessionResponse(response, "Supabase did not return a session for this email and password.");
+}
+
+export async function signInWithUsername(username: string, password: string): Promise<AuthSession> {
+  const normalizedUsername = normalizePlaytestUsername(username);
+  if (!normalizedUsername) {
+    throw new Error("Username must be 3-20 letters, numbers, or underscores.");
+  }
+
+  return signInWithPassword(usernameToPlaytestEmail(normalizedUsername), password);
 }
 
 export function readSessionFromHash(): AuthSession | null {
@@ -182,6 +224,23 @@ async function readAuthSessionResponse(response: Response, emptySessionMessage: 
     accessToken: payload.access_token,
     email: payload.user.email ?? null,
     userId: payload.user.id
+  };
+}
+
+async function readPlaytestSignupResponse(response: Response): Promise<AuthSession> {
+  if (!response.ok) {
+    throw new Error(await readAuthError(response));
+  }
+
+  const payload = (await response.json()) as Partial<AuthSession>;
+  if (!payload.accessToken || !payload.userId) {
+    throw new Error("Username signup did not return a session.");
+  }
+
+  return {
+    accessToken: payload.accessToken,
+    email: payload.email ?? null,
+    userId: payload.userId
   };
 }
 

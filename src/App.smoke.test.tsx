@@ -34,10 +34,10 @@ describe("App smoke render", () => {
 
     expect(html).toContain("Ember Dossier");
     expect(html).toContain("Playtest Login");
-    expect(html).toContain("Email");
+    expect(html).toContain("Username");
     expect(html).toContain("Password");
     expect(html).toContain("Sign in");
-    expect(html).toContain("Create account");
+    expect(html).toContain("Create playtest account");
     expect(html).toContain("Continue as guest");
   });
 });

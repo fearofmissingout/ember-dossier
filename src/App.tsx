@@ -24,10 +24,13 @@ import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePl
 import type { PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
+  isEmailLogin,
   readSessionFromHash,
   readTokenHashFromUrl,
   signInWithPassword,
+  signInWithUsername,
   signUpWithPassword,
+  signUpWithUsername,
   verifyTokenHash,
   type AuthSession
 } from "./lib/auth";
@@ -143,7 +146,7 @@ export default function App() {
 
   async function submitPasswordAuth(mode: "signin" | "signup") {
     if (!authEmail.trim()) {
-      setAuthNotice("Enter an email first.");
+      setAuthNotice("Enter a username first.");
       return;
     }
 
@@ -155,10 +158,15 @@ export default function App() {
     try {
       setAuthSubmitting(true);
       setAuthNotice(null);
+      const login = authEmail.trim();
       const nextSession =
         mode === "signin"
-          ? await signInWithPassword(authEmail.trim(), authPassword)
-          : await signUpWithPassword(authEmail.trim(), authPassword);
+          ? isEmailLogin(login)
+            ? await signInWithPassword(login, authPassword)
+            : await signInWithUsername(login, authPassword)
+          : isEmailLogin(login)
+            ? await signUpWithPassword(login, authPassword)
+            : await signUpWithUsername(login, authPassword);
       setAuthSession(nextSession);
     } catch (error) {
       setAuthNotice(describeSyncError(error));
@@ -680,8 +688,8 @@ export default function App() {
           <p className="eyebrow">Playtest Login</p>
           <h1>Join room {roomSlug}</h1>
           <label className="auth-field">
-            <span>Email</span>
-            <input value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" />
+            <span>Username</span>
+            <input value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="alice_01" />
           </label>
           <label className="auth-field">
             <span>Password</span>
@@ -700,7 +708,7 @@ export default function App() {
             </button>
             <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signup")}>
               <Shield size={18} aria-hidden="true" />
-              Create account
+              Create playtest account
             </button>
             <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={continueAsGuest}>
               <Users size={18} aria-hidden="true" />
@@ -708,7 +716,7 @@ export default function App() {
             </button>
           </div>
           <p className="muted-copy">
-            If account creation asks for email confirmation, use guest mode for this playtest or disable Confirm email in Supabase Auth.
+            Use 3-20 letters, numbers, or underscores. No email confirmation is needed for playtest accounts.
           </p>
           {authNotice && <p className="muted-copy">{authNotice}</p>}
         </section>
