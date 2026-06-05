@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   advanceJourneyTravel,
+  calculateCarryBurden,
   campOptionOutcome,
   combatActionPreview,
   createJourney,
@@ -112,6 +113,57 @@ describe("journey route generation", () => {
     expect(journey.fieldSupplies.ammo).toBe(1);
     expect(journey.fieldSupplies.medicine).toBe(1);
     expect((supported?.squadMaxHp ?? 0) - (unsupported?.squadMaxHp ?? 0)).toBe(8);
+  });
+
+  test("heavy loadouts create pack burden and slow route travel", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "burden-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 3, fuel: 3, materials: 3, medicine: 3, water: 3 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+    const lightJourney = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+    const lightAdvanced = advanceJourneyTravel(lightJourney, squad, 55);
+
+    expect(journey.burden).toMatchObject({
+      load: 18,
+      tier: "overloaded"
+    });
+    expect(journey.pressure).toBeGreaterThan(18);
+    expect(journey.logs.join("\n")).toContain("Pack burden");
+    expect(advanced.condition.fatigue - journey.condition.fatigue).toBeGreaterThan(lightAdvanced.condition.fatigue - lightJourney.condition.fatigue);
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining([expect.stringContaining("Burden +")]));
+  });
+
+  test("carry capacity support can turn an overloaded pack into a heavy pack", () => {
+    const session = createStarterSession("user-a", "Alice", "capacity-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const loadout = { ammo: 3, food: 3, fuel: 3, materials: 3, medicine: 3, water: 3 };
+    const baseline = calculateCarryBurden(squad, loadout);
+    const supported = calculateCarryBurden(squad, loadout, { carryCapacity: 5 });
+
+    expect(baseline.tier).toBe("overloaded");
+    expect(supported.capacity).toBeGreaterThan(baseline.capacity);
+    expect(supported.tier).toBe("heavy");
+    expect(supported.fatiguePenalty).toBeLessThan(baseline.fatiguePenalty);
   });
 
   test("field supply spending follows priority order", () => {

@@ -781,6 +781,84 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+.burden-preview {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #b8c99d;
+  border-radius: 8px;
+  background: #f5faef;
+}
+
+.burden-preview div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.burden-preview span,
+.burden-preview strong {
+  color: #365f43;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.burden-preview p {
+  margin: 0;
+  color: #5f6e62;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.burden-preview i,
+.journey-burden i {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e0d4bd;
+}
+
+.burden-preview b,
+.journey-burden b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #4d8a67;
+}
+
+.burden-preview.heavy {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.burden-preview.heavy span,
+.burden-preview.heavy strong {
+  color: #7b5a13;
+}
+
+.burden-preview.heavy b,
+.journey-burden.heavy b {
+  background: #c68134;
+}
+
+.burden-preview.overloaded {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.burden-preview.overloaded span,
+.burden-preview.overloaded strong {
+  color: #8a3524;
+}
+
+.burden-preview.overloaded b,
+.journey-burden.overloaded b {
+  background: #b65037;
+}
+
 .risk-options,
 .facility-grid,
 .support-grid,
@@ -852,12 +930,13 @@ button:disabled {
 
 .journey-status-grid {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) repeat(3, minmax(160px, 1fr));
+  grid-template-columns: minmax(130px, 0.8fr) repeat(4, minmax(150px, 1fr));
   gap: 8px;
 }
 
 .journey-pressure,
 .journey-condition,
+.journey-burden,
 .journey-resource-strip {
   min-width: 0;
   padding: 9px;
@@ -873,6 +952,7 @@ button:disabled {
 
 .journey-pressure span,
 .journey-condition > span,
+.journey-burden > span,
 .journey-resource-strip > span {
   color: #7a5d3f;
   font-size: 11px;
@@ -883,6 +963,33 @@ button:disabled {
 .journey-pressure strong {
   color: #562d1d;
   font-size: 18px;
+}
+
+.journey-burden {
+  display: grid;
+  gap: 5px;
+}
+
+.journey-burden strong {
+  color: #562d1d;
+  font-size: 18px;
+}
+
+.journey-burden small {
+  color: #6c755f;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.journey-burden.heavy {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.journey-burden.overloaded {
+  border-color: #c98a74;
+  background: #fff1ea;
 }
 
 .journey-pressure i {

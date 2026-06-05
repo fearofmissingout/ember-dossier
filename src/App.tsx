@@ -36,6 +36,7 @@ import {
   addResources,
   advanceJourneyTravel,
   campOptionOutcome,
+  calculateCarryBurden,
   combatActionPreview,
   combatLootOutcome,
   combatLootList,
@@ -56,6 +57,7 @@ import {
   type JourneyCampAction,
   type JourneyCombatLootAction,
   type JourneyChoice,
+  type JourneyCarryBurden,
   type JourneyNode,
   type JourneyRoadEncounterAction,
   type JourneyShopAction,
@@ -1399,11 +1401,20 @@ function ExpeditionPrep({
   const doctrineOptions = expeditionDoctrineOptions(state.facilities);
   const selectedDoctrine = doctrineOptions.find((doctrine) => doctrine.id === draft.doctrineId) ?? doctrineOptions[0];
   const support = supportFromFacilities(state.facilities, selectedDoctrine?.id);
+  const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
+  const previewFieldSupplies: ResourceBundle = {
+    ...draft.loadout
+  };
+  for (const [key, value] of Object.entries(support.startingSupplies) as Array<[ResourceKey, number | undefined]>) {
+    previewFieldSupplies[key] += value ?? 0;
+  }
+  const carryBurden = calculateCarryBurden(selectedSquad, previewFieldSupplies, support);
   const supportItems = [
     { label: "Max HP", sign: "+", value: support.maxHp },
     { label: "Patch", sign: "+", value: support.patchHeal },
     { label: "Guard", sign: "+", value: support.guardBlock },
     { label: "Ammo", sign: "+", value: support.ammoDamage },
+    { label: "Pack", sign: "+", value: support.carryCapacity ?? 0 },
     { label: "Pressure", sign: "-", value: support.pressureRelief },
     { label: "Road secure", sign: "+", value: support.roadSecure },
     { label: "Road search", sign: "+", value: support.roadSearch },
@@ -1485,6 +1496,7 @@ function ExpeditionPrep({
             </div>
           ))}
         </div>
+        <BurdenPreview burden={carryBurden} />
       </section>
 
       <section className="panel">
@@ -1564,7 +1576,7 @@ function ExpeditionPrep({
             onCombatAction={onCombatAction}
             onJourneyAction={onJourneyAction}
             readiness={readiness}
-            squad={state.survivors.filter((survivor) => journey.squadIds.includes(survivor.id))}
+            squad={selectedSquad}
           />
         )}
         <button className="primary-button full-width" type="button" disabled={!squadReady || !canAffordLoadout || Boolean(journey)} onClick={onDispatch}>
@@ -1627,6 +1639,16 @@ function JourneyPanel({
             <strong>Hunger {journey.condition.hunger}</strong>
             <strong>Thirst {journey.condition.thirst}</strong>
           </div>
+        </div>
+        <div className={`journey-burden ${journey.burden.tier}`}>
+          <span>Pack burden</span>
+          <strong>
+            {journey.burden.load}/{journey.burden.capacity}
+          </strong>
+          <i>
+            <b style={{ width: `${Math.max(4, Math.min(100, Math.round((journey.burden.load / journey.burden.capacity) * 100)))}%` }} />
+          </i>
+          <small>{burdenSummary(journey.burden)}</small>
         </div>
         <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
         <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
@@ -1912,6 +1934,36 @@ function JourneyResourceStrip({ resources, title }: { resources: ResourceBundle;
       </div>
     </div>
   );
+}
+
+function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {
+  const fill = Math.max(4, Math.min(100, Math.round((burden.load / burden.capacity) * 100)));
+  return (
+    <div className={`burden-preview ${burden.tier}`}>
+      <div>
+        <span>Pack load</span>
+        <strong>
+          {burden.load}/{burden.capacity}
+        </strong>
+      </div>
+      <i>
+        <b style={{ width: `${fill}%` }} />
+      </i>
+      <p>{burdenSummary(burden)}</p>
+    </div>
+  );
+}
+
+function burdenSummary(burden: JourneyCarryBurden) {
+  if (burden.tier === "overloaded") {
+    return `Overloaded: start pressure +${burden.pressurePenalty}%, travel fatigue +${burden.fatiguePenalty}.`;
+  }
+
+  if (burden.tier === "heavy") {
+    return `Heavy pack: start pressure +${burden.pressurePenalty}%, travel fatigue +${burden.fatiguePenalty}.`;
+  }
+
+  return `Light pack: start pressure ${burden.pressurePenalty}%, no travel fatigue penalty.`;
 }
 
 function CombatBar({ label, max, tone, value }: { label: string; max: number; tone: "danger" | "safe"; value: number }) {

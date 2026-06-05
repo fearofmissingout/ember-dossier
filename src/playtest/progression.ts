@@ -24,6 +24,7 @@ export type ExpeditionSupport = {
   campCook: number;
   campRest: number;
   campScout: number;
+  carryCapacity?: number;
   guardBlock: number;
   lootEvade: number;
   lootIntel: number;
@@ -176,6 +177,7 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
     campCook: kitchen,
     campRest: Math.max(0, dorm - 1) + Math.max(0, clinic - 1),
     campScout: Math.max(0, watchtower - 1) + radio,
+    carryCapacity: workshop + Math.floor(training / 2),
     guardBlock: Math.max(0, dorm - 1) + barricade,
     lootEvade: Math.max(0, watchtower - 1) + barricade,
     lootIntel: radio,

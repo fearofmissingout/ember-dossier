@@ -147,6 +147,16 @@ export type JourneyRoadEventRecord = {
 
 export type JourneyTravelTone = "safe" | "warning" | "danger";
 
+export type JourneyCarryBurdenTier = "light" | "heavy" | "overloaded";
+
+export type JourneyCarryBurden = {
+  capacity: number;
+  fatiguePenalty: number;
+  load: number;
+  pressurePenalty: number;
+  tier: JourneyCarryBurdenTier;
+};
+
 export type JourneyTravelRecord = {
   body: string;
   conditionText: string;
@@ -234,6 +244,7 @@ export type JourneyCondition = {
 export type JourneyState = {
   battleScars: number;
   bonusReward: ResourceBundle;
+  burden: JourneyCarryBurden;
   combat: JourneyCombat | null;
   currentNodeIndex: number;
   extractionStatus: JourneyExtractionStatus;
@@ -970,9 +981,13 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
   const support = draft.support ?? emptySupport();
   const fieldSupplies = { ...draft.loadout };
   addPartialResources(fieldSupplies, support.startingSupplies);
+  const squad = session.account.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
+  const burden = calculateCarryBurden(squad, fieldSupplies, support);
+  const startingPressure = clampPercent((draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18) + burden.pressurePenalty);
 
   return {
     battleScars: 0,
+    burden,
     bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
@@ -984,12 +999,15 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     locationId,
     logs: [
       `Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`,
-      `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`
+      `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`,
+      `Pack burden: ${burden.load}/${burden.capacity}, ${carryBurdenLabel(burden.tier)}${
+        burden.fatiguePenalty > 0 ? `, travel fatigue +${burden.fatiguePenalty}` : ""
+      }${burden.pressurePenalty !== 0 ? `, starting pressure ${formatSignedPercent(burden.pressurePenalty)}` : ""}.`
     ],
     nodes,
     pendingCombatLoot: null,
     pendingRoadEvent: null,
-    pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
+    pressure: startingPressure,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
     roadEvents: [],
@@ -1430,7 +1448,8 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
   const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount;
-  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue - routeSkill);
+  const burdenFatigue = next.burden?.fatiguePenalty ?? 0;
+  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue - routeSkill);
   const foodSpent = spendFieldSupply(next, "food", 1);
   const waterSpent = spendFieldSupply(next, "water", 1);
   const planSupplyResult = applyTravelPlanSupply(next, plan.id);
@@ -1460,6 +1479,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
         foodSpent ? "Food -1" : "No food",
         waterSpent ? "Water -1" : "No water",
         ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
+        ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
         `Fatigue +${fatigueGain}`,
         `Pressure ${formatSignedPercent(pressureDelta)}`
       ],
@@ -1615,6 +1635,46 @@ export function createEmptyResourceBundle(): ResourceBundle {
     materials: 0,
     medicine: 0,
     water: 0
+  };
+}
+
+export function calculateCarryBurden(
+  squad: Survivor[],
+  loadout: ResourceBundle,
+  support: Pick<ExpeditionSupport, "carryCapacity"> = {}
+): JourneyCarryBurden {
+  const load = resourceKeys.reduce((sum, key) => sum + loadout[key], 0);
+  const staminaAverage = squad.length ? squad.reduce((sum, survivor) => sum + survivor.attributes.stamina, 0) / squad.length : 0;
+  const capacity = 4 + squad.length * 3 + Math.floor(staminaAverage / 25) + (support.carryCapacity ?? 0);
+  const ratio = capacity > 0 ? load / capacity : 2;
+
+  if (ratio > 1) {
+    const overload = Math.max(1, load - capacity);
+    return {
+      capacity,
+      fatiguePenalty: 3 + Math.ceil(overload / 2),
+      load,
+      pressurePenalty: 8 + overload * 2,
+      tier: "overloaded"
+    };
+  }
+
+  if (ratio >= 0.75) {
+    return {
+      capacity,
+      fatiguePenalty: 1,
+      load,
+      pressurePenalty: 2,
+      tier: "heavy"
+    };
+  }
+
+  return {
+    capacity,
+    fatiguePenalty: 0,
+    load,
+    pressurePenalty: -2,
+    tier: "light"
   };
 }
 
@@ -2271,6 +2331,15 @@ function travelToneFor(journey: JourneyState): JourneyTravelTone {
 
 function sentenceCase(text: string) {
   return text.length ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
+}
+
+function carryBurdenLabel(tier: JourneyCarryBurdenTier) {
+  const labels: Record<JourneyCarryBurdenTier, string> = {
+    heavy: "heavy pack",
+    light: "light pack",
+    overloaded: "overloaded"
+  };
+  return labels[tier];
 }
 
 function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: JourneyTravelPlan, routeSkill: number, nextNodeIndex: number) {
