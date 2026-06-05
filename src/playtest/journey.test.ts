@@ -12,6 +12,7 @@ import {
   resolveRoadEncounterChoice,
   resolveShopAction,
   routePaceFor,
+  setJourneySegmentTactic,
   setJourneyTravelPlan,
   shopOfferOutcome,
   spendFieldSupplyFromPriority
@@ -289,6 +290,46 @@ describe("journey route generation", () => {
       tone: "safe"
     });
     expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 12");
+  });
+
+  test("segment tactics change the next road advance then reset to watch mode", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "tactic-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const draft = {
+      loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+      risk: "standard" as const,
+      squadIds: squad.map((survivor) => survivor.id)
+    };
+    const baseline = advanceJourneyTravel(createJourney(session, draft, "farm", 55), squad, 55);
+    const braced = advanceJourneyTravel(setJourneySegmentTactic(createJourney(session, draft, "farm", 55), "brace"), squad, 55);
+
+    expect(braced.segmentTactic).toBe("observe");
+    expect(braced.pressure).toBeLessThan(baseline.pressure);
+    expect(braced.travelHistory[0].effects).toEqual(expect.arrayContaining(["Tactic: Tight formation", "Tactic pressure -6%"]));
+    expect(braced.logs.join("\n")).toContain("Segment tactic: Tight formation");
+  });
+
+  test("prospecting a segment spends gear and can turn the road into a find", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "prospect-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const draft = {
+      loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+      risk: "standard" as const,
+      squadIds: squad.map((survivor) => survivor.id)
+    };
+
+    const baseline = advanceJourneyTravel(createJourney(session, draft, "farm", 55), squad, 55);
+    const prospected = advanceJourneyTravel(setJourneySegmentTactic(createJourney(session, draft, "farm", 55), "prospect"), squad, 55);
+    const baselineFinds = Object.values(baseline.bonusReward).reduce((sum, value) => sum + value, 0);
+    const prospectFinds = Object.values(prospected.bonusReward).reduce((sum, value) => sum + value, 0);
+
+    expect(prospected.segmentTactic).toBe("observe");
+    expect(prospected.fieldSupplies.materials).toBe(0);
+    expect(prospectFinds).toBeGreaterThan(baselineFinds);
+    expect(prospected.travelHistory[0].effects).toEqual(expect.arrayContaining(["Tactic: Comb ruins", "Spent Materials"]));
+    expect(prospected.logs.join("\n")).toContain("Segment tactic: Comb ruins");
   });
 
   test("travel segments pause on road encounters before the next node", () => {

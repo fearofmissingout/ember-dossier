@@ -25,7 +25,11 @@ export type JourneyAction =
   | "plan-steady"
   | "plan-scavenge"
   | "plan-rush"
-  | "plan-sneak";
+  | "plan-sneak"
+  | "tactic-observe"
+  | "tactic-brace"
+  | "tactic-ration"
+  | "tactic-prospect";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade";
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
@@ -33,6 +37,7 @@ export type JourneyCombatantStatus = "steady" | "strained" | "down";
 export type JourneyRoadEncounterAction = "secure" | "search" | "support" | "push";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
+export type JourneySegmentTactic = "observe" | "brace" | "ration" | "prospect";
 export type JourneyRoadEventTone = "find" | "hazard" | "road";
 
 export type JourneyDraft = {
@@ -284,6 +289,7 @@ export type JourneyState = {
   risk: RiskStrategy;
   rollShift: number;
   roadEvents: JourneyRoadEventRecord[];
+  segmentTactic: JourneySegmentTactic;
   squadIds: string[];
   condition: JourneyCondition;
   objectiveBonus: number;
@@ -301,6 +307,25 @@ export type JourneyTravelPlanOption = {
   pressure: number;
   fatigue: number;
   hunger: number;
+  thirst: number;
+};
+
+export type JourneySegmentTacticOption = {
+  failFatigue: number;
+  failHunger: number;
+  failPressure: number;
+  failThirst: number;
+  fallbackLog: string;
+  fatigue: number;
+  hunger: number;
+  id: JourneySegmentTactic;
+  label: string;
+  pressure: number;
+  routeSkill: number;
+  scavengeBonus: number;
+  successLog: string;
+  supplyPriority: ResourceKey[];
+  text: string;
   thirst: number;
 };
 
@@ -1082,6 +1107,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
     roadEvents: [],
+    segmentTactic: "observe",
     squadIds: [...draft.squadIds],
     condition: {
       distance: 0,
@@ -1514,23 +1540,25 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number, nextNodeIndex = journey.currentNodeIndex + 1): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
+  const tactic = segmentTacticOptions[next.segmentTactic] ?? segmentTacticOptions.observe;
+  const tacticOutcome = applySegmentTactic(next, tactic);
   const beforePressure = next.pressure;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
-  const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount;
+  const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount + tacticOutcome.routeSkill;
   const burdenFatigue = next.burden?.fatiguePenalty ?? 0;
-  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue - routeSkill);
+  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue + tacticOutcome.fatigue - routeSkill);
   const foodSpent = spendFieldSupply(next, "food", 1);
   const waterSpent = spendFieldSupply(next, "water", 1);
   const planSupplyResult = applyTravelPlanSupply(next, plan.id);
   const rationPressure = (foodSpent ? 0 : 8) + (waterSpent ? 0 : 10);
-  const planPressure = plan.pressure + planSupplyResult.pressure;
+  const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure;
 
   next.condition.distance += 1;
   next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
-  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger);
-  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst);
+  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger);
+  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst);
   next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
   next.rollShift += (rationPressure + planPressure) / 100 + next.condition.fatigue / 350;
 
@@ -1550,6 +1578,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
         foodSpent ? "Food -1" : "No food",
         waterSpent ? "Water -1" : "No water",
         ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
+        ...tacticOutcome.effects,
         ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
         `Fatigue +${fatigueGain}`,
         `Pressure ${formatSignedPercent(pressureDelta)}`
@@ -1560,7 +1589,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
 
   queueRoadEncounter(next, squad, plan.id, routeSkill, nextNodeIndex);
 
-  const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) - next.pressure / 250;
+  const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) + tacticOutcome.scavengeBonus - next.pressure / 250;
   if (scavengeRoll > 0.72) {
     const key = travelScavengeKeys[next.condition.distance % travelScavengeKeys.length];
     next.bonusReward[key] += 1;
@@ -1571,7 +1600,21 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
     next.logs.push("Road snag: a bad detour costs time and makes the next contact feel closer. Pressure +6%.");
   }
 
+  next.segmentTactic = "observe";
   return next;
+}
+
+export function setJourneySegmentTactic(journey: JourneyState, tactic: JourneySegmentTactic): JourneyState {
+  const option = segmentTacticOptions[tactic];
+  if (!option || journey.segmentTactic === tactic) {
+    return journey;
+  }
+
+  return {
+    ...journey,
+    logs: [...journey.logs, `Segment tactic: ${option.label}. ${option.text}`],
+    segmentTactic: tactic
+  };
 }
 
 export function setJourneyTravelPlan(journey: JourneyState, plan: JourneyTravelPlan): JourneyState {
@@ -1982,6 +2025,85 @@ const travelPlanOptions: Record<JourneyTravelPlan, JourneyTravelPlanOption> = Ob
   travelPlanList.map((option) => [option.id, option])
 ) as Record<JourneyTravelPlan, JourneyTravelPlanOption>;
 
+export const segmentTacticList: JourneySegmentTacticOption[] = [
+  {
+    failFatigue: 0,
+    failHunger: 0,
+    failPressure: 0,
+    failThirst: 0,
+    fallbackLog: "The squad keeps eyes open and does not spend extra supplies.",
+    fatigue: 0,
+    hunger: 0,
+    id: "observe",
+    label: "Watch the road",
+    pressure: 0,
+    routeSkill: 0,
+    scavengeBonus: 0,
+    successLog: "The squad keeps the next stretch ordinary on purpose.",
+    supplyPriority: [],
+    text: "Default movement with no extra cost or modifier.",
+    thirst: 0
+  },
+  {
+    failFatigue: 2,
+    failHunger: 0,
+    failPressure: -6,
+    failThirst: 0,
+    fallbackLog: "The squad tightens formation and trades speed for control.",
+    fatigue: 2,
+    hunger: 0,
+    id: "brace",
+    label: "Tight formation",
+    pressure: -6,
+    routeSkill: 1,
+    scavengeBonus: 0,
+    successLog: "A tight formation keeps bad angles covered before the next stop.",
+    supplyPriority: [],
+    text: "Lower pressure and improve route control, but add a little fatigue.",
+    thirst: 0
+  },
+  {
+    failFatigue: 1,
+    failHunger: 6,
+    failPressure: 4,
+    failThirst: 6,
+    fallbackLog: "They call a ration break, but there is not enough to share cleanly.",
+    fatigue: -2,
+    hunger: -10,
+    id: "ration",
+    label: "Share rations",
+    pressure: -4,
+    routeSkill: 0,
+    scavengeBonus: 0,
+    successLog: "A controlled ration break steadies hands before the next stretch.",
+    supplyPriority: ["food", "water"],
+    text: "Spend one food or water to soften hunger, thirst, fatigue, and pressure.",
+    thirst: -10
+  },
+  {
+    failFatigue: 5,
+    failHunger: 3,
+    failPressure: 8,
+    failThirst: 3,
+    fallbackLog: "They search loose ruins without the right gear and lose time.",
+    fatigue: 3,
+    hunger: 2,
+    id: "prospect",
+    label: "Comb ruins",
+    pressure: 5,
+    routeSkill: 0,
+    scavengeBonus: 0.32,
+    successLog: "The squad burns a little gear to pry open better roadside finds.",
+    supplyPriority: ["materials", "fuel"],
+    text: "Spend materials or fuel to greatly improve find odds, at higher pressure.",
+    thirst: 2
+  }
+];
+
+const segmentTacticOptions: Record<JourneySegmentTactic, JourneySegmentTacticOption> = Object.fromEntries(
+  segmentTacticList.map((option) => [option.id, option])
+) as Record<JourneySegmentTactic, JourneySegmentTacticOption>;
+
 export const combatLootList: JourneyCombatLootOption[] = [
   {
     battleScarRelief: 0,
@@ -2360,6 +2482,34 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
   return {
     log: "",
     pressure: 0
+  };
+}
+
+function applySegmentTactic(journey: JourneyState, tactic: JourneySegmentTacticOption) {
+  const spentKey = tactic.supplyPriority.length > 0 ? spendFieldSupplyFromPriority(journey, tactic.supplyPriority, 1) : null;
+  const effective = tactic.supplyPriority.length === 0 || Boolean(spentKey);
+  const pressure = effective ? tactic.pressure : tactic.failPressure;
+  const effects: string[] = [];
+
+  if (tactic.id !== "observe") {
+    effects.push(`Tactic: ${tactic.label}`);
+    if (spentKey) {
+      effects.push(`Spent ${resourceLabels[spentKey]}`);
+    }
+    if (pressure !== 0) {
+      effects.push(`Tactic pressure ${formatSignedPercent(pressure)}`);
+    }
+    journey.logs.push(`Segment tactic: ${tactic.label}. ${effective ? tactic.successLog : tactic.fallbackLog}`);
+  }
+
+  return {
+    effects,
+    fatigue: effective ? tactic.fatigue : tactic.failFatigue,
+    hunger: effective ? tactic.hunger : tactic.failHunger,
+    pressure,
+    routeSkill: effective ? tactic.routeSkill : 0,
+    scavengeBonus: effective ? tactic.scavengeBonus : 0,
+    thirst: effective ? tactic.thirst : tactic.failThirst
   };
 }
 

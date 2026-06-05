@@ -48,6 +48,8 @@ import {
   resolveRoadEncounterChoice,
   resolveShopAction,
   routePaceFor,
+  segmentTacticList,
+  setJourneySegmentTactic,
   setJourneyTravelPlan,
   shopOfferOutcome,
   spendFieldSupplyFromPriority,
@@ -61,6 +63,7 @@ import {
   type JourneyCarryBurden,
   type JourneyNode,
   type JourneyRoadEncounterAction,
+  type JourneySegmentTactic,
   type JourneyShopAction,
   type JourneyState,
   type JourneyTravelPlan
@@ -774,6 +777,12 @@ export default function App() {
     const selectedTravelPlan = travelPlanFromAction(action);
     if (selectedTravelPlan) {
       setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
+      return;
+    }
+
+    const selectedSegmentTactic = segmentTacticFromAction(action);
+    if (selectedSegmentTactic) {
+      setJourney(setJourneySegmentTactic(journey, selectedSegmentTactic));
       return;
     }
 
@@ -1768,6 +1777,23 @@ function JourneyPanel({
           </button>
         ))}
       </div>
+      <div className="segment-tactic-strip" aria-label="Next segment tactic">
+        {segmentTacticList.map((tactic) => (
+          <button
+            className={journey.segmentTactic === tactic.id ? "active" : ""}
+            key={tactic.id}
+            type="button"
+            onClick={() => onJourneyAction(`tactic-${tactic.id}` as JourneyAction)}
+          >
+            <span>{tactic.label}</span>
+            <small>{tactic.supplyPriority.length > 0 ? `Cost ${tactic.supplyPriority.map((key) => resourceLabels[key]).join("/")}` : "No cost"}</small>
+            <small>
+              F{formatSignedNumber(tactic.fatigue)} H{formatSignedNumber(tactic.hunger)} T{formatSignedNumber(tactic.thirst)} P
+              {formatSignedPercent(tactic.pressure)}
+            </small>
+          </button>
+        ))}
+      </div>
       {(journey.trophies.length > 0 || journey.battleScars > 0) && (
         <div className="journey-aftermath">
           <span>Combat aftermath</span>
@@ -2287,6 +2313,16 @@ function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {
     "plan-steady": "steady"
   };
   return planByAction[action] ?? null;
+}
+
+function segmentTacticFromAction(action: JourneyAction): JourneySegmentTactic | null {
+  const tacticByAction: Partial<Record<JourneyAction, JourneySegmentTactic>> = {
+    "tactic-brace": "brace",
+    "tactic-observe": "observe",
+    "tactic-prospect": "prospect",
+    "tactic-ration": "ration"
+  };
+  return tacticByAction[action] ?? null;
 }
 
 function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombatLootAction | null {
