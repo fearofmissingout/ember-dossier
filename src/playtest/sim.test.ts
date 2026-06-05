@@ -83,6 +83,14 @@ describe("playtest room loop", () => {
     expect(next.account.resources.materials).toBe(15);
     expect(next.room.base.resources.materials).toBe(13);
     expect(next.room.contributions).toHaveLength(1);
+    expect(next.room.feed[0]).toEqual(
+      expect.objectContaining({
+        kind: "member",
+        title: "Base supplies contributed"
+      })
+    );
+    expect(next.room.feed[0]?.body).toContain("Alice");
+    expect(next.room.feed[0]?.body).toContain("Food +2");
   });
 
   test("assigns an account survivor to the room without transferring ownership", () => {

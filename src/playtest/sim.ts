@@ -30,6 +30,13 @@ export function applyContribution(session: PlaytestSession, userId: string, reso
     roomId: next.room.id,
     userId
   });
+  next.room.feed.unshift({
+    body: `${actorName(next, userId)} moved supplies from their account stash into the shared base: ${formatResources(resources)}.`,
+    id: `feed-contribution-${Date.now()}`,
+    kind: "member",
+    timestamp: "Just now",
+    title: "Base supplies contributed"
+  });
 
   refreshUiState(next);
   return next;
@@ -255,10 +262,32 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
 
 const resourceKeys = ["food", "water", "materials", "medicine", "fuel", "ammo"] as const;
 
+const resourceLabels: Record<ResourceKey, string> = {
+  ammo: "Ammo",
+  food: "Food",
+  fuel: "Fuel",
+  materials: "Materials",
+  medicine: "Medicine",
+  water: "Water"
+};
+
 function ensureUser(session: PlaytestSession, userId: string) {
   if (session.account.profile.userId !== userId) {
     throw new Error("This session can only mutate the active account.");
   }
+}
+
+function actorName(session: PlaytestSession, userId: string) {
+  return session.room.members.find((member) => member.userId === userId)?.displayName ?? session.account.profile.displayName;
+}
+
+function formatResources(resources: ResourceBundle) {
+  const summary = resourceKeys
+    .filter((key) => resources[key] > 0)
+    .map((key) => `${resourceLabels[key]} +${resources[key]}`)
+    .join(", ");
+
+  return summary || "no usable supplies";
 }
 
 function pickResources(resources: ResourceBundle & { morale?: number; danger?: number }): ResourceBundle {

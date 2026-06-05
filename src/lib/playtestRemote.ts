@@ -1,7 +1,6 @@
-import { createStarterAccount } from "../playtest/state";
+import { createStarterAccount, emptyLoadout, roomToGameState } from "../playtest/state";
 import { starterObjective, starterRoomFacilities, starterRoomLocations, starterRoomResources } from "../playtest/content";
-import { roomToGameState } from "../playtest/state";
-import type { ExpeditionReport } from "../game/types";
+import type { ExpeditionReport, FeedItem } from "../game/types";
 import type {
   AccountState,
   AccountSurvivor,
@@ -193,8 +192,8 @@ export async function saveAssignment(accessToken: string, assignment: RoomAssign
   );
 }
 
-export async function savePlaytestProgress(accessToken: string, session: PlaytestSession) {
-  await saveCoreProgress(accessToken, session);
+export async function savePlaytestProgress(accessToken: string, session: PlaytestSession, activity?: FeedItem) {
+  await Promise.all([saveCoreProgress(accessToken, session), activity ? saveRoomActivity(accessToken, session, activity) : Promise.resolve()]);
 }
 
 export async function saveSettlement(accessToken: string, session: PlaytestSession, report: ExpeditionReport) {
@@ -210,6 +209,18 @@ export async function saveSettlement(accessToken: string, session: PlaytestSessi
       title: `${report.locationName} expedition complete`
     })
   ]);
+}
+
+export async function saveRoomActivity(accessToken: string, session: PlaytestSession, activity: FeedItem) {
+  await upsert(accessToken, "playtest_reports", {
+    expedition_id: null,
+    logs: activity.body.split("\n").filter(Boolean),
+    outcome: "clean",
+    penalties: { danger: 0, morale: 0 },
+    reward: emptyLoadout(),
+    room_id: session.room.id,
+    title: activity.title
+  });
 }
 
 async function saveCoreProgress(accessToken: string, session: PlaytestSession) {

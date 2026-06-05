@@ -595,7 +595,10 @@ export default function App() {
     applySession(nextSession);
     const contribution = nextSession.room.contributions[0];
     if (authSession && contribution) {
-      void saveContribution(authSession.accessToken, contribution).catch((error) => {
+      void Promise.all([
+        saveContribution(authSession.accessToken, contribution),
+        savePlaytestProgress(authSession.accessToken, nextSession, nextSession.room.feed[0])
+      ]).catch((error) => {
         setSyncError(describeSyncError(error));
         setSyncStatus("error");
       });
@@ -615,7 +618,7 @@ export default function App() {
       return;
     }
 
-    void savePlaytestProgress(authSession.accessToken, nextSession).catch((error) => {
+    void savePlaytestProgress(authSession.accessToken, nextSession, nextSession.room.feed[0]).catch((error) => {
       setSyncError(describeSyncError(error));
       setSyncStatus("error");
     });
