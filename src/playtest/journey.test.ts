@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { advanceJourneyTravel, createJourney, createCombatForNode, resolveCombatRound, spendFieldSupplyFromPriority } from "./journey";
+import { advanceJourneyTravel, createJourney, createCombatForNode, resolveCampAction, resolveCombatRound, spendFieldSupplyFromPriority } from "./journey";
 import { createStarterSession } from "./state";
 
 describe("journey route generation", () => {
@@ -21,10 +21,12 @@ describe("journey route generation", () => {
 
     expect(resourceRoute.nodes[0].title).toBe("Sluice Gate Detour");
     expect(resourceRoute.nodes[1].enemy?.name).toBe("Valve Ghoul");
-    expect(resourceRoute.nodes[2].shop?.label).toBe("Buy repair kit");
+    expect(resourceRoute.nodes[2].type).toBe("camp");
+    expect(resourceRoute.nodes[3].shop?.label).toBe("Buy repair kit");
     expect(weirdRoute.nodes[0].title).toBe("Listening Vines");
     expect(weirdRoute.nodes[1].enemy?.name).toBe("Borrowed Shadow");
-    expect(weirdRoute.nodes[2].shop?.label).toBe("Pay masked vendor");
+    expect(weirdRoute.nodes[2].type).toBe("camp");
+    expect(weirdRoute.nodes[3].shop?.label).toBe("Pay masked vendor");
   });
 
   test("combat inherits enemy stats and salvage rewards from the route node", () => {
@@ -121,6 +123,33 @@ describe("journey route generation", () => {
     expect(advanced.fieldSupplies.food).toBe(0);
     expect(advanced.fieldSupplies.water).toBe(0);
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
+  });
+
+  test("camp choices trade supplies for recovery and objective progress", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "camp-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 2;
+    journey.condition.fatigue = 40;
+    journey.condition.hunger = 35;
+    journey.condition.thirst = 30;
+
+    const scouted = resolveCampAction(journey, "scout");
+
+    expect(scouted.fieldSupplies.fuel).toBe(0);
+    expect(scouted.objectiveBonus).toBe(1);
+    expect(scouted.pressure).toBeLessThan(journey.pressure);
+    expect(scouted.logs.join("\n")).toContain("objective +1");
   });
 
   test("tactics expose armored enemies and improve later strike damage", () => {

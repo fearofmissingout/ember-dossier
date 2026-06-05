@@ -37,6 +37,7 @@ import {
   advanceJourneyTravel,
   createCombatForNode,
   createJourney,
+  resolveCampAction,
   spendFieldSupplyFromPriority,
   resolveCombatRound,
   type CombatAction,
@@ -741,6 +742,10 @@ export default function App() {
       }
     }
 
+    if (node.type === "camp" && (action === "rest" || action === "cook" || action === "scout")) {
+      next = resolveCampAction(next, action);
+    }
+
     next = advanceJourneyTravel(next, selectedSquad, readiness);
     next.currentNodeIndex += 1;
     next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
@@ -770,6 +775,7 @@ export default function App() {
       loadout: completedJourney.loadout,
       locationId: completedJourney.locationId,
       randomRolls: adjustedRolls,
+      routeObjectiveBonus: completedJourney.objectiveBonus,
       risk: completedJourney.risk,
       survivorIds: completedJourney.squadIds,
       travelFatigue: completedJourney.condition.fatigue,
@@ -1562,6 +1568,18 @@ function JourneyPanel({
             </button>
             <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
               Skip
+            </button>
+          </div>
+        ) : activeNode.type === "camp" ? (
+          <div className="journey-actions">
+            <button className="primary-button" type="button" onClick={() => onJourneyAction("rest")}>
+              {activeNode.camp?.rest.label ?? "Rest wounds"}
+            </button>
+            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("cook")}>
+              {activeNode.camp?.cook.label ?? "Cook rations"}
+            </button>
+            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("scout")}>
+              {activeNode.camp?.scout.label ?? "Scout ahead"}
             </button>
           </div>
         ) : (

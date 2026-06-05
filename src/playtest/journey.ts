@@ -2,7 +2,7 @@ import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrate
 import type { ExpeditionSupport } from "./progression";
 import type { PlaytestSession } from "./types";
 
-export type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract";
+export type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract" | "rest" | "cook" | "scout";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 
 export type JourneyDraft = {
@@ -46,11 +46,27 @@ export type JourneyShop = {
   failLog: string;
 };
 
+export type JourneyCampAction = "rest" | "cook" | "scout";
+
+export type JourneyCampOption = {
+  label: string;
+  supplyPriority: ResourceKey[];
+  pressure: number;
+  fatigue: number;
+  hunger: number;
+  thirst: number;
+  rollShift: number;
+  objectiveBonus: number;
+  successLog: string;
+  fallbackLog: string;
+};
+
 export type JourneyNode = {
   id: string;
-  type: "event" | "combat" | "shop" | "extraction";
+  type: "event" | "combat" | "camp" | "shop" | "extraction";
   title: string;
   body: string;
+  camp?: Record<JourneyCampAction, JourneyCampOption>;
   careful?: JourneyChoice;
   enemy?: JourneyEnemy;
   force?: JourneyChoice;
@@ -96,6 +112,7 @@ export type JourneyState = {
   rollShift: number;
   squadIds: string[];
   condition: JourneyCondition;
+  objectiveBonus: number;
   support: ExpeditionSupport;
 };
 
@@ -455,12 +472,32 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
   ]
 };
 
+const familyCamps: Record<LocationFamily, { body: string; title: string }> = {
+  resources: {
+    body: "A dry maintenance alcove gives the squad ten quiet minutes before the pipes start knocking again.",
+    title: "Pump Service Camp"
+  },
+  urban: {
+    body: "A locked classroom still has desks, curtains, and one door that can be wedged shut.",
+    title: "Classroom Camp"
+  },
+  weird: {
+    body: "A circle of cold tile refuses to echo. It might be safe, or it might be listening politely.",
+    title: "Quiet Tile Camp"
+  },
+  wilds: {
+    body: "A windbreak of old tarps hides the squad from the road, but smoke would be easy to spot.",
+    title: "Field Windbreak"
+  }
+};
+
 export function createJourney(session: PlaytestSession, draft: JourneyDraft, locationId: string, readiness: number): JourneyState {
   const location = session.room.locations.find((candidate) => candidate.id === locationId);
   const family = location?.family ?? "urban";
   const event = materializeEvent(pick(familyEvents[family]));
   const enemy = materializeEnemy(pick(familyEnemies[family]));
   const shop = materializeShop(pick(familyShops[family]));
+  const camp = familyCamps[family];
 
   const nodes: JourneyNode[] = [
     {
@@ -477,6 +514,13 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       id: "route-combat",
       title: "Contact",
       type: "combat"
+    },
+    {
+      body: camp.body,
+      camp: createCampOptions(family),
+      id: "route-camp",
+      title: camp.title,
+      type: "camp"
     },
     {
       body: "A temporary barter point appears before extraction. The price depends on what survived the road.",
@@ -520,6 +564,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       hunger: 0,
       thirst: 0
     },
+    objectiveBonus: 0,
     support
   };
 }
@@ -708,6 +753,42 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   return next;
 }
 
+export function resolveCampAction(journey: JourneyState, action: JourneyCampAction): JourneyState {
+  const node = journey.nodes[journey.currentNodeIndex];
+  const next = structuredClone(journey) as JourneyState;
+  const option = node?.type === "camp" ? node.camp?.[action] : null;
+  if (!option || !node) {
+    return next;
+  }
+
+  const spentKey = spendFieldSupplyFromPriority(next, option.supplyPriority, 1);
+  if (spentKey) {
+    next.condition.fatigue = clampPercent(next.condition.fatigue + option.fatigue);
+    next.condition.hunger = clampPercent(next.condition.hunger + option.hunger);
+    next.condition.thirst = clampPercent(next.condition.thirst + option.thirst);
+    next.pressure = clampPercent(next.pressure + option.pressure);
+    next.rollShift += option.rollShift;
+    next.objectiveBonus += option.objectiveBonus;
+    next.logs.push(
+      `${node.title}: ${option.successLog} ${resourceLabels[spentKey]} -1, fatigue ${formatSignedNumber(option.fatigue)}, hunger ${formatSignedNumber(
+        option.hunger
+      )}, thirst ${formatSignedNumber(option.thirst)}, pressure ${formatSignedPercent(option.pressure)}${
+        option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""
+      }.`
+    );
+    return next;
+  }
+
+  const fallbackPressure = Math.max(3, option.pressure + 10);
+  next.condition.fatigue = clampPercent(next.condition.fatigue + (option.fatigue < 0 ? Math.ceil(option.fatigue / 2) : option.fatigue + 4));
+  next.condition.hunger = clampPercent(next.condition.hunger + Math.max(5, option.hunger + 16));
+  next.condition.thirst = clampPercent(next.condition.thirst + Math.max(5, option.thirst + 16));
+  next.pressure = clampPercent(next.pressure + fallbackPressure);
+  next.rollShift += Math.max(0.03, option.rollShift / 2);
+  next.logs.push(`${node.title}: ${option.fallbackLog} Pressure ${formatSignedPercent(fallbackPressure)}.`);
+  return next;
+}
+
 export function addResources(target: ResourceBundle, source: ResourceBundle) {
   for (const key of resourceKeys) {
     target[key] += source[key];
@@ -770,6 +851,49 @@ function materializeShop(template: ShopTemplate): JourneyShop {
   return {
     ...template,
     reward: bundleFromKeys(template.rewardKeys)
+  };
+}
+
+function createCampOptions(family: LocationFamily): Record<JourneyCampAction, JourneyCampOption> {
+  const scoutPressure = family === "weird" ? -14 : family === "urban" ? -11 : -9;
+  const cookPressure = family === "wilds" ? -8 : -6;
+  return {
+    cook: {
+      fallbackLog: "They try to make a meal out of scraps, but the pause only makes empty stomachs louder.",
+      fatigue: -6,
+      hunger: -28,
+      label: "Cook rations",
+      objectiveBonus: 0,
+      pressure: cookPressure,
+      rollShift: -0.06,
+      successLog: "A hot ration reset steadies the squad before the next leg.",
+      supplyPriority: ["food", "water"],
+      thirst: -20
+    },
+    rest: {
+      fallbackLog: "The squad rests without enough supplies. It helps, but everyone wakes up sharper and hungrier.",
+      fatigue: -24,
+      hunger: 6,
+      label: "Rest wounds",
+      objectiveBonus: 0,
+      pressure: -8,
+      rollShift: -0.08,
+      successLog: "A guarded rest gets breathing room back into the team.",
+      supplyPriority: ["medicine", "food", "water"],
+      thirst: 6
+    },
+    scout: {
+      fallbackLog: "They scout by instinct and lose time arguing over the route.",
+      fatigue: 5,
+      hunger: 4,
+      label: "Scout ahead",
+      objectiveBonus: 1,
+      pressure: scoutPressure,
+      rollShift: -0.12,
+      successLog: "The squad spends gear to mark a safer lane and useful tower notes.",
+      supplyPriority: ["fuel", "ammo", "materials"],
+      thirst: 4
+    }
   };
 }
 
@@ -840,6 +964,10 @@ function formatBundle(resources: ResourceBundle) {
 
 function formatSignedPercent(value: number) {
   return `${value >= 0 ? "+" : ""}${value}%`;
+}
+
+function formatSignedNumber(value: number) {
+  return `${value >= 0 ? "+" : ""}${value}`;
 }
 
 function pick<T>(items: T[]): T {

@@ -276,6 +276,35 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("Journey: Close Quarters");
   });
 
+  test("route objective bonus contributes to room objective progress", () => {
+    let session = createStarterSession("user-a", "Alice", "route-objective-room");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.82, 0.82, 0.82, 0.82, 0.2],
+      risk: "standard",
+      routeObjectiveBonus: 1,
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.report.outcome).not.toBe("clean");
+    expect(result.session.room.base.objective.repairedParts).toBeGreaterThanOrEqual(1);
+  });
+
   test("journey fatigue carries into survivor settlement", () => {
     let session = createStarterSession("user-a", "Alice", "fatigue-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);

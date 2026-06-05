@@ -7,6 +7,7 @@ import type { BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   journeyLogs?: string[];
+  routeObjectiveBonus?: number;
   survivorIds: string[];
   travelFatigue?: number;
   userId: string;
@@ -195,7 +196,7 @@ export function resolvePlaytestExpedition(
   );
   next.room.base.objective.repairedParts = Math.min(
     next.room.base.objective.requiredParts,
-    next.room.base.objective.repairedParts + objectiveProgress(result.report) + process.objectiveBonus
+    next.room.base.objective.repairedParts + objectiveProgress(result.report) + process.objectiveBonus + (request.routeObjectiveBonus ?? 0)
   );
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
