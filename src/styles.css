@@ -917,6 +917,54 @@ button:disabled {
   font-weight: 900;
 }
 
+.journey-outlook {
+  display: grid;
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.journey-outlook strong {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-outlook span {
+  color: #667267;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.journey-outlook.safe {
+  border-color: #b8c99d;
+  background: #f5faef;
+}
+
+.journey-outlook.safe strong {
+  color: #3d6f4d;
+}
+
+.journey-outlook.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.journey-outlook.warning strong {
+  color: #7b5a13;
+}
+
+.journey-outlook.danger {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.journey-outlook.danger strong {
+  color: #8a3524;
+}
+
 .journey-plan-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

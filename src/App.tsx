@@ -712,9 +712,16 @@ export default function App() {
 
     const node = journey.nodes[journey.currentNodeIndex];
     if (!node || node.type === "extraction" || action === "extract") {
+      const completedRoute = !node || node.type === "extraction";
       finishJourney({
         ...journey,
-        logs: [...journey.logs, "The squad marks the extraction route and calls the base for pickup."]
+        extractionStatus: completedRoute ? "complete" : "early",
+        logs: [
+          ...journey.logs,
+          completedRoute
+            ? "The squad marks the extraction route and calls the base for pickup."
+            : "The squad turns back early, banking field salvage before the route gets worse."
+        ]
       });
       return;
     }
@@ -781,6 +788,7 @@ export default function App() {
     );
     const result = resolvePlaytestExpedition(session, {
       battleScars: completedJourney.battleScars,
+      extractionStatus: completedJourney.extractionStatus === "early" ? "early" : "complete",
       journeyLogs: completedJourney.logs,
       loadout: completedJourney.loadout,
       locationId: completedJourney.locationId,
@@ -1492,6 +1500,9 @@ function JourneyPanel({
   onCombatAction: (action: CombatAction) => void;
   onJourneyAction: (action: JourneyAction) => void;
 }) {
+  const outlook = getJourneyOutlook(journey);
+  const canReturnEarly = !journey.combat && activeNode.type !== "extraction";
+
   return (
     <div className="journey-panel">
       <div className="journey-track" aria-label="Expedition route progress">
@@ -1520,6 +1531,10 @@ function JourneyPanel({
         </div>
         <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
         <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
+      </div>
+      <div className={`journey-outlook ${outlook.tone}`}>
+        <strong>{outlook.label}</strong>
+        <span>{outlook.text}</span>
       </div>
       <div className="journey-plan-strip" aria-label="Road travel plan">
         {travelPlanList.map((plan) => (
@@ -1619,6 +1634,13 @@ function JourneyPanel({
           <button className="primary-button full-width" type="button" onClick={() => onJourneyAction("extract")}>
             Extract and settle
           </button>
+        )}
+        {canReturnEarly && (
+          <div className="journey-actions">
+            <button className="ghost-button inline danger-action" type="button" onClick={() => onJourneyAction("extract")}>
+              Return early
+            </button>
+          </div>
         )}
       </div>
       <div className="journey-log">
@@ -1895,6 +1917,31 @@ function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {
     "plan-steady": "steady"
   };
   return planByAction[action] ?? null;
+}
+
+function getJourneyOutlook(journey: JourneyState) {
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  if (journey.pressure >= 78 || worstCondition >= 82) {
+    return {
+      label: "Red route",
+      text: "The next leg is likely to turn ugly. Returning early preserves field salvage.",
+      tone: "danger"
+    };
+  }
+
+  if (journey.pressure >= 52 || worstCondition >= 58) {
+    return {
+      label: "Strained route",
+      text: "The squad can continue, but supplies or camp actions should solve the road soon.",
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Open route",
+    text: "The road is still controllable. This is a good window to push, scout, or scavenge.",
+    tone: "safe"
+  };
 }
 
 function formatResourceDelta(resources: ResourceBundle) {

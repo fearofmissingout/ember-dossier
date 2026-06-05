@@ -305,6 +305,47 @@ describe("playtest room loop", () => {
     expect(result.session.room.base.objective.repairedParts).toBeGreaterThanOrEqual(1);
   });
 
+  test("early extraction banks safety but reduces site reward and objective progress", () => {
+    let fullSession = createStarterSession("user-a", "Alice", "full-extraction-room");
+    let earlySession = createStarterSession("user-a", "Alice", "early-extraction-room");
+    const squad = fullSession.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      fullSession = assignSurvivorToRoom(fullSession, "user-a", survivorId);
+      earlySession = assignSurvivorToRoom(earlySession, "user-a", survivorId);
+    }
+
+    const request = {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.02, 0.02, 0.02, 0.02, 0.02],
+      risk: "standard" as const,
+      survivorIds: squad,
+      userId: "user-a"
+    };
+
+    const full = resolvePlaytestExpedition(fullSession, {
+      ...request,
+      extractionStatus: "complete"
+    });
+    const early = resolvePlaytestExpedition(earlySession, {
+      ...request,
+      extractionStatus: "early"
+    });
+
+    expect(full.report.reward.water).toBeGreaterThan(early.report.reward.water);
+    expect(full.session.room.base.objective.repairedParts).toBeGreaterThan(early.session.room.base.objective.repairedParts);
+    expect(early.report.logs.join("\n")).toContain("Early extraction");
+    expect(early.session.room.feed[0]?.body).toContain("returned early");
+  });
+
   test("combat aftermath applies injuries, trophies, and report logs", () => {
     let session = createStarterSession("user-a", "Alice", "combat-aftermath-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);

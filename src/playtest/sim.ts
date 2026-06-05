@@ -7,6 +7,7 @@ import type { BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   battleScars?: number;
+  extractionStatus?: "early" | "complete";
   journeyLogs?: string[];
   routeObjectiveBonus?: number;
   survivorIds: string[];
@@ -139,6 +140,7 @@ export function resolvePlaytestExpedition(
     risk: request.risk,
     squadIds: request.survivorIds
   });
+  applyExtractionRewardScale(result.nextState.resources, result.report, request);
 
   const process = buildProcess(next, request, result.report);
   result.report.logs = [...process.logs, ...result.report.logs];
@@ -150,7 +152,7 @@ export function resolvePlaytestExpedition(
   if (next.room.feed[0]) {
     next.room.feed[0] = {
       ...next.room.feed[0],
-      body: `${next.room.feed[0].body}\n${process.logs.slice(0, 8).join("\n")}`
+      body: `${summarizePlaytestReport(result.report, request)}\n${process.logs.slice(0, 8).join("\n")}`
     };
   }
   const progressionLogs: string[] = [];
@@ -196,9 +198,10 @@ export function resolvePlaytestExpedition(
   next.room.assignedSurvivors = next.room.assignedSurvivors.filter(
     (assignment) => !request.survivorIds.includes(assignment.survivorId)
   );
+  const siteObjectiveProgress = request.extractionStatus === "early" ? 0 : objectiveProgress(result.report);
   next.room.base.objective.repairedParts = Math.min(
     next.room.base.objective.requiredParts,
-    next.room.base.objective.repairedParts + objectiveProgress(result.report) + process.objectiveBonus + (request.routeObjectiveBonus ?? 0)
+    next.room.base.objective.repairedParts + siteObjectiveProgress + process.objectiveBonus + (request.routeObjectiveBonus ?? 0)
   );
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
@@ -408,6 +411,11 @@ function formatResources(resources: ResourceBundle) {
   return summary || "no usable supplies";
 }
 
+function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
+  const status = request.extractionStatus === "early" ? "returned early" : "completed the route";
+  return `${report.squadNames.join(", ")} ${status} at ${report.locationName}. Outcome ${report.outcome}. Main reward: ${formatResources(report.reward)}.`;
+}
+
 function pickResources(resources: ResourceBundle & { morale?: number; danger?: number }): ResourceBundle {
   return {
     ammo: resources.ammo,
@@ -421,6 +429,29 @@ function pickResources(resources: ResourceBundle & { morale?: number; danger?: n
 
 function objectiveProgress(report: ExpeditionReport) {
   return report.outcome === "clean" ? 2 : report.outcome === "rough" ? 1 : 0;
+}
+
+function applyExtractionRewardScale(resources: ResourceBundle & { morale?: number; danger?: number }, report: ExpeditionReport, request: PlaytestExpeditionRequest) {
+  if (request.extractionStatus !== "early") {
+    return;
+  }
+
+  const rewardScale = 0.4;
+  const reduced: string[] = [];
+  for (const key of resourceKeys) {
+    const original = report.reward[key];
+    const scaled = Math.floor(original * rewardScale);
+    const delta = original - scaled;
+    if (delta > 0) {
+      resources[key] = Math.max(0, resources[key] - delta);
+      reduced.push(`${resourceLabels[key]} -${delta}`);
+    }
+    report.reward[key] = scaled;
+  }
+
+  report.logs.unshift(
+    `Early extraction: the squad returns before reaching the site core. Main site reward reduced${reduced.length ? ` (${reduced.join(", ")})` : ""}.`
+  );
 }
 
 type ProcessResult = {
@@ -452,6 +483,14 @@ function buildProcess(session: PlaytestSession, request: PlaytestExpeditionReque
   ];
   if (request.journeyLogs?.length) {
     logs.push(...request.journeyLogs.map((line) => `Journey: ${line}`));
+  }
+
+  if (request.extractionStatus === "early") {
+    logs.push("Extraction: the team cuts the route short, keeps field salvage, and avoids committing deeper injuries.");
+    return {
+      ...process,
+      logs
+    };
   }
 
   const encounterRoll = rolls[3] ?? rolls[0] ?? 0.5;

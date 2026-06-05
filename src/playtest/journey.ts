@@ -16,6 +16,7 @@ export type JourneyAction =
   | "plan-rush"
   | "plan-sneak";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
+export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 
 export type JourneyDraft = {
@@ -115,6 +116,7 @@ export type JourneyState = {
   bonusReward: ResourceBundle;
   combat: JourneyCombat | null;
   currentNodeIndex: number;
+  extractionStatus: JourneyExtractionStatus;
   fieldSupplies: ResourceBundle;
   id: string;
   loadout: ResourceBundle;
@@ -572,6 +574,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
+    extractionStatus: "in-progress",
     fieldSupplies,
     id: `journey-${Date.now()}`,
     loadout: { ...draft.loadout },
