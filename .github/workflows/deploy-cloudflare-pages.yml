@@ -35,6 +35,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Sync Cloudflare Pages runtime secrets
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          printf '%s' "$VITE_SUPABASE_URL" | npx wrangler pages secret put SUPABASE_URL --project-name=ember-dossier
+          printf '%s' "$VITE_SUPABASE_PUBLISHABLE_KEY" | npx wrangler pages secret put SUPABASE_PUBLISHABLE_KEY --project-name=ember-dossier
+
       - name: Build Cloudflare Pages Functions
         uses: cloudflare/wrangler-action@v3
         with:
