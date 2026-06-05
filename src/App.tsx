@@ -94,6 +94,8 @@ const defaultLoadout: ResourceBundle = {
   ammo: 1
 };
 
+const guestModeStorageKey = "ember-dossier-guest-mode";
+
 export default function App() {
   const [roomSlug, setRoomSlug] = useState(() => getInitialRoomSlug());
   const [player, setPlayer] = useState<RoomPlayer>(() => loadLocalPlayer());
@@ -112,6 +114,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [guestMode, setGuestMode] = useState(loadGuestMode);
   const applyingRemoteState = useRef(false);
   const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
@@ -160,6 +163,22 @@ export default function App() {
     } finally {
       setAuthSubmitting(false);
     }
+  }
+
+  function continueAsGuest() {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(guestModeStorageKey, "1");
+    }
+    setAuthNotice(null);
+    setGuestMode(true);
+  }
+
+  function switchToAccountLogin() {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(guestModeStorageKey);
+    }
+    setAuthNotice(null);
+    setGuestMode(false);
   }
 
   useEffect(() => {
@@ -280,7 +299,7 @@ export default function App() {
   }
 
   function retryRemoteSync() {
-    if (!hasSupabaseConfig || authSession) {
+    if (!hasSupabaseConfig || authSession || !guestMode) {
       return;
     }
 
@@ -353,14 +372,14 @@ export default function App() {
     setRoomSlugInUrl(roomSlug);
     latestRemoteUpdatedAt.current = null;
     setRemoteReady(!hasSupabaseConfig);
-    if (!hasSupabaseConfig || authSession) {
+    if (!hasSupabaseConfig || authSession || !guestMode) {
       return;
     }
     void hydrateRemoteState();
-  }, [authSession, roomSlug]);
+  }, [authSession, guestMode, roomSlug]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || authSession || syncStatus !== "error" || syncRetryCount >= 3) {
+    if (!hasSupabaseConfig || authSession || !guestMode || syncStatus !== "error" || syncRetryCount >= 3) {
       return;
     }
 
@@ -369,7 +388,7 @@ export default function App() {
     return () => {
       window.clearTimeout(retryTimer);
     };
-  }, [authSession, remoteReady, roomSlug, state, syncRetryCount, syncStatus]);
+  }, [authSession, guestMode, remoteReady, roomSlug, state, syncRetryCount, syncStatus]);
 
   useEffect(() => {
     saveDemoState(state);
@@ -379,7 +398,7 @@ export default function App() {
       return;
     }
 
-    if (!hasSupabaseConfig || authSession || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !guestMode || !remoteReady) {
       return;
     }
 
@@ -409,10 +428,10 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [authSession, player, remoteReady, roomSlug, state]);
+  }, [authSession, guestMode, player, remoteReady, roomSlug, state]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || authSession || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !guestMode || !remoteReady) {
       return;
     }
 
@@ -449,10 +468,10 @@ export default function App() {
       cancelled = true;
       window.clearInterval(pollTimer);
     };
-  }, [authSession, player, remoteReady, roomSlug, state]);
+  }, [authSession, guestMode, player, remoteReady, roomSlug, state]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || authSession || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !guestMode || !remoteReady) {
       return;
     }
 
@@ -465,7 +484,7 @@ export default function App() {
     return () => {
       window.clearInterval(heartbeatTimer);
     };
-  }, [authSession, player, remoteReady, roomSlug]);
+  }, [authSession, guestMode, player, remoteReady, roomSlug]);
 
   const selectedLocation = state.locations.find((location) => location.id === draft.locationId) ?? state.locations[0];
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
@@ -595,12 +614,12 @@ export default function App() {
       loadout: defaultLoadout
     });
 
-    if (hasSupabaseConfig && remoteReady && !authSession) {
+    if (hasSupabaseConfig && remoteReady && !authSession && guestMode) {
       void pushRemoteState(initialSession.uiState);
     }
   }
 
-  if (hasSupabaseConfig && !authSession) {
+  if (hasSupabaseConfig && !authSession && !guestMode) {
     return (
       <main className="auth-shell">
         <section className="panel auth-panel">
@@ -635,6 +654,10 @@ export default function App() {
             <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signup")}>
               <Shield size={18} aria-hidden="true" />
               Create account
+            </button>
+            <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={continueAsGuest}>
+              <Users size={18} aria-hidden="true" />
+              Continue as guest
             </button>
           </div>
           {authNotice && <p className="muted-copy">{authNotice}</p>}
@@ -690,6 +713,12 @@ export default function App() {
           <RotateCcw size={17} aria-hidden="true" />
           重置 demo
         </button>
+        {hasSupabaseConfig && guestMode && !authSession && (
+          <button className="ghost-button" type="button" onClick={switchToAccountLogin}>
+            <Shield size={17} aria-hidden="true" />
+            Account login
+          </button>
+        )}
       </aside>
 
       <section className="workspace">
@@ -1262,6 +1291,10 @@ function calculateReadiness(squad: GameState["survivors"], recommendedStats: Gam
   }, 0);
 
   return total / squad.length;
+}
+
+function loadGuestMode() {
+  return typeof window !== "undefined" && window.localStorage.getItem(guestModeStorageKey) === "1";
 }
 
 function describeSyncError(error: unknown) {

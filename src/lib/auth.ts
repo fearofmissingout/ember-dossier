@@ -160,7 +160,7 @@ function addCurrentPageRedirect(endpoint: URL) {
 
 async function readAuthSessionResponse(response: Response, emptySessionMessage: string): Promise<AuthSession> {
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw new Error(await readAuthError(response));
   }
 
   const payload = (await response.json()) as {
@@ -180,4 +180,14 @@ async function readAuthSessionResponse(response: Response, emptySessionMessage: 
     email: payload.user.email ?? null,
     userId: payload.user.id
   };
+}
+
+async function readAuthError(response: Response) {
+  const text = await response.text();
+  try {
+    const payload = JSON.parse(text) as { error?: string; error_description?: string; msg?: string; message?: string };
+    return payload.message ?? payload.msg ?? payload.error_description ?? payload.error ?? text;
+  } catch {
+    return text;
+  }
 }

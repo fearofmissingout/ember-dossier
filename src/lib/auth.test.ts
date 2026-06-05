@@ -85,4 +85,21 @@ describe("auth client", () => {
       password: "secret-pass"
     });
   });
+
+  test("surfaces Supabase auth error messages as readable text", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.resetModules();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        text: async () => JSON.stringify({ message: "Email rate limit exceeded" })
+      })
+    );
+
+    const { signUpWithPassword } = await import("./auth");
+    await expect(signUpWithPassword("alice@example.com", "secret-pass")).rejects.toThrow(/^Email rate limit exceeded$/);
+  });
 });

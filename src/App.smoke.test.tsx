@@ -38,5 +38,6 @@ describe("App smoke render", () => {
     expect(html).toContain("Password");
     expect(html).toContain("Sign in");
     expect(html).toContain("Create account");
+    expect(html).toContain("Continue as guest");
   });
 });
