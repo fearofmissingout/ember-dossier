@@ -158,33 +158,17 @@ begin
     create policy "content events are readable" on public.content_events for select using (true);
   end if;
 
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public'
-      and tablename = 'demo_snapshots'
-      and policyname = 'demo snapshot is readable'
-  ) then
-    create policy "demo snapshot is readable" on public.demo_snapshots
-      for select using (room_slug = 'ember-demo');
-  end if;
+  drop policy if exists "demo snapshot is readable" on public.demo_snapshots;
+  drop policy if exists "demo snapshot can be inserted" on public.demo_snapshots;
+  drop policy if exists "demo snapshot can be updated" on public.demo_snapshots;
 
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public'
-      and tablename = 'demo_snapshots'
-      and policyname = 'demo snapshot can be inserted'
-  ) then
-    create policy "demo snapshot can be inserted" on public.demo_snapshots
-      for insert with check (room_slug = 'ember-demo');
-  end if;
+  create policy "demo snapshot is readable" on public.demo_snapshots
+    for select using (room_slug ~ '^[a-z0-9][a-z0-9-]{2,31}$');
 
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public'
-      and tablename = 'demo_snapshots'
-      and policyname = 'demo snapshot can be updated'
-  ) then
-    create policy "demo snapshot can be updated" on public.demo_snapshots
-      for update using (room_slug = 'ember-demo') with check (room_slug = 'ember-demo');
-  end if;
+  create policy "demo snapshot can be inserted" on public.demo_snapshots
+    for insert with check (room_slug ~ '^[a-z0-9][a-z0-9-]{2,31}$');
+
+  create policy "demo snapshot can be updated" on public.demo_snapshots
+    for update using (room_slug ~ '^[a-z0-9][a-z0-9-]{2,31}$')
+    with check (room_slug ~ '^[a-z0-9][a-z0-9-]{2,31}$');
 end $$;

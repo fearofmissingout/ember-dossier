@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Archive,
   BookOpen,
   ClipboardList,
+  Copy,
   Home,
+  Link,
   Minus,
   Plus,
   RotateCcw,
@@ -17,7 +19,23 @@ import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, r
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import { resolveExpedition } from "./game/sim";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
-import { loadRemoteDemoState, saveRemoteDemoState } from "./lib/remoteState";
+import {
+  createRoomMeta,
+  loadRemoteDemoState,
+  saveRemoteDemoState,
+  touchRemotePlayer,
+  type RoomMeta,
+  type RoomPlayer
+} from "./lib/remoteState";
+import {
+  createRoomSlug,
+  formatLastSeen,
+  getInitialRoomSlug,
+  getRoomShareLink,
+  loadLocalPlayer,
+  renameLocalPlayer,
+  setRoomSlugInUrl
+} from "./lib/multiplayer";
 import { hasSupabaseConfig } from "./lib/supabase";
 
 type ViewKey = "overview" | "survivors" | "expedition" | "reports" | "facilities" | "members" | "archive";
@@ -61,12 +79,18 @@ const defaultLoadout: ResourceBundle = {
 
 export default function App() {
   const [state, setState] = useState<GameState>(() => loadDemoState());
+  const [roomSlug, setRoomSlug] = useState(() => getInitialRoomSlug());
+  const [player, setPlayer] = useState<RoomPlayer>(() => loadLocalPlayer());
+  const [roomMeta, setRoomMeta] = useState<RoomMeta>(() => createRoomMeta(player));
   const [view, setView] = useState<ViewKey>("overview");
   const [latestReportId, setLatestReportId] = useState<string | null>(null);
   const [remoteReady, setRemoteReady] = useState(!hasSupabaseConfig);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(hasSupabaseConfig ? "loading" : "local");
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncRetryCount, setSyncRetryCount] = useState(0);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const applyingRemoteState = useRef(false);
+  const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
     squadIds: ["lin", "mara", "otto"],
     locationId: "water-plant",
@@ -83,9 +107,12 @@ export default function App() {
     setSyncError(null);
 
     try {
-      const result = await loadRemoteDemoState(createInitialState());
+      const result = await loadRemoteDemoState(roomSlug, createInitialState(), player);
 
+      applyingRemoteState.current = true;
+      latestRemoteUpdatedAt.current = result.updatedAt;
       setState(result.state);
+      setRoomMeta(result.meta);
       saveDemoState(result.state);
       setRemoteReady(true);
       setSyncRetryCount(0);
@@ -108,7 +135,7 @@ export default function App() {
     setSyncError(null);
 
     try {
-      await saveRemoteDemoState(nextState);
+      await saveRemoteDemoState(roomSlug, nextState, roomMeta, player);
       setSyncRetryCount(0);
       setSyncStatus("synced");
     } catch (error) {
@@ -132,9 +159,51 @@ export default function App() {
     void hydrateRemoteState();
   }
 
+  async function copyRoomLink() {
+    const linkToCopy = getRoomShareLink(roomSlug);
+
+    try {
+      await navigator.clipboard.writeText(linkToCopy);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+
+    window.setTimeout(() => setCopyStatus("idle"), 1800);
+  }
+
+  function createNewRoom() {
+    const nextRoomSlug = createRoomSlug();
+
+    latestRemoteUpdatedAt.current = null;
+    setRoomSlug(nextRoomSlug);
+    setView("overview");
+    setLatestReportId(null);
+    setState(createInitialState());
+    setRoomMeta(createRoomMeta(player));
+  }
+
+  function updatePlayerName(name: string) {
+    const updatedPlayer = renameLocalPlayer(player, name);
+    setPlayer(updatedPlayer);
+    setRoomMeta((current) => ({
+      ...current,
+      players: {
+        ...current.players,
+        [updatedPlayer.id]: {
+          ...updatedPlayer,
+          lastSeenAt: new Date().toISOString()
+        }
+      }
+    }));
+  }
+
   useEffect(() => {
+    setRoomSlugInUrl(roomSlug);
+    latestRemoteUpdatedAt.current = null;
+    setRemoteReady(!hasSupabaseConfig);
     void hydrateRemoteState();
-  }, []);
+  }, [roomSlug]);
 
   useEffect(() => {
     if (!hasSupabaseConfig || syncStatus !== "error" || syncRetryCount >= 3) {
@@ -146,10 +215,15 @@ export default function App() {
     return () => {
       window.clearTimeout(retryTimer);
     };
-  }, [remoteReady, state, syncRetryCount, syncStatus]);
+  }, [remoteReady, roomSlug, state, syncRetryCount, syncStatus]);
 
   useEffect(() => {
     saveDemoState(state);
+
+    if (applyingRemoteState.current) {
+      applyingRemoteState.current = false;
+      return;
+    }
 
     if (!hasSupabaseConfig || !remoteReady) {
       return;
@@ -159,7 +233,7 @@ export default function App() {
     const timer = window.setTimeout(() => {
       setSyncStatus("saving");
       setSyncError(null);
-      void saveRemoteDemoState(state)
+      void saveRemoteDemoState(roomSlug, state, roomMeta, player)
         .then(() => {
           if (!cancelled) {
             setSyncRetryCount(0);
@@ -181,13 +255,73 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [remoteReady, state]);
+  }, [player, remoteReady, roomSlug, state]);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || !remoteReady) {
+      return;
+    }
+
+    let cancelled = false;
+    const poll = () => {
+      void loadRemoteDemoState(roomSlug, state, player)
+        .then((result) => {
+          if (cancelled) {
+            return;
+          }
+
+          setRoomMeta(result.meta);
+
+          if (result.updatedAt && result.updatedAt !== latestRemoteUpdatedAt.current) {
+            latestRemoteUpdatedAt.current = result.updatedAt;
+            applyingRemoteState.current = true;
+            setState(result.state);
+            saveDemoState(result.state);
+            setSyncStatus("synced");
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to poll Supabase demo state", error);
+
+          if (!cancelled) {
+            setSyncError(describeSyncError(error));
+            setSyncStatus("error");
+          }
+        });
+    };
+
+    const pollTimer = window.setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollTimer);
+    };
+  }, [player, remoteReady, roomSlug, state]);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || !remoteReady) {
+      return;
+    }
+
+    const heartbeatTimer = window.setInterval(() => {
+      void touchRemotePlayer(roomSlug, player).catch((error) => {
+        console.error("Failed to update room presence", error);
+      });
+    }, 15000);
+
+    return () => {
+      window.clearInterval(heartbeatTimer);
+    };
+  }, [player, remoteReady, roomSlug]);
 
   const selectedLocation = state.locations.find((location) => location.id === draft.locationId) ?? state.locations[0];
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const squadReady = draft.squadIds.length >= 3 && draft.squadIds.length <= 5;
   const canAffordLoadout = resourceKeys.every((key) => state.resources[key] >= draft.loadout[key]);
   const readiness = useMemo(() => calculateReadiness(selectedSquad, selectedLocation.recommendedStats), [selectedLocation, selectedSquad]);
+  const roomPlayers = useMemo(
+    () => Object.values(roomMeta.players).sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt)),
+    [roomMeta.players]
+  );
 
   function toggleSurvivor(id: string) {
     setDraft((current) => {
@@ -280,6 +414,21 @@ export default function App() {
           })}
         </nav>
 
+        <div className="room-card">
+          <span>当前房间</span>
+          <strong>{roomSlug}</strong>
+          <div className="room-actions">
+            <button type="button" onClick={copyRoomLink} title="复制邀请链接">
+              <Copy size={15} aria-hidden="true" />
+              {copyStatus === "copied" ? "已复制" : copyStatus === "failed" ? "复制失败" : "邀请"}
+            </button>
+            <button type="button" onClick={createNewRoom} title="创建新房间">
+              <Link size={15} aria-hidden="true" />
+              新房
+            </button>
+          </div>
+        </div>
+
         <button className="ghost-button" type="button" onClick={resetDemo}>
           <RotateCcw size={17} aria-hidden="true" />
           重置 demo
@@ -301,6 +450,8 @@ export default function App() {
                 重试
               </button>
             )}
+            <span>房间 {roomSlug}</span>
+            <span>在线 {roomPlayers.length}</span>
             <span>士气 {state.resources.morale}</span>
             <span>危险 {state.resources.danger}</span>
           </div>
@@ -325,7 +476,17 @@ export default function App() {
         )}
         {view === "reports" && <Reports state={state} latestReportId={latestReportId} />}
         {view === "facilities" && <Facilities state={state} />}
-        {view === "members" && <Members />}
+        {view === "members" && (
+          <RoomMembers
+            player={player}
+            players={roomPlayers}
+            roomSlug={roomSlug}
+            copyStatus={copyStatus}
+            onCopyRoomLink={copyRoomLink}
+            onCreateRoom={createNewRoom}
+            onRenamePlayer={updatePlayerName}
+          />
+        )}
         {view === "archive" && <ArchiveView state={state} />}
       </section>
     </main>
@@ -628,6 +789,66 @@ function Facilities({ state }: { state: GameState }) {
             <span>等级 {facility.level}</span>
             <p>{facility.effect}</p>
           </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RoomMembers({
+  player,
+  players,
+  roomSlug,
+  copyStatus,
+  onCopyRoomLink,
+  onCreateRoom,
+  onRenamePlayer
+}: {
+  player: RoomPlayer;
+  players: RoomPlayer[];
+  roomSlug: string;
+  copyStatus: "idle" | "copied" | "failed";
+  onCopyRoomLink: () => void;
+  onCreateRoom: () => void;
+  onRenamePlayer: (name: string) => void;
+}) {
+  return (
+    <section className="panel">
+      <p className="eyebrow">Room</p>
+      <div className="panel-heading">
+        <div>
+          <h2>房间与成员</h2>
+          <p className="muted-copy">同一个房间链接会共享基地、远征结果和动态流。</p>
+        </div>
+        <span className="subtle-pill">{roomSlug}</span>
+      </div>
+
+      <div className="room-settings">
+        <label>
+          <span>你的名字</span>
+          <input value={player.name} onChange={(event) => onRenamePlayer(event.target.value)} />
+        </label>
+        <div className="room-actions large">
+          <button type="button" onClick={onCopyRoomLink}>
+            <Copy size={16} aria-hidden="true" />
+            {copyStatus === "copied" ? "邀请链接已复制" : copyStatus === "failed" ? "复制失败" : "复制邀请链接"}
+          </button>
+          <button type="button" onClick={onCreateRoom}>
+            <Link size={16} aria-hidden="true" />
+            创建新房间
+          </button>
+        </div>
+      </div>
+
+      <div className="member-list">
+        {players.map((roomPlayer) => (
+          <div className="member-row player-row" key={roomPlayer.id}>
+            <span className="player-mark" style={{ background: roomPlayer.color }} />
+            <div>
+              <strong>{roomPlayer.name}</strong>
+              <small>{roomPlayer.id === player.id ? "你" : formatLastSeen(roomPlayer.lastSeenAt)}</small>
+            </div>
+          </div>
         ))}
       </div>
     </section>

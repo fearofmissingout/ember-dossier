@@ -132,6 +132,55 @@ button:disabled {
   color: #7b3a2c;
 }
 
+.room-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #cab89b;
+  border-radius: 8px;
+  background: #fbf7ec;
+}
+
+.room-card > span,
+.room-settings label span {
+  color: #8c4b32;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.room-card strong {
+  color: #26312c;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.room-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.room-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #b99d75;
+  border-radius: 8px;
+  background: #f5ead5;
+  color: #563523;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.room-actions button:hover {
+  border-color: #8e5b31;
+}
+
 .workspace {
   min-width: 0;
   padding: 28px;
@@ -571,6 +620,54 @@ button:disabled {
   color: #7d3f2d;
 }
 
+.room-settings {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.room-settings label {
+  display: grid;
+  gap: 6px;
+}
+
+.room-settings input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cab89b;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  font-weight: 800;
+}
+
+.room-actions.large button {
+  min-height: 42px;
+}
+
+.player-row {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.player-row > div {
+  display: grid;
+  gap: 2px;
+}
+
+.player-row small {
+  color: #6a766f;
+  font-weight: 800;
+}
+
+.player-mark {
+  width: 14px;
+  height: 38px;
+  flex: 0 0 14px;
+  border-radius: 999px;
+}
+
 .archive-grid {
   grid-template-columns: repeat(3, minmax(160px, 1fr));
 }
@@ -623,6 +720,10 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  body {
+    min-width: 0;
+  }
+
   .workspace,
   .app-shell {
     padding: 0;
@@ -633,16 +734,38 @@ button:disabled {
     padding: 16px;
   }
 
+  .side-rail {
+    display: grid;
+    gap: 12px;
+  }
+
+  .brand-lockup {
+    margin-bottom: 0;
+  }
+
   .top-bar,
   .panel-heading {
     display: grid;
+  }
+
+  .top-bar h1 {
+    font-size: 30px;
   }
 
   .system-status {
     justify-content: flex-start;
   }
 
-  .nav-list,
+  .system-status span,
+  .system-status button {
+    min-height: 32px;
+    font-size: 12px;
+  }
+
+  .nav-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .view-grid,
   .expedition-layout,
   .survivor-grid,
@@ -654,5 +777,40 @@ button:disabled {
 
   .summary-panel {
     grid-column: span 1;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .resource-tile {
+    min-height: 74px;
+  }
+
+  .survivor-card {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .portrait-mark {
+    min-height: 70px;
+  }
+
+  .room-actions button,
+  .primary-button,
+  .pick-row,
+  .risk-card,
+  .icon-button {
+    min-height: 44px;
+  }
+
+  .feed-item,
+  .member-row,
+  .loadout-row,
+  .metric-pair {
+    display: grid;
+  }
+
+  .feed-item > span {
+    flex: none;
   }
 }
