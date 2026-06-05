@@ -27,11 +27,13 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
   setBaseAssignment,
   treatSurvivor,
   upgradeFacility,
+  type BaseDevelopmentPlan,
   type BaseRecoveryPlan
 } from "./playtest/sim";
 import {
@@ -1093,7 +1095,9 @@ export default function App() {
           />
         )}
         {view === "reports" && <Reports state={state} latestReportId={latestReportId} />}
-        {view === "facilities" && <Facilities state={state} onUpgrade={upgradeRoomFacility} />}
+        {view === "facilities" && (
+          <Facilities state={state} developmentPlan={baseDevelopmentPlan(session)} onUpgrade={upgradeRoomFacility} />
+        )}
         {view === "members" && (
           <RoomMembers
             player={player}
@@ -2217,11 +2221,48 @@ function Reports({ state, latestReportId }: { state: GameState; latestReportId: 
   );
 }
 
-function Facilities({ state, onUpgrade }: { state: GameState; onUpgrade: (id: string) => void }) {
+function Facilities({
+  state,
+  developmentPlan,
+  onUpgrade
+}: {
+  state: GameState;
+  developmentPlan: BaseDevelopmentPlan;
+  onUpgrade: (id: string) => void;
+}) {
   return (
     <section className="panel">
       <p className="eyebrow">Facilities</p>
       <h2>Base development</h2>
+      <div className="development-plan-card" aria-label="Base development plan">
+        <div>
+          <span>Development plan</span>
+          <strong>{developmentPlan.summary}</strong>
+          <small>
+            {developmentPlan.recommended.length
+              ? "Recommended projects for the next build cycle"
+              : "All facilities are fully developed"}
+          </small>
+        </div>
+        <div className="development-project-strip">
+          {developmentPlan.recommended.map((project) => (
+            <article
+              className={project.canAfford ? "development-project-card" : "development-project-card gated"}
+              key={project.id}
+            >
+              <div>
+                <strong>{project.name}</strong>
+                <span>{project.action} to Lv.{project.nextLevel}</span>
+              </div>
+              <small>
+                {project.canAfford ? `${project.cost} materials ready` : `Need ${project.materialDeficit} more materials`}
+              </small>
+              <p>{project.baseImpact}</p>
+              <p>{project.expeditionImpact}</p>
+            </article>
+          ))}
+        </div>
+      </div>
       <div className="facility-grid">
         {state.facilities.map((facility) => {
           const cost = facilityActionCost(facility);

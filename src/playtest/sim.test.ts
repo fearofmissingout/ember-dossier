@@ -12,6 +12,7 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
   setBaseAssignment,
@@ -186,6 +187,34 @@ describe("playtest room loop", () => {
       name: session.account.survivors[0].name
     });
     expect(plan.summary).toContain("1 injury clear");
+  });
+
+  test("previews base development priorities and material gates", () => {
+    const session = createStarterSession("user-a", "Alice", "development-plan-room");
+    session.room.base.resources.materials = 10;
+
+    const plan = baseDevelopmentPlan(session);
+    const workshop = plan.projects.find((project) => project.id === "workshop");
+    const radio = plan.projects.find((project) => project.id === "radio");
+
+    expect(plan.materials).toBe(10);
+    expect(plan.affordableCount).toBeGreaterThan(0);
+    expect(plan.recommended[0]).toMatchObject({
+      action: "Build",
+      canAfford: true,
+      nextLevel: 1
+    });
+    expect(workshop).toMatchObject({
+      action: "Build",
+      canAfford: true,
+      cost: 10,
+      expeditionImpact: expect.stringContaining("salvage")
+    });
+    expect(radio).toMatchObject({
+      canAfford: false,
+      materialDeficit: 2
+    });
+    expect(plan.summary).toContain("10 materials");
   });
 
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {

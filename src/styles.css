@@ -2063,6 +2063,78 @@ button:disabled {
   grid-template-columns: repeat(4, minmax(180px, 1fr));
 }
 
+.development-plan-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #d2c1a4;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.development-plan-card > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.development-plan-card > div:first-child span {
+  color: #8a6f2f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.development-plan-card strong {
+  color: #2e271d;
+}
+
+.development-plan-card small {
+  color: #6f6250;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.development-project-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.development-project-card {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #d1c4aa;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.development-project-card.gated {
+  background: #f5ead5;
+  opacity: 0.86;
+}
+
+.development-project-card div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.development-project-card span {
+  color: #8b5b3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.development-project-card p {
+  margin: 0;
+  color: #5e6a62;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .facility-card {
   padding: 16px;
   border: 1px solid #d1c4aa;
@@ -2245,6 +2317,7 @@ button:disabled {
   .march-forecast,
   .travel-record-strip,
   .road-event-strip,
+  .development-project-strip,
   .hardship-strip {
     grid-template-columns: 1fr 1fr;
   }
@@ -2328,6 +2401,7 @@ button:disabled {
   .travel-record-strip,
   .road-event-strip,
   .hardship-strip,
+  .development-project-strip,
   .resource-grid {
     grid-template-columns: 1fr;
   }

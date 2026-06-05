@@ -1,6 +1,6 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
-import { facilityActionCost, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
+import { facilityActionCost, facilityActionLabel, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
 import { hasSurvivorPerk, survivorPerkDetails } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
@@ -496,6 +496,30 @@ export type BaseRecoveryPlan = {
   summary: string;
 };
 
+export type BaseDevelopmentProjectPreview = {
+  action: "Build" | "Upgrade" | "Maxed";
+  baseImpact: string;
+  canAfford: boolean;
+  category: string;
+  cost: number;
+  expeditionImpact: string;
+  id: string;
+  level: number;
+  materialDeficit: number;
+  name: string;
+  nextLevel: number;
+  priority: number;
+};
+
+export type BaseDevelopmentPlan = {
+  affordableCount: number;
+  blockedCount: number;
+  materials: number;
+  projects: BaseDevelopmentProjectPreview[];
+  recommended: BaseDevelopmentProjectPreview[];
+  summary: string;
+};
+
 export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
   const dormLevel = facilityLevel(session, "dorm");
   const clinicLevel = facilityLevel(session, "clinic");
@@ -530,6 +554,44 @@ export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
     summary: `${careWorkers.length} care shift${careWorkers.length === 1 ? "" : "s"}, ${likelyInjuryClears} injury clear${
       likelyInjuryClears === 1 ? "" : "s"
     } likely, fatigue -${dailyRecovery} baseline.`
+  };
+}
+
+export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPlan {
+  const materials = session.room.base.resources.materials;
+  const projects = session.room.base.facilities.map((facility) => {
+    const action = facilityActionLabel(facility);
+    const cost = facilityActionCost(facility);
+    const nextLevel = action === "Maxed" ? facility.level : isFacilityBuilt(facility) ? facility.level + 1 : 1;
+    const canAfford = action !== "Maxed" && materials >= cost;
+    return {
+      action,
+      baseImpact: facilityDevelopmentImpact(facility.id).base,
+      canAfford,
+      category: facility.category ?? "core",
+      cost,
+      expeditionImpact: facilityDevelopmentImpact(facility.id).expedition,
+      id: facility.id,
+      level: facility.level,
+      materialDeficit: Math.max(0, cost - materials),
+      name: facility.name,
+      nextLevel,
+      priority: developmentProjectScore(facility.id, facility.category ?? "core", action, canAfford)
+    };
+  });
+  const activeProjects = projects
+    .filter((project) => project.action !== "Maxed")
+    .sort((left, right) => right.priority - left.priority || left.materialDeficit - right.materialDeficit || left.cost - right.cost);
+  const affordableCount = activeProjects.filter((project) => project.canAfford).length;
+  const blockedCount = activeProjects.length - affordableCount;
+
+  return {
+    affordableCount,
+    blockedCount,
+    materials,
+    projects,
+    recommended: activeProjects.slice(0, 3),
+    summary: `${materials} materials available. ${affordableCount} project${affordableCount === 1 ? "" : "s"} affordable, ${blockedCount} gated.`
   };
 }
 
@@ -856,6 +918,78 @@ function resolveBaseAssignments(session: PlaytestSession) {
 function careHealScore(session: PlaytestSession, survivor: PlaytestSession["account"]["survivors"][number]): number {
   const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
   return Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2 + baseInstinctBonus * 3);
+}
+
+function developmentProjectScore(facilityId: string, category: string, action: "Build" | "Upgrade" | "Maxed", canAfford: boolean): number {
+  if (action === "Maxed") {
+    return 0;
+  }
+
+  const categoryScore: Record<string, number> = {
+    core: 4,
+    expedition: 7,
+    survival: 6,
+    utility: 7
+  };
+  const focusScore: Record<string, number> = {
+    kitchen: 3,
+    radio: 3,
+    training: 3,
+    workshop: 4,
+    barricade: 2,
+    clinic: 1,
+    dorm: 1,
+    generator: 1,
+    watchtower: 1
+  };
+
+  return (categoryScore[category] ?? 4) + (focusScore[facilityId] ?? 0) + (action === "Build" ? 3 : 0) + (canAfford ? 2 : -1);
+}
+
+function facilityDevelopmentImpact(facilityId: string): { base: string; expedition: string } {
+  const impacts: Record<string, { base: string; expedition: string }> = {
+    barricade: {
+      base: "Lowers danger and makes guard shifts stronger.",
+      expedition: "Improves guard, route secure, and extraction evade choices."
+    },
+    clinic: {
+      base: "Improves care shifts, fatigue recovery, and injury clearing.",
+      expedition: "Improves patch actions, medical loot, and field treatment."
+    },
+    dorm: {
+      base: "Improves daily fatigue recovery and keeps the roster usable.",
+      expedition: "Raises squad stamina and improves camp rest value."
+    },
+    generator: {
+      base: "Keeps powered systems online and supports ammo prep.",
+      expedition: "Improves ammo damage and can add starting ammo."
+    },
+    kitchen: {
+      base: "Reduces food and water pressure during day settlement.",
+      expedition: "Improves camp meals, shop rations, and road supplies."
+    },
+    radio: {
+      base: "Improves objective repair windows and coordination.",
+      expedition: "Improves pressure relief, route intel, scout camps, and shop intel."
+    },
+    training: {
+      base: "Adds a long-term combat development track.",
+      expedition: "Improves stamina, carry capacity, and opening combat drills."
+    },
+    watchtower: {
+      base: "Lowers daily danger and helps guards catch problems early.",
+      expedition: "Improves pressure relief, route search, route push, and evade."
+    },
+    workshop: {
+      base: "Improves repair shifts and turns strong repairs into materials.",
+      expedition: "Improves ammo damage, salvage, shop service, and opening exposes."
+    }
+  };
+
+  return impacts[facilityId] ?? {
+    base: "Improves base operations.",
+    expedition: "Improves expedition support."
+  };
 }
 
 function recoveryPriorityPatients(session: PlaytestSession, excludedIds: Set<string>): BaseRecoveryPatientPreview[] {
