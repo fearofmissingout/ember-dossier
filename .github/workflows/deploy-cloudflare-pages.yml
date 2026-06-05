@@ -40,15 +40,18 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages functions build functions --outfile dist/_worker.js
+          command: pages functions build functions --outdir dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Place Pages worker in asset output
+        run: mv dist/index.js dist/_worker.js
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=ember-dossier --branch=master
+          command: pages deploy dist --project-name=ember-dossier --branch=master --no-bundle
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Production playtest smoke
