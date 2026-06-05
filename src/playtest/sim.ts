@@ -309,6 +309,7 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
   next.room.base.day = nextDay;
   next.room.base.morale = clamp(next.room.base.morale + (shortagePressure > 0 ? -shortagePressure * 6 : 2), 0, 100);
   next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel - barricadeLevel - shift.dangerReduction, 0, 100);
+  const baseEvent = resolveBaseDayEvent(next, nextDay, shift.coverage);
 
   const logs = [
     ...shift.logs,
@@ -316,7 +317,8 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
     shortagePressure > 0
       ? `Pressure: shortages hit morale and make the base louder. Morale -${shortagePressure * 6}, danger +${shortagePressure * 3}.`
       : "Pressure: the base makes it through the night without ration panic. Morale +2.",
-    `Recovery: ${recoveredCount} survivor${recoveredCount === 1 ? "" : "s"} rested. Fatigue -${recovery} before injuries.`
+    `Recovery: ${recoveredCount} survivor${recoveredCount === 1 ? "" : "s"} rested. Fatigue -${recovery} before injuries.`,
+    ...baseEvent.logs
   ];
   if (kitchenLevel > 0) {
     logs.push(`Kitchen: upkeep reduced by level ${kitchenLevel}.`);
@@ -349,7 +351,7 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
     id: `feed-day-${Date.now()}`,
     kind: "system",
     timestamp: `Day ${nextDay}`,
-    title: next.room.base.objective.status === "lost" ? "Objective failed" : `Day ${nextDay} settlement`
+    title: next.room.base.objective.status === "lost" ? "Objective failed" : `Day ${nextDay}: ${baseEvent.title}`
   });
 
   refreshUiState(next);
@@ -461,6 +463,13 @@ type ProcessResult = {
   moraleDelta: number;
   objectiveBonus: number;
   resourceBonus: Partial<Record<ResourceKey, number>>;
+};
+
+type BaseShiftCoverage = Record<BaseWorkType, number>;
+
+type BaseDayEventResult = {
+  logs: string[];
+  title: string;
 };
 
 function buildProcess(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport): ProcessResult {
@@ -585,9 +594,115 @@ function facilityLevel(session: PlaytestSession, facilityId: string): number {
   return session.room.base.facilities.find((facility) => facility.id === facilityId)?.level ?? 0;
 }
 
+function createEmptyShiftCoverage(): BaseShiftCoverage {
+  return {
+    care: 0,
+    forage: 0,
+    guard: 0,
+    repair: 0
+  };
+}
+
+function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage: BaseShiftCoverage): BaseDayEventResult {
+  const eventIndex = Math.max(0, nextDay - 2) % 4;
+  const logs: string[] = [];
+
+  if (eventIndex === 0) {
+    const title = "Fence breach";
+    const support = coverage.guard + facilityLevel(session, "watchtower") + facilityLevel(session, "barricade");
+    if (support >= 3) {
+      const relief = Math.min(6, support);
+      session.room.base.danger = clamp(session.room.base.danger - relief, 0, 100);
+      session.room.base.morale = clamp(session.room.base.morale + 1, 0, 100);
+      logs.push(`Base event: ${title}. Guards, tower sightlines, and barricades close the gap before dawn. Danger -${relief}, morale +1.`);
+    } else if (support > 0) {
+      session.room.base.danger = clamp(session.room.base.danger + 2, 0, 100);
+      logs.push(`Base event: ${title}. The watch catches it late, but stops a worse breach. Danger +2.`);
+    } else {
+      session.room.base.danger = clamp(session.room.base.danger + 8, 0, 100);
+      session.room.base.morale = clamp(session.room.base.morale - 3, 0, 100);
+      logs.push(`Base event: ${title}. No one is watching the blind side. Danger +8, morale -3.`);
+    }
+    return { logs, title };
+  }
+
+  if (eventIndex === 1) {
+    const title = "Spoiled stores";
+    const support = coverage.forage + facilityLevel(session, "kitchen");
+    if (support >= 2) {
+      const food = 1 + Math.floor(support / 2);
+      session.room.base.resources.food += food;
+      session.room.base.resources.water += 1;
+      logs.push(`Base event: ${title}. The kitchen crew catches the rot and turns safe scraps into rations. Food +${food}, Water +1.`);
+    } else if (support > 0) {
+      logs.push(`Base event: ${title}. A forager isolates the bad crates before they spread. No extra loss.`);
+    } else {
+      const foodLoss = spendWithShortage(session.room.base.resources, "food", 2);
+      const waterLoss = spendWithShortage(session.room.base.resources, "water", 1);
+      const pressure = foodLoss + waterLoss;
+      session.room.base.morale = clamp(session.room.base.morale - 2 - pressure * 2, 0, 100);
+      logs.push(`Base event: ${title}. A sour crate contaminates the shelf. Food -${2 - foodLoss}/2, Water -${1 - waterLoss}/1, morale -${2 + pressure * 2}.`);
+    }
+    return { logs, title };
+  }
+
+  if (eventIndex === 2) {
+    const title = "Sick bay rush";
+    const support = coverage.care + facilityLevel(session, "clinic");
+    const patient = session.account.survivors
+      .filter((survivor) => survivor.status !== "assigned")
+      .sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20))[0];
+    if (support >= 2) {
+      if (patient) {
+        const fatigueRelief = 6 + support * 2;
+        patient.fatigue = clamp(patient.fatigue - fatigueRelief, 0, 100);
+        if (patient.injuries.length > 0) {
+          patient.injuries = patient.injuries.slice(1);
+        }
+        patient.status = patient.injuries.length > 0 ? "recovering" : "available";
+        logs.push(`Base event: ${title}. Clinic coverage stabilizes ${patient.name}. Fatigue -${fatigueRelief}, one injury cleared if present.`);
+      } else {
+        session.room.base.resources.medicine += 1;
+        logs.push(`Base event: ${title}. The clinic has a quiet day and repacks field kits. Medicine +1.`);
+      }
+    } else if (support > 0) {
+      session.room.base.resources.medicine += 1;
+      logs.push(`Base event: ${title}. One caretaker keeps the line moving and saves usable supplies. Medicine +1.`);
+    } else {
+      const shortage = spendWithShortage(session.room.base.resources, "medicine", 1);
+      if (patient) {
+        patient.fatigue = clamp(patient.fatigue + 6, 0, 100);
+      }
+      session.room.base.morale = clamp(session.room.base.morale - (shortage > 0 ? 4 : 2), 0, 100);
+      logs.push(`Base event: ${title}. No care shift is ready. Medicine -${1 - shortage}/1${patient ? `, ${patient.name} fatigue +6` : ""}, morale -${shortage > 0 ? 4 : 2}.`);
+    }
+    return { logs, title };
+  }
+
+  const title = "Signal window";
+  const support = coverage.repair + facilityLevel(session, "radio") + Math.floor(facilityLevel(session, "workshop") / 2);
+  if (support >= 2) {
+    const objective = Math.min(2, Math.max(1, Math.floor(support / 2)));
+    session.room.base.objective.repairedParts = Math.min(
+      session.room.base.objective.requiredParts,
+      session.room.base.objective.repairedParts + objective
+    );
+    session.room.base.resources.materials += 1;
+    logs.push(`Base event: ${title}. The room catches a clean tower ping and acts fast. Objective +${objective}, Materials +1.`);
+  } else if (support > 0) {
+    session.room.base.objective.repairedParts = Math.min(session.room.base.objective.requiredParts, session.room.base.objective.repairedParts + 1);
+    logs.push(`Base event: ${title}. A rough signal still gives the repair crew one useful tower note. Objective +1.`);
+  } else {
+    session.room.base.danger = clamp(session.room.base.danger + 3, 0, 100);
+    logs.push(`Base event: ${title}. The tower clicks through an unanswered frequency. Danger +3.`);
+  }
+  return { logs, title };
+}
+
 function resolveBaseAssignments(session: PlaytestSession) {
   const logs: string[] = [];
   let dangerReduction = 0;
+  const coverage = createEmptyShiftCoverage();
 
   for (const assignment of session.room.baseAssignments) {
     const survivor = session.account.survivors.find(
@@ -596,6 +711,7 @@ function resolveBaseAssignments(session: PlaytestSession) {
     if (!survivor || survivor.status === "assigned") {
       continue;
     }
+    coverage[assignment.type] += 1;
 
     const fatiguePenalty = survivor.fatigue >= 70 ? 1 : 0;
     const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
@@ -667,6 +783,7 @@ function resolveBaseAssignments(session: PlaytestSession) {
   }
 
   return {
+    coverage,
     dangerReduction,
     logs
   };

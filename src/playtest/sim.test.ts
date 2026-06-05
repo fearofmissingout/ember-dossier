@@ -503,6 +503,79 @@ describe("playtest room loop", () => {
     expect(next.room.feed[0]?.body).toContain("Barricade");
   });
 
+  test("base day events punish uncovered perimeter breaches", () => {
+    const session = createStarterSession("user-a", "Alice", "event-breach-room");
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.danger = 18;
+    const watchtower = session.room.base.facilities.find((facility) => facility.id === "watchtower");
+    if (watchtower) {
+      watchtower.level = 0;
+    }
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("Fence breach");
+    expect(next.room.feed[0]?.body).toContain("Base event: Fence breach");
+    expect(next.room.base.danger).toBeGreaterThan(session.room.base.danger);
+    expect(next.room.base.morale).toBeLessThan(session.room.base.morale + 2);
+  });
+
+  test("guard shifts and barricades turn perimeter events into relief", () => {
+    let session = createStarterSession("user-a", "Alice", "event-guard-room");
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.danger = 22;
+    const barricade = session.room.base.facilities.find((facility) => facility.id === "barricade");
+    if (barricade) {
+      barricade.level = 2;
+    }
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "guard");
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("Fence breach");
+    expect(next.room.feed[0]?.body).toContain("Danger -");
+    expect(next.room.base.danger).toBeLessThan(22);
+  });
+
+  test("kitchen and forage coverage turn spoiled stores into extra rations", () => {
+    let session = createStarterSession("user-a", "Alice", "event-stores-room");
+    session.room.base.day = 2;
+    session.room.base.resources.food = 6;
+    session.room.base.resources.water = 6;
+    const kitchen = session.room.base.facilities.find((facility) => facility.id === "kitchen");
+    if (kitchen) {
+      kitchen.level = 1;
+    }
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "forage");
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("Spoiled stores");
+    expect(next.room.feed[0]?.body).toContain("Food +");
+    expect(next.room.base.resources.food).toBeGreaterThanOrEqual(6);
+  });
+
+  test("repair coverage converts signal windows into objective progress", () => {
+    let session = createStarterSession("user-a", "Alice", "event-signal-room");
+    session.room.base.day = 4;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.objective.repairedParts = 0;
+    const radio = session.room.base.facilities.find((facility) => facility.id === "radio");
+    if (radio) {
+      radio.level = 1;
+    }
+    session = setBaseAssignment(session, "user-a", session.account.survivors[1].id, "repair");
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("Signal window");
+    expect(next.room.feed[0]?.body).toContain("Base event: Signal window");
+    expect(next.room.base.objective.repairedParts).toBeGreaterThan(1);
+  });
+
   test("advances a room day with upkeep, recovery, pressure, and feed", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     session.account.survivors[0].fatigue = 52;
