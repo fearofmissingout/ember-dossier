@@ -47,6 +47,7 @@ import {
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
   resolveShopAction,
+  routePaceFor,
   setJourneyTravelPlan,
   shopOfferOutcome,
   spendFieldSupplyFromPriority,
@@ -1654,13 +1655,36 @@ function JourneyPanel({
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
+  const routePace = routePaceFor(journey);
 
   return (
     <div className="journey-panel">
+      <div className="route-pacing" aria-label="Route pace">
+        <div>
+          <span>Route progress</span>
+          <strong>
+            {routePace.currentStop}/{routePace.totalStops}
+          </strong>
+          <small>
+            {routePace.progressPercent}% to extraction / {routePace.remainingStops} stop(s) left
+          </small>
+        </div>
+        <div>
+          <span>Current beat</span>
+          <strong>{routePace.currentLabel}</strong>
+          <small>{routePace.currentTitle}</small>
+        </div>
+        <div>
+          <span>Next stop</span>
+          <strong>{routePace.nextLabel}</strong>
+          <small>{routePace.nextTitle}</small>
+        </div>
+      </div>
       <div className="journey-track" aria-label="Expedition route progress">
-        {journey.nodes.map((node, index) => (
-          <span className={index === journey.currentNodeIndex ? "active" : index < journey.currentNodeIndex ? "done" : ""} key={node.id}>
-            {index + 1}
+        {routePace.forecast.map((stop) => (
+          <span className={stop.state} key={`${journey.id}-pace-${stop.index}`}>
+            <b>{stop.index}</b>
+            <small>{stop.label}</small>
           </span>
         ))}
       </div>

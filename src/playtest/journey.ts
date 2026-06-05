@@ -138,6 +138,29 @@ export type JourneyNode = {
   shop?: JourneyShop;
 };
 
+export type JourneyRouteStopState = "active" | "ahead" | "done";
+
+export type JourneyRouteStop = {
+  index: number;
+  label: string;
+  state: JourneyRouteStopState;
+  title: string;
+};
+
+export type JourneyRoutePace = {
+  currentLabel: string;
+  currentStop: number;
+  currentTitle: string;
+  distanceSegments: number;
+  forecast: JourneyRouteStop[];
+  nextLabel: string;
+  nextTitle: string;
+  pendingRoad: boolean;
+  progressPercent: number;
+  remainingStops: number;
+  totalStops: number;
+};
+
 export type JourneyRoadEventRecord = {
   outcome: string;
   segment: number;
@@ -293,6 +316,54 @@ export type JourneyCombatLootOption = {
   supportText?: string;
   text: string;
 };
+
+export function routePaceFor(journey: JourneyState): JourneyRoutePace {
+  const totalStops = journey.nodes.length;
+  const safeIndex = Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, totalStops - 1)));
+  const activeNode = journey.nodes[safeIndex];
+  const nextNode = journey.nodes[safeIndex + 1] ?? null;
+  const pendingRoad = journey.pendingRoadEvent;
+  const currentLabel = pendingRoad ? roadEventLabel(pendingRoad.tone) : nodeTypeLabel(activeNode?.type);
+  const currentTitle = pendingRoad?.title ?? activeNode?.title ?? "Unknown route";
+  const nextLabel = nextNode ? nodeTypeLabel(nextNode.type) : "return";
+  const nextTitle = nextNode?.title ?? "Back to base";
+  const progressPercent = totalStops <= 1 ? 100 : Math.round((safeIndex / (totalStops - 1)) * 100);
+
+  return {
+    currentLabel,
+    currentStop: safeIndex + 1,
+    currentTitle,
+    distanceSegments: journey.condition.distance,
+    forecast: journey.nodes.map((node, index) => ({
+      index: index + 1,
+      label: nodeTypeLabel(node.type),
+      state: index === safeIndex ? "active" : index < safeIndex ? "done" : "ahead",
+      title: node.title
+    })),
+    nextLabel,
+    nextTitle,
+    pendingRoad: Boolean(pendingRoad),
+    progressPercent,
+    remainingStops: Math.max(0, totalStops - safeIndex - 1),
+    totalStops
+  };
+}
+
+function nodeTypeLabel(type?: JourneyNode["type"]): string {
+  if (!type) {
+    return "route";
+  }
+
+  return type;
+}
+
+function roadEventLabel(tone: JourneyRoadEventTone): string {
+  if (tone === "road") {
+    return "road fork";
+  }
+
+  return `road ${tone}`;
+}
 
 export type JourneyCombatActionPreview = {
   action: CombatAction;

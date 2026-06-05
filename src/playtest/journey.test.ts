@@ -11,6 +11,7 @@ import {
   resolveCombatRound,
   resolveRoadEncounterChoice,
   resolveShopAction,
+  routePaceFor,
   setJourneyTravelPlan,
   shopOfferOutcome,
   spendFieldSupplyFromPriority
@@ -43,6 +44,80 @@ describe("journey route generation", () => {
     expect(weirdRoute.nodes[1].enemy?.name).toBe("Borrowed Shadow");
     expect(weirdRoute.nodes[2].type).toBe("camp");
     expect(weirdRoute.nodes[3].shop?.label).toBe("Pay masked vendor");
+  });
+
+  test("summarizes route pace and upcoming journey beats", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "pace-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const startPace = routePaceFor(journey);
+    const midJourney = { ...journey, currentNodeIndex: 2, condition: { ...journey.condition, distance: 2 } };
+    const midPace = routePaceFor(midJourney);
+
+    expect(startPace).toMatchObject({
+      currentLabel: "event",
+      currentStop: 1,
+      nextLabel: "combat",
+      progressPercent: 0,
+      remainingStops: 4,
+      totalStops: 5
+    });
+    expect(startPace.forecast.map((stop) => `${stop.index}:${stop.label}:${stop.state}`)).toEqual([
+      "1:event:active",
+      "2:combat:ahead",
+      "3:camp:ahead",
+      "4:shop:ahead",
+      "5:extraction:ahead"
+    ]);
+    expect(midPace).toMatchObject({
+      currentLabel: "camp",
+      currentStop: 3,
+      distanceSegments: 2,
+      nextLabel: "shop",
+      progressPercent: 50,
+      remainingStops: 2
+    });
+    expect(midPace.forecast[0].state).toBe("done");
+  });
+
+  test("route pace surfaces pending road encounters as the current beat", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "pace-road-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const blocked = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 55);
+    const pace = routePaceFor(blocked);
+
+    expect(blocked.pendingRoadEvent?.tone).toBe("find");
+    expect(pace).toMatchObject({
+      currentLabel: "road find",
+      currentTitle: "Thorn Wire Ditch",
+      currentStop: 1,
+      nextLabel: "combat",
+      pendingRoad: true,
+      progressPercent: 0
+    });
   });
 
   test("combat inherits enemy stats and salvage rewards from the route node", () => {

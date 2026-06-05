@@ -898,15 +898,56 @@ button:disabled {
   background: #fff8e7;
 }
 
+.route-pacing {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.route-pacing div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.route-pacing span {
+  color: #7b6b58;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.route-pacing strong,
+.route-pacing small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.route-pacing strong {
+  color: #3d3024;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.route-pacing small {
+  color: #6f5f4e;
+  font-size: 12px;
+}
+
 .journey-track {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   gap: 8px;
 }
 
 .journey-track span {
   display: grid;
-  min-height: 28px;
+  min-height: 44px;
+  gap: 2px;
   place-items: center;
   border: 1px solid #d6c4a3;
   border-radius: 8px;
@@ -914,6 +955,13 @@ button:disabled {
   color: #7a5d3f;
   font-size: 12px;
   font-weight: 900;
+}
+
+.journey-track small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  text-transform: uppercase;
 }
 
 .journey-track span.active {
