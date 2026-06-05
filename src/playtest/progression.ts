@@ -1,5 +1,5 @@
 import type { Facility, ResourceBundle } from "../game/types";
-import type { AccountSurvivor } from "./types";
+import type { AccountSurvivor, RoomBaseAssignment } from "./types";
 
 export type SurvivorPerkId = "field_runner" | "steady_hands" | "base_instinct";
 export type ExpeditionDoctrineId =
@@ -173,6 +173,7 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
   const workshop = facilityLevel(facilities, "workshop");
 
   const support: ExpeditionSupport = {
+    ...emptyExpeditionSupport(),
     ammoDamage: Math.max(0, generator - 1) + workshop,
     campCook: kitchen,
     campRest: Math.max(0, dorm - 1) + Math.max(0, clinic - 1),
@@ -204,6 +205,106 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
 
   return applyExpeditionDoctrine(support, doctrineId);
 }
+
+export function emptyExpeditionSupport(): ExpeditionSupport {
+  return {
+    ammoDamage: 0,
+    campCook: 0,
+    campRest: 0,
+    campScout: 0,
+    carryCapacity: 0,
+    guardBlock: 0,
+    lootEvade: 0,
+    lootIntel: 0,
+    lootMedicine: 0,
+    lootSalvage: 0,
+    maxHp: 0,
+    patchHeal: 0,
+    pressureRelief: 0,
+    roadPush: 0,
+    roadSearch: 0,
+    roadSecure: 0,
+    shopIntel: 0,
+    shopRations: 0,
+    shopService: 0,
+    startingSupplies: {}
+  };
+}
+
+export function basePrepSupportFromAssignments(
+  assignments: RoomBaseAssignment[],
+  survivors: AccountSurvivor[],
+  userId: string,
+  squadIds: string[] = []
+): ExpeditionSupport {
+  const support = emptyExpeditionSupport();
+  const squad = new Set(squadIds);
+  const survivorIds = new Set(survivors.map((survivor) => survivor.id));
+  const relevantAssignments = assignments.filter(
+    (assignment) => assignment.userId === userId && !squad.has(assignment.survivorId) && survivorIds.has(assignment.survivorId)
+  );
+
+  for (const assignment of relevantAssignments) {
+    if (assignment.type === "forage") {
+      support.startingSupplies.food = (support.startingSupplies.food ?? 0) + 1;
+      support.startingSupplies.water = (support.startingSupplies.water ?? 0) + 1;
+      support.shopRations += 1;
+    } else if (assignment.type === "care") {
+      support.startingSupplies.medicine = (support.startingSupplies.medicine ?? 0) + 1;
+      support.patchHeal += 1;
+      support.lootMedicine += 1;
+    } else if (assignment.type === "repair") {
+      support.carryCapacity = (support.carryCapacity ?? 0) + 2;
+      support.lootSalvage += 1;
+      support.shopService += 1;
+    } else if (assignment.type === "guard") {
+      support.pressureRelief += 1;
+      support.roadSecure += 1;
+      support.guardBlock += 1;
+    }
+  }
+
+  return support;
+}
+
+export function mergeExpeditionSupport(left: ExpeditionSupport, right: ExpeditionSupport): ExpeditionSupport {
+  const merged = emptyExpeditionSupport();
+  for (const key of numericSupportKeys) {
+    merged[key] = (left[key] ?? 0) + (right[key] ?? 0);
+  }
+
+  merged.startingSupplies = {
+    ...left.startingSupplies
+  };
+
+  for (const [key, value] of Object.entries(right.startingSupplies) as Array<[keyof ResourceBundle, number | undefined]>) {
+    merged.startingSupplies[key] = (merged.startingSupplies[key] ?? 0) + (value ?? 0);
+  }
+
+  return merged;
+}
+
+const numericSupportKeys = [
+  "ammoDamage",
+  "campCook",
+  "campRest",
+  "campScout",
+  "carryCapacity",
+  "guardBlock",
+  "lootEvade",
+  "lootIntel",
+  "lootMedicine",
+  "lootSalvage",
+  "maxHp",
+  "patchHeal",
+  "pressureRelief",
+  "roadPush",
+  "roadSearch",
+  "roadSecure",
+  "shopIntel",
+  "shopRations",
+  "shopService"
+] as const;
 
 function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: ExpeditionDoctrineId): ExpeditionSupport {
   const next: ExpeditionSupport = {

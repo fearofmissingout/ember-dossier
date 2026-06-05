@@ -65,7 +65,9 @@ import {
   type JourneyTravelPlan
 } from "./playtest/journey";
 import {
+  basePrepSupportFromAssignments,
   expeditionDoctrineOptions,
+  mergeExpeditionSupport,
   supportFromFacilities,
   survivorPerkDetails,
   xpForNextLevel,
@@ -713,12 +715,19 @@ export default function App() {
     }
 
     applySession(preparedSession);
+    const facilitySupport = supportFromFacilities(preparedSession.room.base.facilities, draft.doctrineId);
+    const basePrepSupport = basePrepSupportFromAssignments(
+      preparedSession.room.baseAssignments,
+      preparedSession.account.survivors,
+      preparedSession.account.profile.userId,
+      draft.squadIds
+    );
     setJourney(
       createJourney(
         preparedSession,
         {
           ...draft,
-          support: supportFromFacilities(preparedSession.room.base.facilities, draft.doctrineId)
+          support: mergeExpeditionSupport(facilitySupport, basePrepSupport)
         },
         selectedLocation.id,
         readiness
@@ -1040,6 +1049,8 @@ export default function App() {
         )}
         {view === "expedition" && (
           <ExpeditionPrep
+            accountSurvivors={session.account.survivors}
+            baseAssignments={session.room.baseAssignments}
             state={state}
             draft={draft}
             selectedLocation={selectedLocation}
@@ -1047,6 +1058,7 @@ export default function App() {
             squadReady={squadReady}
             canAffordLoadout={canAffordLoadout && objectiveActive}
             objectiveActive={objectiveActive}
+            userId={session.account.profile.userId}
             journey={journey}
             onToggleSurvivor={toggleSurvivor}
             onLocationChange={(locationId) => {
@@ -1363,6 +1375,8 @@ function Survivors({
 }
 
 function ExpeditionPrep({
+  accountSurvivors,
+  baseAssignments,
   state,
   draft,
   selectedLocation,
@@ -1370,6 +1384,7 @@ function ExpeditionPrep({
   squadReady,
   canAffordLoadout,
   objectiveActive,
+  userId,
   journey,
   onToggleSurvivor,
   onLocationChange,
@@ -1380,6 +1395,8 @@ function ExpeditionPrep({
   onDispatch,
   onJourneyAction
 }: {
+  accountSurvivors: PlaytestSession["account"]["survivors"];
+  baseAssignments: PlaytestSession["room"]["baseAssignments"];
   state: GameState;
   draft: ExpeditionDraft;
   selectedLocation: GameState["locations"][number];
@@ -1387,6 +1404,7 @@ function ExpeditionPrep({
   squadReady: boolean;
   canAffordLoadout: boolean;
   objectiveActive: boolean;
+  userId: string;
   journey: JourneyState | null;
   onToggleSurvivor: (id: string) => void;
   onLocationChange: (locationId: string) => void;
@@ -1400,7 +1418,9 @@ function ExpeditionPrep({
   const activeNode = journey?.nodes[journey.currentNodeIndex];
   const doctrineOptions = expeditionDoctrineOptions(state.facilities);
   const selectedDoctrine = doctrineOptions.find((doctrine) => doctrine.id === draft.doctrineId) ?? doctrineOptions[0];
-  const support = supportFromFacilities(state.facilities, selectedDoctrine?.id);
+  const facilitySupport = supportFromFacilities(state.facilities, selectedDoctrine?.id);
+  const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
+  const support = mergeExpeditionSupport(facilitySupport, basePrepSupport);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const previewFieldSupplies: ResourceBundle = {
     ...draft.loadout
@@ -1429,6 +1449,16 @@ function ExpeditionPrep({
     { label: "Shop rations", sign: "+", value: support.shopRations },
     { label: "Shop intel", sign: "+", value: support.shopIntel },
     { label: "Shop service", sign: "+", value: support.shopService }
+  ].filter((item) => item.value > 0);
+  const basePrepItems = [
+    { label: "Prep food", sign: "+", value: basePrepSupport.startingSupplies.food ?? 0 },
+    { label: "Prep water", sign: "+", value: basePrepSupport.startingSupplies.water ?? 0 },
+    { label: "Prep medicine", sign: "+", value: basePrepSupport.startingSupplies.medicine ?? 0 },
+    { label: "Prep pack", sign: "+", value: basePrepSupport.carryCapacity ?? 0 },
+    { label: "Prep guard", sign: "+", value: basePrepSupport.guardBlock },
+    { label: "Prep road", sign: "+", value: basePrepSupport.roadSecure },
+    { label: "Prep shop", sign: "+", value: basePrepSupport.shopRations + basePrepSupport.shopService },
+    { label: "Prep pressure", sign: "-", value: basePrepSupport.pressureRelief }
   ].filter((item) => item.value > 0);
   return (
     <div className="expedition-layout">
@@ -1568,6 +1598,17 @@ function ExpeditionPrep({
           {(support.startingSupplies.water ?? 0) > 0 && <strong>Start Water +{support.startingSupplies.water}</strong>}
           {(support.startingSupplies.ammo ?? 0) > 0 && <strong>Start Ammo +{support.startingSupplies.ammo}</strong>}
           {(support.startingSupplies.medicine ?? 0) > 0 && <strong>Start Medicine +{support.startingSupplies.medicine}</strong>}
+          <span>Base prep</span>
+          {basePrepItems.length ? (
+            basePrepItems.map((item) => (
+              <strong key={item.label}>
+                {item.label} {item.sign}
+                {item.value}
+              </strong>
+            ))
+          ) : (
+            <strong>No idle base crew prep</strong>
+          )}
         </div>
         {journey && activeNode && (
           <JourneyPanel
