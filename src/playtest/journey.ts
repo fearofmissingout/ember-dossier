@@ -11,11 +11,16 @@ export type JourneyAction =
   | "rest"
   | "cook"
   | "scout"
+  | "loot-salvage"
+  | "loot-medicine"
+  | "loot-intel"
+  | "loot-evade"
   | "plan-steady"
   | "plan-scavenge"
   | "plan-rush"
   | "plan-sneak";
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
+export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade";
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
@@ -108,6 +113,12 @@ export type JourneyCombat = {
   reward: ResourceBundle;
 };
 
+export type JourneyCombatLoot = {
+  enemyName: string;
+  trophy: string;
+  trait: JourneyEnemy["trait"];
+};
+
 export type JourneyCondition = {
   distance: number;
   fatigue: number;
@@ -127,6 +138,7 @@ export type JourneyState = {
   locationId: string;
   logs: string[];
   nodes: JourneyNode[];
+  pendingCombatLoot: JourneyCombatLoot | null;
   pressure: number;
   risk: RiskStrategy;
   rollShift: number;
@@ -146,6 +158,17 @@ export type JourneyTravelPlanOption = {
   fatigue: number;
   hunger: number;
   thirst: number;
+};
+
+export type JourneyCombatLootOption = {
+  fatigue: number;
+  id: JourneyCombatLootAction;
+  label: string;
+  objectiveBonus: number;
+  pressure: number;
+  reward: ResourceBundle;
+  rollShift: number;
+  text: string;
 };
 
 type JourneyEventTemplate = {
@@ -588,6 +611,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`
     ],
     nodes,
+    pendingCombatLoot: null,
     pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
@@ -812,8 +836,12 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     next.pressure = clampPercent(next.pressure - 12);
     next.rollShift -= 0.12;
     next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, trophy: ${trophy}, pressure -12%.`);
-    next.currentNodeIndex += 1;
-    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
+    next.pendingCombatLoot = {
+      enemyName: combat.enemyName,
+      trait: combat.enemyTrait,
+      trophy
+    };
+    next.combat = null;
   }
 
   return next;
@@ -910,6 +938,37 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
   next.pressure = clampPercent(next.pressure + fallbackPressure);
   next.rollShift += Math.max(0.03, option.rollShift / 2);
   next.logs.push(`${node.title}: ${option.fallbackLog} Pressure ${formatSignedPercent(fallbackPressure)}.`);
+  return next;
+}
+
+export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCombatLootAction): JourneyState {
+  const next = structuredClone(journey) as JourneyState;
+  const pending = next.pendingCombatLoot;
+  const option = combatLootOptions[action];
+  if (!pending || !option) {
+    return next;
+  }
+
+  addResources(next.bonusReward, option.reward);
+  next.condition.fatigue = clampPercent(next.condition.fatigue + option.fatigue);
+  next.pressure = clampPercent(next.pressure + option.pressure);
+  next.rollShift += option.rollShift;
+  next.objectiveBonus += option.objectiveBonus;
+
+  const scarsBefore = next.battleScars;
+  if (action === "medicine") {
+    next.battleScars = Math.max(0, next.battleScars - 1);
+  }
+  const scarsDelta = scarsBefore - next.battleScars;
+
+  next.logs.push(
+    `${pending.enemyName}: ${option.label}. ${option.text} ${formatBundle(option.reward)}, fatigue ${formatSignedNumber(
+      option.fatigue
+    )}, pressure ${formatSignedPercent(option.pressure)}${option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""}${
+      scarsDelta > 0 ? `, battle scars -${scarsDelta}` : ""
+    }. Trophy secured: ${pending.trophy}.`
+  );
+  next.pendingCombatLoot = null;
   return next;
 }
 
@@ -1029,6 +1088,13 @@ function bundleFromKeys(keys: ResourceKey[]) {
   return bundle;
 }
 
+function lootReward(resources: Partial<ResourceBundle>) {
+  return {
+    ...createEmptyResourceBundle(),
+    ...resources
+  };
+}
+
 const resourceKeys: ResourceKey[] = ["food", "water", "materials", "medicine", "fuel", "ammo"];
 
 const resourceLabels: Record<ResourceKey, string> = {
@@ -1082,6 +1148,53 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
 const travelPlanOptions: Record<JourneyTravelPlan, JourneyTravelPlanOption> = Object.fromEntries(
   travelPlanList.map((option) => [option.id, option])
 ) as Record<JourneyTravelPlan, JourneyTravelPlanOption>;
+
+export const combatLootList: JourneyCombatLootOption[] = [
+  {
+    fatigue: 4,
+    id: "salvage",
+    label: "Strip the carcass",
+    objectiveBonus: 0,
+    pressure: 5,
+    reward: lootReward({ fuel: 1, materials: 2 }),
+    rollShift: 0.04,
+    text: "Slow work, better parts."
+  },
+  {
+    fatigue: -8,
+    id: "medicine",
+    label: "Field dress wounds",
+    objectiveBonus: 0,
+    pressure: 2,
+    reward: lootReward({ medicine: 1 }),
+    rollShift: -0.02,
+    text: "Patch the worst damage before moving."
+  },
+  {
+    fatigue: 2,
+    id: "intel",
+    label: "Search for clues",
+    objectiveBonus: 1,
+    pressure: 6,
+    reward: lootReward({}),
+    rollShift: -0.1,
+    text: "Spend time reading the scene."
+  },
+  {
+    fatigue: -3,
+    id: "evade",
+    label: "Leave fast",
+    objectiveBonus: 0,
+    pressure: -9,
+    reward: lootReward({}),
+    rollShift: -0.06,
+    text: "No extra loot, cleaner exit."
+  }
+];
+
+const combatLootOptions: Record<JourneyCombatLootAction, JourneyCombatLootOption> = Object.fromEntries(
+  combatLootList.map((option) => [option.id, option])
+) as Record<JourneyCombatLootAction, JourneyCombatLootOption>;
 
 const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: JourneyCombatIntent; incoming: number; label: string; text: string }> = {
   brace: {

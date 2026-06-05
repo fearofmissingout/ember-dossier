@@ -4,6 +4,7 @@ import {
   createJourney,
   createCombatForNode,
   resolveCampAction,
+  resolveCombatLootChoice,
   resolveCombatRound,
   setJourneyTravelPlan,
   spendFieldSupplyFromPriority
@@ -364,6 +365,67 @@ describe("journey route generation", () => {
 
     expect(won.trophies).toContain("armor plates");
     expect(won.battleScars).toBeGreaterThan(0);
+    expect(won.pendingCombatLoot?.trophy).toBe("armor plates");
+    expect(won.currentNodeIndex).toBe(1);
     expect(won.logs.join("\n")).toContain("Battle scars");
+  });
+
+  test("combat loot choices trade victory time for resources or objective clues", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "loot-choice-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+    }
+
+    const won = resolveCombatRound(journey, "strike", squad, 75);
+    const intel = resolveCombatLootChoice(won, "intel");
+    const salvage = resolveCombatLootChoice(won, "salvage");
+
+    expect(intel.pendingCombatLoot).toBeNull();
+    expect(intel.objectiveBonus).toBe(won.objectiveBonus + 1);
+    expect(intel.logs.join("\n")).toContain("Search for clues");
+    expect(salvage.bonusReward.materials).toBeGreaterThan(won.bonusReward.materials);
+  });
+
+  test("field dress loot choice reduces battle scars", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "loot-medicine-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+      journey.combat.squadHp = Math.floor(journey.combat.squadMaxHp * 0.3);
+    }
+
+    const won = resolveCombatRound(journey, "strike", squad, 75);
+    const dressed = resolveCombatLootChoice(won, "medicine");
+
+    expect(dressed.battleScars).toBeLessThan(won.battleScars);
+    expect(dressed.bonusReward.medicine).toBeGreaterThan(won.bonusReward.medicine);
+    expect(dressed.logs.join("\n")).toContain("battle scars -1");
   });
 });

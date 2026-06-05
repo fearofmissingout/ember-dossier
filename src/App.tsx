@@ -35,15 +35,18 @@ import {
 import {
   addResources,
   advanceJourneyTravel,
+  combatLootList,
   createCombatForNode,
   createJourney,
   resolveCampAction,
+  resolveCombatLootChoice,
   setJourneyTravelPlan,
   spendFieldSupplyFromPriority,
   travelPlanList,
   resolveCombatRound,
   type CombatAction,
   type JourneyAction,
+  type JourneyCombatLootAction,
   type JourneyChoice,
   type JourneyNode,
   type JourneyState,
@@ -707,6 +710,20 @@ export default function App() {
     const selectedTravelPlan = travelPlanFromAction(action);
     if (selectedTravelPlan) {
       setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
+      return;
+    }
+
+    const selectedLootAction = combatLootActionFromJourneyAction(action);
+    if (journey.pendingCombatLoot) {
+      if (!selectedLootAction) {
+        return;
+      }
+
+      let next = resolveCombatLootChoice(journey, selectedLootAction);
+      next = advanceJourneyTravel(next, selectedSquad, readiness);
+      next.currentNodeIndex += 1;
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      setJourney(next);
       return;
     }
 
@@ -1501,7 +1518,7 @@ function JourneyPanel({
   onJourneyAction: (action: JourneyAction) => void;
 }) {
   const outlook = getJourneyOutlook(journey);
-  const canReturnEarly = !journey.combat && activeNode.type !== "extraction";
+  const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && activeNode.type !== "extraction";
 
   return (
     <div className="journey-panel">
@@ -1562,7 +1579,26 @@ function JourneyPanel({
         <span className="subtle-pill">{activeNode.type}</span>
         <h3>{activeNode.title}</h3>
         <p>{activeNode.body}</p>
-        {journey.combat ? (
+        {journey.pendingCombatLoot ? (
+          <div className="combat-loot-card">
+            <div>
+              <strong>{journey.pendingCombatLoot.enemyName} down</strong>
+              <span>Trophy secured: {journey.pendingCombatLoot.trophy}</span>
+            </div>
+            <div className="combat-loot-grid">
+              {combatLootList.map((option) => (
+                <button key={option.id} type="button" onClick={() => onJourneyAction(`loot-${option.id}` as JourneyAction)}>
+                  <strong>{option.label}</strong>
+                  <span>{option.text}</span>
+                  <small>
+                    {formatResourceDelta(option.reward)} · F{formatSignedNumber(option.fatigue)} · P{formatSignedPercent(option.pressure)}
+                    {option.objectiveBonus > 0 ? ` · Obj +${option.objectiveBonus}` : ""}
+                  </small>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : journey.combat ? (
           <div className="combat-card">
             <div className="combat-trait">
               <strong>{journey.combat.enemyTraitLabel}</strong>
@@ -1921,6 +1957,16 @@ function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {
     "plan-steady": "steady"
   };
   return planByAction[action] ?? null;
+}
+
+function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombatLootAction | null {
+  const lootByAction: Partial<Record<JourneyAction, JourneyCombatLootAction>> = {
+    "loot-evade": "evade",
+    "loot-intel": "intel",
+    "loot-medicine": "medicine",
+    "loot-salvage": "salvage"
+  };
+  return lootByAction[action] ?? null;
 }
 
 function getJourneyOutlook(journey: JourneyState) {

@@ -1075,6 +1075,7 @@ button:disabled {
 }
 
 .combat-card,
+.combat-loot-card,
 .combat-bars,
 .journey-log {
   display: grid;
@@ -1121,6 +1122,54 @@ button:disabled {
   color: #765645;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.combat-loot-card > div:first-child {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.combat-loot-card strong {
+  color: #783924;
+}
+
+.combat-loot-card span {
+  color: #667267;
+  font-size: 12px;
+}
+
+.combat-loot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.combat-loot-grid button {
+  display: grid;
+  min-height: 82px;
+  gap: 4px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+  cursor: pointer;
+  text-align: left;
+}
+
+.combat-loot-grid button:hover {
+  border-color: #a34d32;
+}
+
+.combat-loot-grid small {
+  color: #8a6f4e;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
 }
 
 .combat-stats {
@@ -1426,6 +1475,10 @@ button:disabled {
 
   .journey-plan-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .combat-loot-grid {
+    grid-template-columns: 1fr;
   }
 
   .summary-panel {
