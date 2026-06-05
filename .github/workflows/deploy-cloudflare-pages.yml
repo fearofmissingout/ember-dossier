@@ -44,6 +44,7 @@ jobs:
             python3 -c 'import sys; print(sys.stdin.read().lstrip("\ufeff").strip(), end="")'
           }
           export CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | clean_secret)"
+          export CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | clean_secret)"
           printf '%s' "$VITE_SUPABASE_URL" | clean_secret | npx wrangler pages secret put SUPABASE_URL --project-name=ember-dossier
           printf '%s' "$VITE_SUPABASE_PUBLISHABLE_KEY" | clean_secret | npx wrangler pages secret put SUPABASE_PUBLISHABLE_KEY --project-name=ember-dossier
 
