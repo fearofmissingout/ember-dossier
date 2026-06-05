@@ -110,6 +110,7 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
   ]);
 
   const base = baseRows[0] ?? serializeStarterRoomBase(room.id);
+  const remoteObjective = deserializeRemoteObjective(base.objective);
 
   return {
     assignedSurvivors: assignments.map((assignment) => ({
@@ -124,10 +125,11 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
       facilities: base.facilities,
       morale: base.morale,
       name: base.name,
-      objective: base.objective,
+      objective: remoteObjective.objective,
       resources: base.resources,
       roomId: room.id
     },
+    baseAssignments: remoteObjective.assignments,
     contributions: contributions.map((contribution) => ({
       createdAt: contribution.created_at,
       id: contribution.id,
@@ -235,7 +237,7 @@ async function saveCoreProgress(accessToken: string, session: PlaytestSession) {
         day: session.room.base.day,
         facilities: session.room.base.facilities,
         morale: session.room.base.morale,
-        objective: session.room.base.objective,
+        objective: serializeRemoteObjective(session),
         resources: session.room.base.resources
       }
     ),
@@ -375,10 +377,28 @@ function serializeStarterRoomBase(roomId: string): PlaytestRoomBaseRow {
     facilities: starterRoomFacilities(),
     morale: 62,
     name: "Tower Run Base",
-    objective: starterObjective(),
+    objective: {
+      ...starterObjective(),
+      assignments: []
+    },
     resources: starterRoomResources(),
     room_id: roomId,
     updated_at: new Date().toISOString()
+  };
+}
+
+function deserializeRemoteObjective(objective: RemoteRoomObjective) {
+  const { assignments, ...cleanObjective } = objective;
+  return {
+    assignments: Array.isArray(assignments) ? assignments : [],
+    objective: cleanObjective as PlaytestRoom["base"]["objective"]
+  };
+}
+
+function serializeRemoteObjective(session: PlaytestSession): RemoteRoomObjective {
+  return {
+    ...session.room.base.objective,
+    assignments: session.room.baseAssignments
   };
 }
 
@@ -478,10 +498,14 @@ type PlaytestRoomBaseRow = {
   facilities: PlaytestRoom["base"]["facilities"];
   morale: number;
   name: string;
-  objective: PlaytestRoom["base"]["objective"];
+  objective: RemoteRoomObjective;
   resources: PlaytestRoom["base"]["resources"];
   room_id: string;
   updated_at: string;
+};
+
+type RemoteRoomObjective = PlaytestRoom["base"]["objective"] & {
+  assignments?: PlaytestRoom["baseAssignments"];
 };
 
 type ContributionRow = {

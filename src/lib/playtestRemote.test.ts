@@ -42,6 +42,14 @@ describe("playtest remote client", () => {
     const { createStarterSession } = await import("../playtest/state");
     const { savePlaytestProgress } = await import("./playtestRemote");
     const session = createStarterSession("user-a", "Alice", "room-a");
+    session.room.baseAssignments = [
+      {
+        roomId: session.room.id,
+        survivorId: session.account.survivors[0].id,
+        type: "forage",
+        userId: session.account.profile.userId
+      }
+    ];
 
     await savePlaytestProgress("token-123", session, {
       body: "Alice upgraded the clinic.\nMedicine runs cleaner now.",
@@ -66,5 +74,9 @@ describe("playtest remote client", () => {
       ([url, init]) => String(url).includes("/rest/v1/playtest_room_bases") && init?.method === "PATCH"
     );
     expect(roomBasePatch).toBeTruthy();
+    const [, roomBaseInit] = roomBasePatch as [URL, RequestInit];
+    const roomBaseBody = JSON.parse(String(roomBaseInit.body));
+    expect(roomBaseBody.assignments).toBeUndefined();
+    expect(roomBaseBody.objective.assignments).toEqual(session.room.baseAssignments);
   });
 });

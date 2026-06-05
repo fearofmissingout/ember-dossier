@@ -12,6 +12,7 @@ import {
   applyContribution,
   assignSurvivorToRoom,
   resolvePlaytestExpedition,
+  setBaseAssignment,
   treatSurvivor,
   upgradeFacility
 } from "./sim";
@@ -107,6 +108,36 @@ describe("playtest room loop", () => {
         userId: "user-a"
       })
     ]);
+  });
+
+  test("assigns survivors to base shifts and settles their production on day advance", () => {
+    let session = createStarterSession("user-a", "Alice", "room-a");
+    session.account.survivors[0].attributes.stamina = 9;
+    session.account.survivors[0].attributes.luck = 9;
+    session.account.survivors[1].attributes.technical = 10;
+    session.account.survivors[2].attributes.willpower = 9;
+    session.account.survivors[2].attributes.agility = 8;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.resources.materials = 3;
+    session.room.base.danger = 20;
+
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "forage");
+    session = setBaseAssignment(session, "user-a", session.account.survivors[1].id, "repair");
+    session = setBaseAssignment(session, "user-a", session.account.survivors[2].id, "guard");
+
+    expect(session.room.baseAssignments).toHaveLength(3);
+    expect(session.room.feed[0]?.title).toBe("Base shift updated");
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.baseAssignments).toHaveLength(0);
+    expect(next.room.base.resources.food).toBeGreaterThan(6);
+    expect(next.room.base.objective.repairedParts).toBeGreaterThan(0);
+    expect(next.room.base.danger).toBeLessThan(20);
+    expect(next.room.feed[0]?.body).toContain("foraged");
+    expect(next.room.feed[0]?.body).toContain("repaired the tower");
+    expect(next.room.feed[0]?.body).toContain("kept watch");
   });
 
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {

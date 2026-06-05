@@ -639,6 +639,31 @@ button:disabled {
   background: #437c71;
 }
 
+.work-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.work-row span {
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.work-row select {
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #cab89b;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  font-weight: 800;
+}
+
 .expedition-layout {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
@@ -758,6 +783,79 @@ button:disabled {
 
 .journey-track span.done {
   border-color: #7aa087;
+  background: #e2efe1;
+  color: #2d6348;
+}
+
+.journey-status-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) repeat(2, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.journey-pressure,
+.journey-resource-strip {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.journey-pressure {
+  display: grid;
+  gap: 5px;
+}
+
+.journey-pressure span,
+.journey-resource-strip > span {
+  color: #7a5d3f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-pressure strong {
+  color: #562d1d;
+  font-size: 18px;
+}
+
+.journey-pressure i {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8dbc5;
+}
+
+.journey-pressure b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b65037;
+}
+
+.journey-resource-strip {
+  display: grid;
+  gap: 7px;
+}
+
+.journey-resource-strip div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.journey-resource-strip small {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #efe4cf;
+  color: #7a6a55;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.journey-resource-strip small.has-value {
   background: #e2efe1;
   color: #2d6348;
 }
@@ -984,7 +1082,8 @@ button:disabled {
   .view-grid,
   .expedition-layout,
   .survivor-grid,
-  .facility-grid {
+  .facility-grid,
+  .journey-status-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1062,6 +1161,7 @@ button:disabled {
   .survivor-grid,
   .facility-grid,
   .archive-grid,
+  .journey-status-grid,
   .resource-grid {
     grid-template-columns: 1fr;
   }

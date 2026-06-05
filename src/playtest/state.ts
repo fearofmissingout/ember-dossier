@@ -48,6 +48,7 @@ export function createStarterRoom(slug: string, name = "Tower Run", hostUserId =
       resources: starterRoomResources(),
       roomId
     },
+    baseAssignments: [],
     contributions: [],
     createdAt: nowIso(),
     feed: [
@@ -132,9 +133,15 @@ export function loadPlaytestSession(userId: string, displayName: string, roomSlu
       return createStarterSession(userId, displayName, roomSlug);
     }
 
+    const room = {
+      ...session.room,
+      baseAssignments: session.room.baseAssignments ?? []
+    };
+
     return {
       ...session,
-      uiState: roomToGameState(session.room, session.account.survivors)
+      room,
+      uiState: roomToGameState(room, session.account.survivors)
     };
   } catch {
     localStorage.removeItem(playtestStorageKey);

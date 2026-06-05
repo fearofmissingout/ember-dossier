@@ -22,9 +22,17 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
-import { advanceRoomDay, applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition, treatSurvivor, upgradeFacility } from "./playtest/sim";
+import {
+  advanceRoomDay,
+  applyContribution,
+  assignSurvivorToRoom,
+  resolvePlaytestExpedition,
+  setBaseAssignment,
+  treatSurvivor,
+  upgradeFacility
+} from "./playtest/sim";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
-import type { PlaytestSession } from "./playtest/types";
+import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
   isEmailLogin,
@@ -93,13 +101,16 @@ type JourneyCombat = {
 };
 
 type JourneyState = {
+  bonusReward: ResourceBundle;
   combat: JourneyCombat | null;
   currentNodeIndex: number;
+  fieldSupplies: ResourceBundle;
   id: string;
   loadout: ResourceBundle;
   locationId: string;
   logs: string[];
   nodes: JourneyNode[];
+  pressure: number;
   risk: RiskStrategy;
   rollShift: number;
   squadIds: string[];
@@ -134,6 +145,14 @@ const defaultLoadout: ResourceBundle = {
   fuel: 1,
   ammo: 1
 };
+
+const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
+  { key: "idle", label: "Rest" },
+  { key: "forage", label: "Forage" },
+  { key: "repair", label: "Repair" },
+  { key: "guard", label: "Guard" },
+  { key: "care", label: "Care" }
+];
 
 const guestModeStorageKey = "ember-dossier-guest-mode";
 
@@ -635,6 +654,17 @@ export default function App() {
     }
   }
 
+  function assignBaseShift(survivorId: string, type: BaseWorkType | "idle") {
+    try {
+      const nextSession = setBaseAssignment(session, session.account.profile.userId, survivorId, type);
+      applySession(nextSession);
+      persistPlaytestProgress(nextSession);
+    } catch (error) {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    }
+  }
+
   function upgradeRoomFacility(facilityId: string) {
     try {
       const nextSession = upgradeFacility(session, session.account.profile.userId, facilityId);
@@ -693,18 +723,42 @@ export default function App() {
     const next = structuredClone(journey) as JourneyState;
     if (node.type === "event") {
       if (action === "careful") {
-        next.rollShift -= 0.1;
-        next.logs.push(`${node.title}: slow search finds a safer path. Outcome pressure -10%.`);
+        const spent = spendFieldSupply(next, next.fieldSupplies.water > 0 ? "water" : "food", 1);
+        const found = Math.random() > 0.5 ? "materials" : "food";
+        next.bonusReward[found] += 1;
+        next.pressure = Math.max(0, next.pressure - (spent ? 12 : 5));
+        next.rollShift -= spent ? 0.12 : 0.05;
+        next.logs.push(
+          spent
+            ? `${node.title}: slow search spends 1 supply, finds ${resourceLabels[found]} +1, pressure -12%.`
+            : `${node.title}: slow search finds ${resourceLabels[found]} +1, but no spare supply keeps pressure high.`
+        );
       } else {
-        next.rollShift += 0.08;
-        next.logs.push(`${node.title}: forced route saves time but raises noise. Outcome pressure +8%.`);
+        const spentAmmo = spendFieldSupply(next, "ammo", 1);
+        next.pressure = Math.min(100, next.pressure + (spentAmmo ? 4 : 10));
+        next.rollShift += spentAmmo ? 0.04 : 0.1;
+        next.logs.push(
+          spentAmmo
+            ? `${node.title}: forced route burns 1 ammo to clear the lane. Pressure +4%.`
+            : `${node.title}: forced route saves time but raises noise. Pressure +10%.`
+        );
       }
     }
 
     if (node.type === "shop") {
       if (action === "trade") {
-        next.rollShift -= 0.06;
-        next.logs.push(`${node.title}: the trader swaps route gossip for a promise of future salvage. Outcome pressure -6%.`);
+        const paid = spendFieldSupply(next, "materials", 1) || spendFieldSupply(next, "fuel", 1);
+        if (paid) {
+          next.bonusReward.medicine += 1;
+          next.bonusReward.ammo += 1;
+          next.pressure = Math.max(0, next.pressure - 6);
+          next.rollShift -= 0.06;
+          next.logs.push(`${node.title}: trade succeeds. Medicine +1, Ammo +1, pressure -6%.`);
+        } else {
+          next.pressure = Math.min(100, next.pressure + 3);
+          next.rollShift += 0.03;
+          next.logs.push(`${node.title}: no trade goods left. The squad leaves empty-handed, pressure +3%.`);
+        }
       } else {
         next.logs.push(`${node.title}: the squad keeps moving and saves its bargaining power.`);
       }
@@ -731,25 +785,32 @@ export default function App() {
     let incoming = combat.attack;
 
     if (action === "strike") {
-      const ammoBonus = next.loadout.ammo > 0 ? 4 : 0;
+      const ammoBonus = spendFieldSupply(next, "ammo", 1) ? 5 : 0;
       squadDamage += ammoBonus;
       combat.enemyHp = Math.max(0, combat.enemyHp - squadDamage);
-      next.logs.push(`${node.title}: round ${combat.round}, focused strike deals ${squadDamage} damage.`);
+      next.logs.push(
+        `${node.title}: round ${combat.round}, focused strike deals ${squadDamage} damage${ammoBonus > 0 ? " and spends 1 ammo" : ""}.`
+      );
     } else if (action === "guard") {
       incoming = Math.max(1, Math.floor(incoming / 2));
+      next.pressure = Math.max(0, next.pressure - 2);
       next.rollShift -= 0.02;
-      next.logs.push(`${node.title}: round ${combat.round}, the squad guards and keeps formation.`);
+      next.logs.push(`${node.title}: round ${combat.round}, the squad guards, halves damage, and pressure -2%.`);
     } else {
-      const heal = next.loadout.medicine > 0 ? 10 : 4;
+      const spentMedicine = spendFieldSupply(next, "medicine", 1);
+      const heal = spentMedicine ? 12 : 4;
       combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
-      next.rollShift -= 0.01;
-      next.logs.push(`${node.title}: round ${combat.round}, field patch restores ${heal} squad stamina.`);
+      next.rollShift -= spentMedicine ? 0.02 : 0.01;
+      next.logs.push(
+        `${node.title}: round ${combat.round}, field patch restores ${heal} squad stamina${spentMedicine ? " and spends 1 medicine" : ""}.`
+      );
     }
 
     if (combat.enemyHp > 0) {
       combat.squadHp = Math.max(0, combat.squadHp - incoming);
       next.logs.push(`${combat.enemyName} hits back for ${incoming}.`);
       if (combat.squadHp <= 0) {
+        next.pressure = Math.min(100, next.pressure + 24);
         next.rollShift += 0.24;
         next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
         next.currentNodeIndex += 1;
@@ -758,8 +819,10 @@ export default function App() {
         combat.round += 1;
       }
     } else {
+      next.bonusReward.materials += 1;
+      next.pressure = Math.max(0, next.pressure - 12);
       next.rollShift -= 0.12;
-      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. Outcome pressure -12%.`);
+      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. Materials +1, pressure -12%.`);
       next.currentNodeIndex += 1;
       next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
     }
@@ -780,6 +843,7 @@ export default function App() {
       survivorIds: completedJourney.squadIds,
       userId: session.account.profile.userId
     });
+    applyJourneyBonus(result.session, result.report, completedJourney.bonusReward);
 
     applySession(result.session);
     if (authSession) {
@@ -960,8 +1024,10 @@ export default function App() {
             state={state}
             selectedIds={draft.squadIds}
             canTreat={session.room.base.resources.medicine > 0}
+            baseAssignments={session.room.baseAssignments}
             onToggle={toggleSurvivor}
             onTreat={treatSelectedSurvivor}
+            onWorkChange={assignBaseShift}
           />
         )}
         {view === "expedition" && (
@@ -1172,14 +1238,18 @@ function Survivors({
   state,
   selectedIds,
   canTreat,
+  baseAssignments,
   onToggle,
-  onTreat
+  onTreat,
+  onWorkChange
 }: {
   state: GameState;
   selectedIds: string[];
   canTreat: boolean;
+  baseAssignments: PlaytestSession["room"]["baseAssignments"];
   onToggle: (id: string) => void;
   onTreat: (id: string) => void;
+  onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
 }) {
   return (
     <section className="panel">
@@ -1224,6 +1294,19 @@ function Survivors({
                   <i style={{ width: `${survivor.fatigue}%` }} />
                 </div>
                 <strong>{survivor.fatigue}</strong>
+              </div>
+              <div className="work-row">
+                <span>Base shift</span>
+                <select
+                  value={baseAssignments.find((assignment) => assignment.survivorId === survivor.id)?.type ?? "idle"}
+                  onChange={(event) => onWorkChange(survivor.id, event.target.value as BaseWorkType | "idle")}
+                >
+                  {baseWorkOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               {(survivor.injuries.length > 0 || survivor.fatigue >= 35) && (
                 <button
@@ -1420,6 +1503,17 @@ function JourneyPanel({
           </span>
         ))}
       </div>
+      <div className="journey-status-grid">
+        <div className="journey-pressure">
+          <span>Pressure</span>
+          <strong>{journey.pressure}%</strong>
+          <i>
+            <b style={{ width: `${Math.max(0, Math.min(100, journey.pressure))}%` }} />
+          </i>
+        </div>
+        <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
+        <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
+      </div>
       <div className="journey-node">
         <span className="subtle-pill">{activeNode.type}</span>
         <h3>{activeNode.title}</h3>
@@ -1473,6 +1567,21 @@ function JourneyPanel({
       <div className="journey-log">
         {journey.logs.slice(-4).map((line, index) => (
           <p key={`${journey.id}-log-${index}`}>{line}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function JourneyResourceStrip({ resources, title }: { resources: ResourceBundle; title: string }) {
+  return (
+    <div className="journey-resource-strip">
+      <span>{title}</span>
+      <div>
+        {resourceKeys.map((key) => (
+          <small className={resources[key] > 0 ? "has-value" : ""} key={key}>
+            {resourceLabels[key]} {resources[key]}
+          </small>
         ))}
       </div>
     </div>
@@ -1701,17 +1810,73 @@ function createJourney(session: PlaytestSession, draft: ExpeditionDraft, locatio
   ];
 
   return {
+    bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
+    fieldSupplies: { ...draft.loadout },
     id: `journey-${Date.now()}`,
     loadout: { ...draft.loadout },
     locationId,
-    logs: [`Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`],
+    logs: [
+      `Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`,
+      `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`
+    ],
     nodes,
+    pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
     squadIds: [...draft.squadIds]
   };
+}
+
+function createEmptyResourceBundle(): ResourceBundle {
+  return {
+    ammo: 0,
+    food: 0,
+    fuel: 0,
+    materials: 0,
+    medicine: 0,
+    water: 0
+  };
+}
+
+function spendFieldSupply(journey: JourneyState, key: ResourceKey, amount: number) {
+  if (journey.fieldSupplies[key] < amount) {
+    return false;
+  }
+
+  journey.fieldSupplies[key] -= amount;
+  return true;
+}
+
+function applyJourneyBonus(session: PlaytestSession, report: { logs: string[]; reward: ResourceBundle }, bonusReward: ResourceBundle) {
+  const claimed = resourceKeys.filter((key) => bonusReward[key] > 0);
+  if (claimed.length === 0) {
+    return;
+  }
+
+  for (const key of claimed) {
+    session.room.base.resources[key] += bonusReward[key];
+    report.reward[key] += bonusReward[key];
+  }
+
+  const bonusLine = `Field salvage secured: ${formatResourceDelta(bonusReward)}.`;
+  report.logs.unshift(bonusLine);
+  if (session.room.feed[0]) {
+    session.room.feed[0] = {
+      ...session.room.feed[0],
+      body: `${session.room.feed[0].body}\n${bonusLine}`
+    };
+  }
+}
+
+function formatResourceDelta(resources: ResourceBundle) {
+  const entries = resourceKeys.filter((key) => resources[key] > 0);
+  if (entries.length === 0) {
+    return "none";
+  }
+
+  return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
 }
 
 function createCombatForNode(

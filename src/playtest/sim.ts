@@ -1,7 +1,7 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
 import { emptyLoadout, roomToGameState } from "./state";
-import type { PlaytestSession } from "./types";
+import type { BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   journeyLogs?: string[];
@@ -61,6 +61,47 @@ export function assignSurvivorToRoom(session: PlaytestSession, userId: string, s
       userId
     });
   }
+
+  refreshUiState(next);
+  return next;
+}
+
+export function setBaseAssignment(session: PlaytestSession, userId: string, survivorId: string, type: BaseWorkType | "idle"): PlaytestSession {
+  const next = clone(session);
+  ensureUser(next, userId);
+
+  const survivor = next.account.survivors.find((candidate) => candidate.id === survivorId);
+  if (!survivor) {
+    throw new Error(`Unknown survivor: ${survivorId}`);
+  }
+
+  if (survivor.status === "assigned") {
+    throw new Error("Assigned expedition survivors cannot work a base shift.");
+  }
+
+  next.room.baseAssignments = next.room.baseAssignments.filter(
+    (assignment) => !(assignment.userId === userId && assignment.survivorId === survivorId)
+  );
+
+  if (type !== "idle") {
+    next.room.baseAssignments.push({
+      roomId: next.room.id,
+      survivorId,
+      type,
+      userId
+    });
+  }
+
+  next.room.feed.unshift({
+    body:
+      type === "idle"
+        ? `${survivor.name} is off shift and will focus on rest.`
+        : `${survivor.name} is assigned to ${baseWorkLabels[type]} until the next day settlement.`,
+    id: `feed-base-assignment-${Date.now()}`,
+    kind: "member",
+    timestamp: "Just now",
+    title: "Base shift updated"
+  });
 
   refreshUiState(next);
   return next;
@@ -219,13 +260,15 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
   const clinicLevel = facilityLevel(next, "clinic");
   const watchtowerLevel = facilityLevel(next, "watchtower");
   const recovery = 6 + dormLevel * 3 + clinicLevel * 2;
+  const shift = resolveBaseAssignments(next);
   const recoveredCount = recoverSurvivors(next, recovery);
 
   next.room.base.day = nextDay;
   next.room.base.morale = clamp(next.room.base.morale + (shortagePressure > 0 ? -shortagePressure * 6 : 2), 0, 100);
-  next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel, 0, 100);
+  next.room.base.danger = clamp(next.room.base.danger + shortagePressure * 3 - watchtowerLevel - shift.dangerReduction, 0, 100);
 
   const logs = [
+    ...shift.logs,
     `Upkeep: food -${foodNeed - foodShortage}/${foodNeed}, water -${waterNeed - waterShortage}/${waterNeed}.`,
     shortagePressure > 0
       ? `Pressure: shortages hit morale and make the base louder. Morale -${shortagePressure * 6}, danger +${shortagePressure * 3}.`
@@ -247,6 +290,7 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
       )} day(s) remain.`
     );
   }
+  next.room.baseAssignments = [];
 
   next.room.feed.unshift({
     body: logs.join("\n"),
@@ -269,6 +313,13 @@ const resourceLabels: Record<ResourceKey, string> = {
   materials: "Materials",
   medicine: "Medicine",
   water: "Water"
+};
+
+const baseWorkLabels: Record<BaseWorkType, string> = {
+  care: "clinic care",
+  forage: "foraging",
+  guard: "watch duty",
+  repair: "tower repair"
 };
 
 function ensureUser(session: PlaytestSession, userId: string) {
@@ -391,6 +442,74 @@ function spendWithShortage(resources: ResourceBundle, key: ResourceKey, amount: 
 
 function facilityLevel(session: PlaytestSession, facilityId: string): number {
   return session.room.base.facilities.find((facility) => facility.id === facilityId)?.level ?? 0;
+}
+
+function resolveBaseAssignments(session: PlaytestSession) {
+  const logs: string[] = [];
+  let dangerReduction = 0;
+
+  for (const assignment of session.room.baseAssignments) {
+    const survivor = session.account.survivors.find(
+      (candidate) => candidate.id === assignment.survivorId && candidate.ownerUserId === assignment.userId
+    );
+    if (!survivor || survivor.status === "assigned") {
+      continue;
+    }
+
+    const fatiguePenalty = survivor.fatigue >= 70 ? 1 : 0;
+    if (assignment.type === "forage") {
+      const yieldScore = Math.max(1, Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty);
+      session.room.base.resources.food += yieldScore;
+      session.room.base.resources.water += Math.max(1, yieldScore - 1);
+      survivor.fatigue = clamp(survivor.fatigue + 6, 0, 100);
+      logs.push(`${survivor.name} foraged: Food +${yieldScore}, Water +${Math.max(1, yieldScore - 1)}, fatigue +6.`);
+    }
+
+    if (assignment.type === "repair") {
+      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty);
+      session.room.base.objective.repairedParts = Math.min(
+        session.room.base.objective.requiredParts,
+        session.room.base.objective.repairedParts + repairScore
+      );
+      session.room.base.resources.materials += repairScore > 1 ? 1 : 0;
+      survivor.fatigue = clamp(survivor.fatigue + 5, 0, 100);
+      logs.push(`${survivor.name} repaired the tower: Objective +${repairScore}${repairScore > 1 ? ", Materials +1" : ""}, fatigue +5.`);
+    }
+
+    if (assignment.type === "guard") {
+      const guardScore = Math.max(1, Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty);
+      dangerReduction += guardScore;
+      survivor.fatigue = clamp(survivor.fatigue + 4, 0, 100);
+      logs.push(`${survivor.name} kept watch: danger pressure -${guardScore}, fatigue +4.`);
+    }
+
+    if (assignment.type === "care") {
+      const healScore = Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2);
+      const patient = session.account.survivors
+        .filter((candidate) => candidate.id !== survivor.id && candidate.status !== "assigned")
+        .sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20))[0];
+      if (patient) {
+        patient.fatigue = clamp(patient.fatigue - healScore, 0, 100);
+        if (patient.injuries.length > 0 && healScore >= 10) {
+          patient.injuries = patient.injuries.slice(1);
+        }
+        patient.status = patient.injuries.length > 0 ? "recovering" : "available";
+        logs.push(`${survivor.name} handled care: ${patient.name} fatigue -${healScore}${healScore >= 10 ? ", one injury cleared if present" : ""}.`);
+      } else {
+        logs.push(`${survivor.name} handled care, but no patient needed help.`);
+      }
+      survivor.fatigue = clamp(survivor.fatigue + 3, 0, 100);
+    }
+  }
+
+  if (logs.length === 0) {
+    logs.push("Base shifts: no one was assigned, so the base only handled upkeep.");
+  }
+
+  return {
+    dangerReduction,
+    logs
+  };
 }
 
 function recoverSurvivors(session: PlaytestSession, recovery: number): number {

@@ -76,6 +76,15 @@ export type RoomAssignedSurvivor = {
   assignedAt: string;
 };
 
+export type BaseWorkType = "forage" | "repair" | "guard" | "care";
+
+export type RoomBaseAssignment = {
+  roomId: string;
+  survivorId: string;
+  type: BaseWorkType;
+  userId: string;
+};
+
 export type ExpeditionParticipant = {
   userId: string;
   survivorId: string;
@@ -103,6 +112,7 @@ export type PlaytestRoom = {
   base: RoomBase;
   contributions: RoomContribution[];
   assignedSurvivors: RoomAssignedSurvivor[];
+  baseAssignments: RoomBaseAssignment[];
   locations: Location[];
   feed: FeedItem[];
 };
