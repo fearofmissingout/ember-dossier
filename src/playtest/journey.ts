@@ -418,6 +418,7 @@ export type JourneyCombatActionPreview = {
   effect: string;
   label: string;
   risk: string;
+  strain: number;
 };
 
 type JourneyEventTemplate = {
@@ -1191,10 +1192,11 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
   }
 
   const intent = combatIntentDetails[combat.intent] ?? combatIntentDetails.maul;
-  const lead = bestBy(squad, "willpower");
-  const striker = bestBy(squad, "agility");
-  const tactician = bestBy(squad, "technical");
-  const medic = bestBy(squad, "medical");
+  const lead = combatActorForAction(combat, squad, "guard");
+  const striker = combatActorForAction(combat, squad, "strike");
+  const tactician = combatActorForAction(combat, squad, "tactic");
+  const medic = combatActorForAction(combat, squad, "patch");
+  const strain = combatActionStrain[action] ?? 0;
   const incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(journey.pressure / 20) : 0) + intent.incoming;
 
   if (action === "strike") {
@@ -1223,9 +1225,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       actorName: striker.name,
       cost: hasAmmo ? "Ammo -1" : "No ammo",
       counterTag: pulsePreview.counterTag,
-      effect: `${damage} damage${armorPenalty > 0 ? `, armor absorbs ${armorPenalty}` : ""}`,
+      effect: withActionStrain(`${damage} damage${armorPenalty > 0 ? `, armor absorbs ${armorPenalty}` : ""}`, strain),
       label: "Strike",
-      risk: pulsePreview.risk
+      risk: pulsePreview.risk,
+      strain
     };
   }
 
@@ -1245,9 +1248,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       actorName: lead.name,
       cost: "No supply",
       counterTag: pulsePreview.counterTag,
-      effect: `block ${blocked}, expose +${combat.intent === "windup" ? 2 : 1}`,
+      effect: withActionStrain(`block ${blocked}, expose +${combat.intent === "windup" ? 2 : 1}`, strain),
       label: "Guard",
-      risk: pulsePreview.risk
+      risk: pulsePreview.risk,
+      strain
     };
   }
 
@@ -1268,9 +1272,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       actorName: medic.name,
       cost: hasMedicine ? "Medicine -1" : "No medicine",
       counterTag: pulsePreview.counterTag,
-      effect: `Heal ${heal}${bleedRelief > 0 ? `, bleed -${bleedRelief}` : ""}`,
+      effect: withActionStrain(`Heal ${heal}${bleedRelief > 0 ? `, bleed -${bleedRelief}` : ""}`, strain),
       label: "Patch",
-      risk: pulsePreview.risk
+      risk: pulsePreview.risk,
+      strain
     };
   }
 
@@ -1297,9 +1302,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       actorName: tactician.name,
       cost: "No supply",
       counterTag: pulsePreview.counterTag,
-      effect: `Expose +${expose}, pressure -${pressureDrop}%`,
+      effect: withActionStrain(`Expose +${expose}, pressure -${pressureDrop}%`, strain),
       label: "Tactic",
-      risk: pulsePreview.risk
+      risk: pulsePreview.risk,
+      strain
     };
   }
 
@@ -1318,7 +1324,8 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     counterTag: retreatPreview.counterTag,
     effect: `Exit combat, take ${Math.max(3, Math.ceil(combat.attack / 2))} damage`,
     label: "Retreat",
-    risk: retreatPreview.risk
+    risk: retreatPreview.risk,
+    strain
   };
 }
 
@@ -1330,10 +1337,11 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     return next;
   }
 
-  const lead = bestBy(squad, "willpower");
-  const striker = bestBy(squad, "agility");
-  const tactician = bestBy(squad, "technical");
-  const medic = bestBy(squad, "medical");
+  const lead = combatActorForAction(combat, squad, "guard");
+  const striker = combatActorForAction(combat, squad, "strike");
+  const tactician = combatActorForAction(combat, squad, "tactic");
+  const medic = combatActorForAction(combat, squad, "patch");
+  let actionActorId: string | null = null;
 
   if (action === "retreat") {
     applyCombatDamage(next, combat, Math.max(3, Math.ceil(combat.attack / 2)), lead.id);
@@ -1354,6 +1362,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   let incomingFocusId: string | null = striker.id;
 
   if (action === "strike") {
+    actionActorId = striker.id;
     markCombatantAction(combat, striker.id, "Strike");
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
     const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (ammoSpent ? 2 : 0));
@@ -1379,6 +1388,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }${counterLog.length ? `, ${counterLog.join(", ")}` : ""}.`
     );
   } else if (action === "guard") {
+    actionActorId = lead.id;
     markCombatantAction(combat, lead.id, "Guard");
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock;
     const windupBlock = combat.intent === "windup" ? 6 : 0;
@@ -1398,6 +1408,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }.`
     );
   } else if (action === "patch") {
+    actionActorId = medic.id;
     markCombatantAction(combat, medic.id, "Patch");
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
@@ -1421,6 +1432,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }.`
     );
   } else if (action === "tactic") {
+    actionActorId = tactician.id;
     markCombatantAction(combat, tactician.id, "Tactic");
     const braceBreak = combat.intent === "brace" ? 2 : 0;
     const prowlRead = combat.intent === "prowl" ? 1 : 0;
@@ -1441,6 +1453,10 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
         counterLog.length ? `, ${counterLog.join(", ")}` : ""
       }.`
     );
+  }
+
+  if (actionActorId) {
+    applyCombatActionStrain(next, combat, actionActorId, combatActionStrain[action] ?? 0, action);
   }
 
   if (combat.enemyHp > 0) {
@@ -2542,6 +2558,22 @@ const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: Jour
   }
 };
 
+const combatActionStrain: Record<CombatAction, number> = {
+  guard: 1,
+  patch: 1,
+  retreat: 0,
+  strike: 2,
+  tactic: 1
+};
+
+const combatActionNames: Record<CombatAction, string> = {
+  guard: "guard",
+  patch: "patch",
+  retreat: "retreat",
+  strike: "strike",
+  tactic: "tactic"
+};
+
 export function enemyTraitPulse(trait: JourneyEnemy["trait"]): JourneyEnemyPulse {
   const pulses: Record<JourneyEnemy["trait"], JourneyEnemyPulse> = {
     armored: {
@@ -3076,6 +3108,28 @@ function markCombatantAction(combat: JourneyCombat, survivorId: string, action: 
   }
 }
 
+function applyCombatActionStrain(journey: JourneyState, combat: JourneyCombat, survivorId: string, amount: number, action: CombatAction) {
+  const combatant = combat.frontline.find((line) => line.survivorId === survivorId);
+  const strain = Math.max(0, Math.floor(amount));
+  if (!combatant || combatant.status === "down" || strain <= 0) {
+    return;
+  }
+
+  const spent = Math.min(combatant.stamina, strain);
+  combatant.stamina = Math.max(0, combatant.stamina - spent);
+  combat.squadHp = Math.max(0, combat.squadHp - spent);
+  if (combatant.stamina === 0) {
+    combatant.wounds += 1;
+    combatant.status = "down";
+    journey.battleScars += 1;
+    markCombatScarTarget(journey, combatant.survivorId);
+    journey.logs.push(`Action strain: ${combatant.name} is knocked down by overexertion after spending ${spent} stamina on ${combatActionNames[action]}.`);
+  } else {
+    refreshCombatantStatus(combatant);
+    journey.logs.push(`Action strain: ${combatant.name} spends ${spent} stamina on ${combatActionNames[action]}.`);
+  }
+}
+
 function braceCombatant(combat: JourneyCombat, survivorId: string, guard: number) {
   const combatant = combat.frontline.find((line) => line.survivorId === survivorId);
   if (combatant && combatant.status !== "down") {
@@ -3208,6 +3262,19 @@ function nextCombatIntent(trait: JourneyEnemy["trait"], round: number, pressure:
   return combatIntentDetails[sequence[(round - 1) % sequence.length]];
 }
 
+function combatActorForAction(combat: JourneyCombat, squad: Survivor[], action: CombatAction) {
+  const statByAction: Record<CombatAction, keyof Survivor["attributes"]> = {
+    guard: "willpower",
+    patch: "medical",
+    retreat: "willpower",
+    strike: "agility",
+    tactic: "technical"
+  };
+  const livingIds = new Set(combat.frontline.filter((line) => line.status !== "down").map((line) => line.survivorId));
+  const candidates = squad.filter((survivor) => livingIds.has(survivor.id));
+  return bestBy(candidates.length > 0 ? candidates : squad, statByAction[action]);
+}
+
 function bestBy(squad: Survivor[], stat: keyof Survivor["attributes"]) {
   return squad.reduce((best, survivor) => (survivor.attributes[stat] > best.attributes[stat] ? survivor : best), squad[0]);
 }
@@ -3243,6 +3310,10 @@ function formatSignedPercent(value: number) {
 
 function formatSignedNumber(value: number) {
   return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+function withActionStrain(effect: string, strain: number) {
+  return strain > 0 ? `${effect}, strain -${strain}` : effect;
 }
 
 function withoutTerminalPunctuation(value: string) {

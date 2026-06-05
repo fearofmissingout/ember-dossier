@@ -192,6 +192,61 @@ describe("journey route generation", () => {
     expect((supported?.squadMaxHp ?? 0) - (unsupported?.squadMaxHp ?? 0)).toBe(8);
   });
 
+  test("combat actions show and apply actor strain", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-strain-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    const combat = createCombatForNode(journey.nodes[1], squad, 60)!;
+    const withCombat = { ...journey, combat, currentNodeIndex: 1 };
+    const preview = combatActionPreview(withCombat, "strike", squad, 60);
+    const striker = combat.frontline.find((line) => line.name === preview?.actorName)!;
+
+    const resolved = resolveCombatRound(withCombat, "strike", squad, 60);
+    const resolvedStriker = resolved.combat?.frontline.find((line) => line.survivorId === striker.survivorId);
+
+    expect(preview?.strain).toBeGreaterThan(0);
+    expect(preview?.effect).toContain("strain");
+    expect(resolved.logs.join("\n")).toContain("Action strain:");
+    expect(resolvedStriker?.stamina).toBeLessThan(striker.stamina);
+  });
+
+  test("combat actions avoid downed specialists when choosing actors", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-downed-role-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    const combat = createCombatForNode(journey.nodes[1], squad, 60)!;
+    const originalPreview = combatActionPreview({ ...journey, combat, currentNodeIndex: 1 }, "strike", squad, 60)!;
+    const downedStriker = combat.frontline.find((line) => line.name === originalPreview.actorName)!;
+    downedStriker.stamina = 0;
+    downedStriker.status = "down";
+
+    const preview = combatActionPreview({ ...journey, combat, currentNodeIndex: 1 }, "strike", squad, 60);
+    const resolved = resolveCombatRound({ ...journey, combat, currentNodeIndex: 1 }, "strike", squad, 60);
+
+    expect(preview?.actorName).not.toBe(downedStriker.name);
+    expect(resolved.logs.join("\n")).not.toContain(`${downedStriker.name} leads a strike`);
+  });
+
   test("heavy loadouts create pack burden and slow route travel", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const session = createStarterSession("user-a", "Alice", "burden-room");
