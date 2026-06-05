@@ -21,7 +21,15 @@ import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./gam
 import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition } from "./playtest/sim";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { PlaytestSession } from "./playtest/types";
-import { fetchAuthUser, readSessionFromHash, requestMagicLink, type AuthSession } from "./lib/auth";
+import {
+  fetchAuthUser,
+  readSessionFromHash,
+  readTokenHashFromUrl,
+  signInWithPassword,
+  signUpWithPassword,
+  verifyTokenHash,
+  type AuthSession
+} from "./lib/auth";
 import {
   loadPlaytestSession as loadRemotePlaytestSession,
   saveAssignment,
@@ -101,7 +109,9 @@ export default function App() {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const applyingRemoteState = useRef(false);
   const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
@@ -126,17 +136,29 @@ export default function App() {
     saveDemoState(nextSession.uiState);
   }
 
-  async function sendMagicLink() {
+  async function submitPasswordAuth(mode: "signin" | "signup") {
     if (!authEmail.trim()) {
       setAuthNotice("Enter an email first.");
       return;
     }
 
+    if (authPassword.length < 6) {
+      setAuthNotice("Password needs at least 6 characters.");
+      return;
+    }
+
     try {
-      await requestMagicLink(authEmail.trim());
-      setAuthNotice("Magic link sent. Open it on this device to join the playtest.");
+      setAuthSubmitting(true);
+      setAuthNotice(null);
+      const nextSession =
+        mode === "signin"
+          ? await signInWithPassword(authEmail.trim(), authPassword)
+          : await signUpWithPassword(authEmail.trim(), authPassword);
+      setAuthSession(nextSession);
     } catch (error) {
       setAuthNotice(describeSyncError(error));
+    } finally {
+      setAuthSubmitting(false);
     }
   }
 
@@ -146,26 +168,44 @@ export default function App() {
     }
 
     const parsed = readSessionFromHash();
-    if (!parsed) {
+    if (parsed) {
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `/?room=${roomSlug}`);
+      }
+
+      if (parsed.userId) {
+        setAuthSession(parsed);
+        return;
+      }
+
+      void fetchAuthUser(parsed.accessToken)
+        .then(setAuthSession)
+        .catch((error) => {
+          setSyncError(describeSyncError(error));
+          setSyncStatus("error");
+        });
       return;
     }
 
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-
-    if (parsed.userId) {
-      setAuthSession(parsed);
+    const tokenHash = readTokenHashFromUrl();
+    if (!tokenHash) {
       return;
     }
 
-    void fetchAuthUser(parsed.accessToken)
-      .then(setAuthSession)
+    void verifyTokenHash(tokenHash.tokenHash, tokenHash.type)
+      .then((nextSession) => {
+        if (typeof window !== "undefined") {
+          window.history.replaceState(null, "", `/?room=${roomSlug}`);
+        }
+        setAuthNotice("Email confirmed. Loading your playtest account.");
+        setAuthSession(nextSession);
+      })
       .catch((error) => {
+        setAuthNotice(describeSyncError(error));
         setSyncError(describeSyncError(error));
         setSyncStatus("error");
       });
-  }, []);
+  }, [roomSlug]);
 
   useEffect(() => {
     if (!hasSupabaseConfig || !authSession) {
@@ -577,10 +617,26 @@ export default function App() {
             <span>Email</span>
             <input value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" />
           </label>
-          <button className="primary-button full-width" type="button" onClick={sendMagicLink}>
-            <Send size={18} aria-hidden="true" />
-            Send magic link
-          </button>
+          <label className="auth-field">
+            <span>Password</span>
+            <input
+              value={authPassword}
+              minLength={6}
+              onChange={(event) => setAuthPassword(event.target.value)}
+              placeholder="At least 6 characters"
+              type="password"
+            />
+          </label>
+          <div className="auth-actions">
+            <button className="primary-button full-width" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signin")}>
+              <Send size={18} aria-hidden="true" />
+              Sign in
+            </button>
+            <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signup")}>
+              <Shield size={18} aria-hidden="true" />
+              Create account
+            </button>
+          </div>
           {authNotice && <p className="muted-copy">{authNotice}</p>}
         </section>
       </main>

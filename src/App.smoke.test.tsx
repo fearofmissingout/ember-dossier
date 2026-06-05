@@ -35,6 +35,8 @@ describe("App smoke render", () => {
     expect(html).toContain("Ember Dossier");
     expect(html).toContain("Playtest Login");
     expect(html).toContain("Email");
-    expect(html).toContain("Send magic link");
+    expect(html).toContain("Password");
+    expect(html).toContain("Sign in");
+    expect(html).toContain("Create account");
   });
 });

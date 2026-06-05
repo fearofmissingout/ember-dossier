@@ -88,6 +88,16 @@ button:disabled {
   font-weight: 800;
 }
 
+.auth-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-secondary {
+  justify-content: center;
+  margin-top: 0;
+}
+
 .side-rail {
   position: sticky;
   top: 0;
