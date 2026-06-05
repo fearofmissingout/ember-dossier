@@ -43,6 +43,51 @@ button:disabled {
     #eee8d8;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(rgba(238, 232, 216, 0.94), rgba(238, 232, 216, 0.97)),
+    repeating-linear-gradient(0deg, rgba(72, 55, 38, 0.04) 0, rgba(72, 55, 38, 0.04) 1px, transparent 1px, transparent 28px),
+    #eee8d8;
+}
+
+.auth-panel {
+  display: grid;
+  width: min(520px, 100%);
+  gap: 16px;
+}
+
+.auth-panel h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+.auth-field {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-field span {
+  color: #8c4b32;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.auth-field input {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cab89b;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  font-weight: 800;
+}
+
 .side-rail {
   position: sticky;
   top: 0;
@@ -314,6 +359,31 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
+}
+
+.account-band,
+.objective-band {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.contribution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.contribution-row {
+  display: grid;
+  align-content: space-between;
+  min-height: 112px;
+}
+
+.contribution-row small {
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .resource-tile {
