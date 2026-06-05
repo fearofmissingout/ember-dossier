@@ -140,6 +140,20 @@ describe("playtest room loop", () => {
     expect(next.room.feed[0]?.body).toContain("kept watch");
   });
 
+  test("base instinct perk improves base shift output", () => {
+    let session = createStarterSession("user-a", "Alice", "room-a");
+    session.account.survivors[0].level = 3;
+    session.account.survivors[0].attributes.technical = 10;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "repair");
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.base.objective.repairedParts).toBeGreaterThanOrEqual(3);
+    expect(next.room.feed[0]?.body).toContain("repaired the tower");
+  });
+
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {
     let session = createStarterSession("user-a", "Alice", "room-a");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
@@ -170,6 +184,36 @@ describe("playtest room loop", () => {
     expect(result.session.account.survivors[0].fatigue).toBeGreaterThan(session.account.survivors[0].fatigue);
     expect(result.session.room.base.objective.repairedParts).toBeGreaterThanOrEqual(1);
     expect(result.session.room.feed[0]?.kind).toBe("report");
+  });
+
+  test("expedition level-up unlocks survivor perks and writes progression logs", () => {
+    let session = createStarterSession("user-a", "Alice", "room-a");
+    session.account.survivors[0].xp = 18;
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 0,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.12, 0.18, 0.21],
+      risk: "cautious",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.session.account.survivors[0].level).toBe(2);
+    expect(result.report.logs.join("\n")).toContain("unlocked");
+    expect(result.session.room.feed[0]?.body).toContain("reached level 2");
   });
 
   test("expedition reports include process beats and random encounters", () => {

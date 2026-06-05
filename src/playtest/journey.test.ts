@@ -50,6 +50,38 @@ describe("journey route generation", () => {
     expect(combat?.enemyTraitLabel).toBe("Swarm");
   });
 
+  test("facility support adds field supplies and combat endurance", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "support-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const support = {
+      ammoDamage: 1,
+      guardBlock: 1,
+      maxHp: 8,
+      patchHeal: 3,
+      pressureRelief: 2,
+      startingSupplies: { ammo: 1, medicine: 1 }
+    };
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support
+      },
+      "hospital",
+      60
+    );
+
+    const unsupported = createCombatForNode(journey.nodes[1], squad, 60);
+    const supported = createCombatForNode(journey.nodes[1], squad, 60, support);
+
+    expect(journey.fieldSupplies.ammo).toBe(1);
+    expect(journey.fieldSupplies.medicine).toBe(1);
+    expect((supported?.squadMaxHp ?? 0) - (unsupported?.squadMaxHp ?? 0)).toBe(8);
+  });
+
   test("field supply spending follows priority order", () => {
     const session = createStarterSession("user-a", "Alice", "supply-room");
     const journey = createJourney(
@@ -71,6 +103,7 @@ describe("journey route generation", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "tactic-room");
     const squad = session.account.survivors.slice(0, 3);
+    squad[2].level = 2;
     const journey = createJourney(
       session,
       {

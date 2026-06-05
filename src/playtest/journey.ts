@@ -1,4 +1,5 @@
 import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "../game/types";
+import type { ExpeditionSupport } from "./progression";
 import type { PlaytestSession } from "./types";
 
 export type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract";
@@ -8,6 +9,7 @@ export type JourneyDraft = {
   squadIds: string[];
   risk: RiskStrategy;
   loadout: ResourceBundle;
+  support?: ExpeditionSupport;
 };
 
 export type JourneyChoice = {
@@ -86,6 +88,7 @@ export type JourneyState = {
   risk: RiskStrategy;
   rollShift: number;
   squadIds: string[];
+  support: ExpeditionSupport;
 };
 
 type JourneyEventTemplate = {
@@ -482,11 +485,15 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     }
   ];
 
+  const support = draft.support ?? emptySupport();
+  const fieldSupplies = { ...draft.loadout };
+  addPartialResources(fieldSupplies, support.startingSupplies);
+
   return {
     bonusReward: createEmptyResourceBundle(),
     combat: null,
     currentNodeIndex: 0,
-    fieldSupplies: { ...draft.loadout },
+    fieldSupplies,
     id: `journey-${Date.now()}`,
     loadout: { ...draft.loadout },
     locationId,
@@ -498,14 +505,16 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
-    squadIds: [...draft.squadIds]
+    squadIds: [...draft.squadIds],
+    support
   };
 }
 
 export function createCombatForNode(
   node: JourneyNode | undefined,
   squad: GameState["survivors"],
-  readiness: number
+  readiness: number,
+  support: ExpeditionSupport = emptySupport()
 ): JourneyCombat | null {
   if (!node || node.type !== "combat") {
     return null;
@@ -514,7 +523,7 @@ export function createCombatForNode(
   const riskIndex = squad.length > 4 ? 2 : squad.length > 3 ? 1 : 0;
   const enemy = node.enemy ?? materializeEnemy(familyEnemies.urban[0]);
   const enemyMaxHp = 22 + riskIndex * 6 + enemy.hpBonus;
-  const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5);
+  const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5) + support.maxHp;
 
   return {
     armor: enemy.armor,
@@ -544,11 +553,12 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
   if (action === "retreat") {
     combat.squadHp = Math.max(0, combat.squadHp - Math.max(3, Math.ceil(combat.attack / 2)));
-    next.pressure = clampPercent(next.pressure + 18);
-    next.rollShift += 0.18;
-    next.logs.push(`${node.title}: the squad retreats under pressure. Squad stamina takes a hit, pressure +18%.`);
+    const retreatPressure = Math.max(8, 18 - next.support.pressureRelief);
+    next.pressure = clampPercent(next.pressure + retreatPressure);
+    next.rollShift += retreatPressure / 100;
+    next.logs.push(`${node.title}: the squad retreats under pressure. Squad stamina takes a hit, pressure +${retreatPressure}%.`);
     next.currentNodeIndex += 1;
-    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
     return next;
   }
 
@@ -563,7 +573,11 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   if (action === "strike") {
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
     const armorPenalty = Math.max(0, combat.armor - combat.exposed - (ammoSpent ? 2 : 0));
-    const damage = Math.max(3, Math.round(readiness / 14) + Math.floor(striker.attributes.agility / 18) + (ammoSpent ? 5 : 0) - armorPenalty);
+    const fieldRunnerBonus = hasPerk(striker, "field_runner") ? 2 : 0;
+    const damage = Math.max(
+      3,
+      Math.round(readiness / 14) + Math.floor(striker.attributes.agility / 18) + fieldRunnerBonus + (ammoSpent ? 5 + next.support.ammoDamage : 0) - armorPenalty
+    );
     combat.enemyHp = Math.max(0, combat.enemyHp - damage);
     next.logs.push(
       `${node.title}: round ${combat.round}, ${striker.name} leads a strike for ${damage} damage${ammoSpent ? " and spends 1 ammo" : ""}${
@@ -571,7 +585,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       }.`
     );
   } else if (action === "guard") {
-    const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30);
+    const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock;
     incoming = Math.max(1, Math.floor(incoming / 2) - guardValue);
     combat.exposed = Math.min(3, combat.exposed + 1);
     next.pressure = clampPercent(next.pressure - 3);
@@ -580,7 +594,8 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   } else if (action === "patch") {
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
-    const heal = Math.floor(medic.attributes.medical / 9) + (medicineSpent ? 12 : 4);
+    const steadyHandsBonus = hasPerk(medic, "steady_hands") ? 3 : 0;
+    const heal = Math.floor(medic.attributes.medical / 9) + steadyHandsBonus + next.support.patchHeal + (medicineSpent ? 12 : 4);
     combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
     if (combat.bleed > 0) {
       combat.bleed = Math.max(0, combat.bleed - (medicineSpent ? 2 : 1));
@@ -590,9 +605,9 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       `${node.title}: round ${combat.round}, ${medic.name} patches the line for ${heal} stamina${medicineSpent ? " and spends 1 medicine" : ""}.`
     );
   } else if (action === "tactic") {
-    const expose = 1 + Math.floor(tactician.attributes.technical / 35);
+    const expose = 1 + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
     combat.exposed = Math.min(4, combat.exposed + expose);
-    next.pressure = clampPercent(next.pressure - Math.floor(tactician.attributes.luck / 25));
+    next.pressure = clampPercent(next.pressure - Math.floor(tactician.attributes.luck / 25) - next.support.pressureRelief);
     next.rollShift -= 0.04;
     next.logs.push(`${node.title}: round ${combat.round}, ${tactician.name} calls the pattern. Enemy exposed +${expose}, pressure softens.`);
   }
@@ -620,7 +635,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       next.rollShift += 0.24;
       next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
       next.currentNodeIndex += 1;
-      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
     } else {
       combat.round += 1;
       combat.exposed = Math.max(0, combat.exposed - 1);
@@ -631,7 +646,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     next.rollShift -= 0.12;
     next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, pressure -12%.`);
     next.currentNodeIndex += 1;
-    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
   }
 
   return next;
@@ -721,8 +736,37 @@ const resourceLabels: Record<ResourceKey, string> = {
   water: "Water"
 };
 
+function emptySupport(): ExpeditionSupport {
+  return {
+    ammoDamage: 0,
+    guardBlock: 0,
+    maxHp: 0,
+    patchHeal: 0,
+    pressureRelief: 0,
+    startingSupplies: {}
+  };
+}
+
+function addPartialResources(target: ResourceBundle, source: Partial<ResourceBundle>) {
+  for (const [key, value] of Object.entries(source) as Array<[ResourceKey, number | undefined]>) {
+    target[key] += value ?? 0;
+  }
+}
+
 function bestBy(squad: Survivor[], stat: keyof Survivor["attributes"]) {
   return squad.reduce((best, survivor) => (survivor.attributes[stat] > best.attributes[stat] ? survivor : best), squad[0]);
+}
+
+function hasPerk(survivor: Survivor, perkId: "field_runner" | "steady_hands") {
+  const level = "level" in survivor && typeof survivor.level === "number" ? survivor.level : 1;
+  if (level < 2) {
+    return false;
+  }
+
+  const mobility = survivor.attributes.agility + survivor.attributes.stamina;
+  const control = survivor.attributes.technical + survivor.attributes.medical + survivor.attributes.willpower;
+  const primary = mobility >= control / 1.5 ? "field_runner" : "steady_hands";
+  return primary === perkId;
 }
 
 function clampPercent(value: number) {

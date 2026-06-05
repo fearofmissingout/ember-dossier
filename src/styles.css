@@ -612,7 +612,14 @@ button:disabled {
   color: #842d20;
 }
 
+.tag-row .perk-tag {
+  border-color: #7aa087;
+  background: #e2efe1;
+  color: #2d6348;
+}
+
 .fatigue-line,
+.xp-line,
 .readiness-meter {
   display: grid;
   grid-template-columns: auto minmax(80px, 1fr) auto;
@@ -624,6 +631,7 @@ button:disabled {
 }
 
 .fatigue-line div,
+.xp-line div,
 .readiness-meter div {
   height: 8px;
   overflow: hidden;
@@ -632,11 +640,16 @@ button:disabled {
 }
 
 .fatigue-line i,
+.xp-line i,
 .readiness-meter i {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: #437c71;
+}
+
+.xp-line i {
+  background: #8a6f2f;
 }
 
 .work-row {
@@ -742,9 +755,31 @@ button:disabled {
 
 .risk-options,
 .facility-grid,
+.support-grid,
 .archive-grid {
   display: grid;
   gap: 10px;
+}
+
+.support-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin-top: 12px;
+}
+
+.support-grid span,
+.support-grid strong {
+  min-height: 34px;
+  padding: 8px;
+  border: 1px solid #d4c2a0;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #5b604f;
+  font-size: 12px;
+}
+
+.support-grid span {
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .journey-panel {

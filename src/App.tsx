@@ -43,6 +43,7 @@ import {
   type JourneyNode,
   type JourneyState
 } from "./playtest/journey";
+import { supportFromFacilities, survivorPerkDetails, xpForNextLevel } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
@@ -679,7 +680,17 @@ export default function App() {
     }
 
     applySession(preparedSession);
-    setJourney(createJourney(preparedSession, draft, selectedLocation.id, readiness));
+    setJourney(
+      createJourney(
+        preparedSession,
+        {
+          ...draft,
+          support: supportFromFacilities(preparedSession.room.base.facilities)
+        },
+        selectedLocation.id,
+        readiness
+      )
+    );
   }
 
   function resolveJourneyAction(action: JourneyAction) {
@@ -729,7 +740,7 @@ export default function App() {
     }
 
     next.currentNodeIndex += 1;
-    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
     setJourney(next);
   }
 
@@ -933,6 +944,7 @@ export default function App() {
         {view === "survivors" && (
           <Survivors
             state={state}
+            accountSurvivors={session.account.survivors}
             selectedIds={draft.squadIds}
             canTreat={session.room.base.resources.medicine > 0}
             baseAssignments={session.room.baseAssignments}
@@ -1146,6 +1158,7 @@ function Overview({
 }
 
 function Survivors({
+  accountSurvivors,
   state,
   selectedIds,
   canTreat,
@@ -1154,6 +1167,7 @@ function Survivors({
   onTreat,
   onWorkChange
 }: {
+  accountSurvivors: PlaytestSession["account"]["survivors"];
   state: GameState;
   selectedIds: string[];
   canTreat: boolean;
@@ -1172,14 +1186,21 @@ function Survivors({
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
       </div>
       <div className="survivor-grid">
-        {state.survivors.map((survivor) => (
+        {state.survivors.map((survivor) => {
+          const accountSurvivor = accountSurvivors.find((candidate) => candidate.id === survivor.id);
+          const perks = accountSurvivor ? survivorPerkDetails(accountSurvivor) : [];
+          const xpTarget = accountSurvivor ? xpForNextLevel(accountSurvivor) : 0;
+          return (
           <article className={selectedIds.includes(survivor.id) ? "survivor-card selected" : "survivor-card"} key={survivor.id}>
             <div className="portrait-mark">{survivor.codename.slice(0, 2)}</div>
             <div className="card-copy">
               <div className="card-title-line">
                 <div>
                   <h3>{survivor.name}</h3>
-                  <p>{survivor.profession} / {survivor.role}</p>
+                  <p>
+                    {survivor.profession} / {survivor.role}
+                    {accountSurvivor ? ` / Lv.${accountSurvivor.level}` : ""}
+                  </p>
                 </div>
                 <button className="icon-button" type="button" onClick={() => onToggle(survivor.id)} aria-label={`切换 ${survivor.name}`}>
                   {selectedIds.includes(survivor.id) ? <Minus size={17} /> : <Plus size={17} />}
@@ -1195,10 +1216,26 @@ function Survivors({
                 {survivor.traits.map((trait) => (
                   <span key={trait}>{trait}</span>
                 ))}
+                {perks.map((perk) => (
+                  <span className="perk-tag" key={perk.id} title={perk.description}>
+                    {perk.label}
+                  </span>
+                ))}
                 {survivor.injuries.map((injury) => (
                   <span className="danger-tag" key={injury}>{injury}</span>
                 ))}
               </div>
+              {accountSurvivor && (
+                <div className="xp-line">
+                  <span>XP</span>
+                  <div>
+                    <i style={{ width: `${Math.max(5, Math.min(100, Math.round((accountSurvivor.xp / xpTarget) * 100)))}%` }} />
+                  </div>
+                  <strong>
+                    {accountSurvivor.xp}/{xpTarget}
+                  </strong>
+                </div>
+              )}
               <div className="fatigue-line">
                 <span>疲劳</span>
                 <div>
@@ -1232,7 +1269,8 @@ function Survivors({
               )}
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -1272,6 +1310,14 @@ function ExpeditionPrep({
   onJourneyAction: (action: JourneyAction) => void;
 }) {
   const activeNode = journey?.nodes[journey.currentNodeIndex];
+  const support = supportFromFacilities(state.facilities);
+  const supportItems = [
+    ["Max HP", support.maxHp],
+    ["Patch", support.patchHeal],
+    ["Guard", support.guardBlock],
+    ["Ammo", support.ammoDamage],
+    ["Pressure", support.pressureRelief]
+  ].filter(([, value]) => Number(value) > 0);
   return (
     <div className="expedition-layout">
       <section className="panel">
@@ -1373,6 +1419,20 @@ function ExpeditionPrep({
           {selectedLocation.tags.map((tag) => (
             <span key={tag}>{tag}</span>
           ))}
+        </div>
+        <div className="support-grid">
+          <span>Base support</span>
+          {supportItems.length ? (
+            supportItems.map(([label, value]) => (
+              <strong key={label}>
+                {label} +{value}
+              </strong>
+            ))
+          ) : (
+            <strong>No facility combat bonuses yet</strong>
+          )}
+          {(support.startingSupplies.ammo ?? 0) > 0 && <strong>Start Ammo +{support.startingSupplies.ammo}</strong>}
+          {(support.startingSupplies.medicine ?? 0) > 0 && <strong>Start Medicine +{support.startingSupplies.medicine}</strong>}
         </div>
         {journey && activeNode && (
           <JourneyPanel

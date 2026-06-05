@@ -1,5 +1,6 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
+import { hasSurvivorPerk, survivorPerkDetails } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
 
@@ -147,6 +148,7 @@ export function resolvePlaytestExpedition(
       body: `${next.room.feed[0].body}\n${process.logs.slice(0, 8).join("\n")}`
     };
   }
+  const progressionLogs: string[] = [];
   next.account.survivors = next.account.survivors.map((survivor) => {
     const updated = result.nextState.survivors.find((candidate) => candidate.id === survivor.id);
     if (!updated) {
@@ -155,16 +157,34 @@ export function resolvePlaytestExpedition(
 
     const participated = request.survivorIds.includes(survivor.id);
     const nextXp = participated ? survivor.xp + 8 : survivor.xp;
+    const nextLevel = participated && nextXp >= survivor.level * 20 ? survivor.level + 1 : survivor.level;
+    if (nextLevel > survivor.level) {
+      const unlocked = survivorPerkDetails({ ...survivor, level: nextLevel, xp: nextXp }).filter(
+        (perk) => !survivorPerkDetails(survivor).some((existing) => existing.id === perk.id)
+      );
+      progressionLogs.push(
+        `${survivor.name} reached level ${nextLevel}${unlocked.length ? ` and unlocked ${unlocked.map((perk) => perk.label).join(", ")}` : ""}.`
+      );
+    }
 
     return {
       ...survivor,
       fatigue: updated.fatigue,
       injuries: updated.injuries,
-      level: participated && nextXp >= survivor.level * 20 ? survivor.level + 1 : survivor.level,
+      level: nextLevel,
       status: participated ? "available" : survivor.status,
       xp: nextXp
     };
   });
+  if (progressionLogs.length) {
+    result.report.logs.unshift(...progressionLogs);
+    if (next.room.feed[0]) {
+      next.room.feed[0] = {
+        ...next.room.feed[0],
+        body: `${next.room.feed[0].body}\n${progressionLogs.join("\n")}`
+      };
+    }
+  }
   applyProcessEffects(next, request, process);
 
   next.room.assignedSurvivors = next.room.assignedSurvivors.filter(
@@ -457,8 +477,9 @@ function resolveBaseAssignments(session: PlaytestSession) {
     }
 
     const fatiguePenalty = survivor.fatigue >= 70 ? 1 : 0;
+    const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
     if (assignment.type === "forage") {
-      const yieldScore = Math.max(1, Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty);
+      const yieldScore = Math.max(1, Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty + baseInstinctBonus);
       session.room.base.resources.food += yieldScore;
       session.room.base.resources.water += Math.max(1, yieldScore - 1);
       survivor.fatigue = clamp(survivor.fatigue + 6, 0, 100);
@@ -466,7 +487,7 @@ function resolveBaseAssignments(session: PlaytestSession) {
     }
 
     if (assignment.type === "repair") {
-      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty);
+      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty + baseInstinctBonus);
       session.room.base.objective.repairedParts = Math.min(
         session.room.base.objective.requiredParts,
         session.room.base.objective.repairedParts + repairScore
@@ -477,14 +498,14 @@ function resolveBaseAssignments(session: PlaytestSession) {
     }
 
     if (assignment.type === "guard") {
-      const guardScore = Math.max(1, Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty);
+      const guardScore = Math.max(1, Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty + baseInstinctBonus);
       dangerReduction += guardScore;
       survivor.fatigue = clamp(survivor.fatigue + 4, 0, 100);
       logs.push(`${survivor.name} kept watch: danger pressure -${guardScore}, fatigue +4.`);
     }
 
     if (assignment.type === "care") {
-      const healScore = Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2);
+      const healScore = Math.max(6, survivor.attributes.medical + facilityLevel(session, "clinic") * 2 + baseInstinctBonus * 3);
       const patient = session.account.survivors
         .filter((candidate) => candidate.id !== survivor.id && candidate.status !== "assigned")
         .sort((left, right) => right.fatigue + right.injuries.length * 20 - (left.fatigue + left.injuries.length * 20))[0];
