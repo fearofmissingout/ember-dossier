@@ -1,5 +1,7 @@
 import type { Facility } from "./types";
 
+export const maxFacilityLevel = 3;
+
 export const facilityBlueprints: Facility[] = [
   { category: "core", id: "dorm", name: "Dormitory", level: 1, status: "stable", effect: "Rest beds improve daily fatigue recovery and guard endurance." },
   { category: "core", id: "clinic", name: "Clinic", level: 1, status: "strained", effect: "Treatment improves care shifts and field patching." },
@@ -29,6 +31,10 @@ export function completeFacilities(facilities: Facility[]): Facility[] {
 }
 
 export function facilityActionCost(facility: Facility): number {
+  if (isFacilityMaxed(facility)) {
+    return 0;
+  }
+
   if (!isFacilityBuilt(facility)) {
     return buildCosts[facility.id] ?? 8;
   }
@@ -36,8 +42,21 @@ export function facilityActionCost(facility: Facility): number {
   return facility.level * 5;
 }
 
-export function facilityActionLabel(facility: Facility): "Build" | "Upgrade" {
+export function facilityActionLabel(facility: Facility): "Build" | "Upgrade" | "Maxed" {
+  if (isFacilityMaxed(facility)) {
+    return "Maxed";
+  }
+
   return isFacilityBuilt(facility) ? "Upgrade" : "Build";
+}
+
+export function facilityUpgradePreview(facility: Facility): string[] {
+  if (isFacilityMaxed(facility)) {
+    return ["Fully developed", facilityGrowthSummary(facility.id)];
+  }
+
+  const nextLevel = isFacilityBuilt(facility) ? facility.level + 1 : 1;
+  return [`${isFacilityBuilt(facility) ? "Upgrades" : "Builds"} to Lv.${nextLevel}`, facilityGrowthSummary(facility.id)];
 }
 
 export function facilityBaseEffect(facilityId: string): string {
@@ -46,4 +65,23 @@ export function facilityBaseEffect(facilityId: string): string {
 
 export function isFacilityBuilt(facility: Facility): boolean {
   return facility.level > 0;
+}
+
+export function isFacilityMaxed(facility: Facility): boolean {
+  return facility.level >= maxFacilityLevel;
+}
+
+function facilityGrowthSummary(facilityId: string): string {
+  const summaries: Record<string, string> = {
+    barricade: "Reduces danger, strengthens guard shifts, and unlocks road-secure doctrine support.",
+    clinic: "Improves care shifts, field patching, and high-level medicine starts.",
+    dorm: "Improves daily recovery, guard endurance, and formation doctrine stamina.",
+    generator: "Improves ammo support, combat damage, and high-level starting ammo.",
+    kitchen: "Lowers daily food and water upkeep.",
+    radio: "Improves objective repair windows, route pressure relief, and intel recovery.",
+    training: "Improves expedition stamina, breach drills, and combat resilience.",
+    watchtower: "Improves route pressure relief, scouting, and road-search doctrine support.",
+    workshop: "Improves repair shifts, salvage, ammo damage, and road-secure support."
+  };
+  return summaries[facilityId] ?? "Improves base and expedition operations.";
 }

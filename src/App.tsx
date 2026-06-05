@@ -20,7 +20,7 @@ import {
   Wrench
 } from "lucide-react";
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
-import { facilityActionCost, facilityActionLabel, isFacilityBuilt } from "./game/facilities";
+import { facilityActionCost, facilityActionLabel, facilityUpgradePreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
 import {
@@ -1946,6 +1946,8 @@ function Facilities({ state, onUpgrade }: { state: GameState; onUpgrade: (id: st
           const cost = facilityActionCost(facility);
           const actionLabel = facilityActionLabel(facility);
           const built = isFacilityBuilt(facility);
+          const maxed = isFacilityMaxed(facility);
+          const preview = facilityUpgradePreview(facility);
           return (
             <article className={`facility-card ${facility.status} ${built ? "" : "unbuilt"}`} key={facility.id}>
               <div className="facility-title-row">
@@ -1954,14 +1956,18 @@ function Facilities({ state, onUpgrade }: { state: GameState; onUpgrade: (id: st
               </div>
               <span>{built ? `Level ${facility.level}` : "Blueprint"}</span>
               <p>{facility.effect}</p>
+              <div className="facility-upgrade-preview">
+                <strong>{preview[0]}</strong>
+                <span>{preview[1]}</span>
+              </div>
               <button
                 className="ghost-button compact-action"
                 type="button"
-                disabled={state.resources.materials < cost}
+                disabled={maxed || state.resources.materials < cost}
                 onClick={() => onUpgrade(facility.id)}
               >
                 <Wrench size={16} aria-hidden="true" />
-                {actionLabel}: {cost} materials
+                {maxed ? "Fully developed" : `${actionLabel}: ${cost} materials`}
               </button>
             </article>
           );

@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
+import { facilityActionLabel, facilityUpgradePreview, isFacilityMaxed } from "../game/facilities";
 import {
   clearPlaytestSession,
   createStarterAccount,
@@ -511,6 +512,29 @@ describe("playtest room loop", () => {
     expect(builtKitchen?.level).toBe(1);
     expect(next.room.base.resources.materials).toBe(4);
     expect(next.room.feed[0]?.title).toContain("Facility built");
+  });
+
+  test("caps facility growth at level three and previews the next benefit", () => {
+    const session = createStarterSession("user-a", "Alice", "facility-cap-room");
+    const clinic = session.room.base.facilities.find((facility) => facility.id === "clinic");
+    session.room.base.resources.materials = 20;
+    if (!clinic) {
+      throw new Error("Missing clinic");
+    }
+    clinic.level = 3;
+    clinic.status = "stable";
+
+    expect(isFacilityMaxed(clinic)).toBe(true);
+    expect(facilityActionLabel(clinic)).toBe("Maxed");
+    expect(facilityUpgradePreview(clinic)[0]).toContain("Fully developed");
+    expect(() => upgradeFacility(session, "user-a", "clinic")).toThrow("already fully developed");
+    expect(session.room.base.resources.materials).toBe(20);
+
+    const kitchen = session.room.base.facilities.find((facility) => facility.id === "kitchen");
+    if (!kitchen) {
+      throw new Error("Missing kitchen");
+    }
+    expect(facilityUpgradePreview(kitchen)).toEqual(["Builds to Lv.1", "Lowers daily food and water upkeep."]);
   });
 
   test("kitchen and barricade change daily upkeep and danger", () => {

@@ -1,6 +1,6 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
-import { facilityActionCost, facilityBaseEffect, isFacilityBuilt } from "../game/facilities";
+import { facilityActionCost, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
 import { hasSurvivorPerk, survivorPerkDetails } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
@@ -252,6 +252,10 @@ export function upgradeFacility(session: PlaytestSession, userId: string, facili
   }
 
   const wasBuilt = isFacilityBuilt(facility);
+  if (isFacilityMaxed(facility)) {
+    throw new Error(`${facility.name} is already fully developed.`);
+  }
+
   const materialCost = facilityActionCost(facility);
   if (next.room.base.resources.materials < materialCost) {
     throw new Error(`Not enough materials to ${wasBuilt ? "upgrade" : "build"} this facility.`);

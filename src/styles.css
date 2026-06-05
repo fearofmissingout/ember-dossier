@@ -1614,6 +1614,30 @@ button:disabled {
   line-height: 1.55;
 }
 
+.facility-upgrade-preview {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #e1d7c2;
+  border-radius: 8px;
+  background: #f8f2e6;
+}
+
+.facility-upgrade-preview strong {
+  color: #5d3c25;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.facility-upgrade-preview span {
+  margin: 0;
+  color: #627066;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .compact-action {
   width: auto;
   min-height: 36px;
