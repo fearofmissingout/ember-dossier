@@ -17,8 +17,17 @@ import {
 } from "lucide-react";
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
-import { resolveExpedition } from "./game/sim";
 import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
+import { applyContribution, assignSurvivorToRoom, resolvePlaytestExpedition } from "./playtest/sim";
+import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
+import type { PlaytestSession } from "./playtest/types";
+import { fetchAuthUser, readSessionFromHash, requestMagicLink, type AuthSession } from "./lib/auth";
+import {
+  loadPlaytestSession as loadRemotePlaytestSession,
+  saveAssignment,
+  saveContribution,
+  saveSettlement
+} from "./lib/playtestRemote";
 import {
   createRoomMeta,
   loadRemoteDemoState,
@@ -78,9 +87,10 @@ const defaultLoadout: ResourceBundle = {
 };
 
 export default function App() {
-  const [state, setState] = useState<GameState>(() => loadDemoState());
   const [roomSlug, setRoomSlug] = useState(() => getInitialRoomSlug());
   const [player, setPlayer] = useState<RoomPlayer>(() => loadLocalPlayer());
+  const [session, setSession] = useState<PlaytestSession>(() => loadPlaytestSession(player.id, player.name, roomSlug));
+  const [state, setState] = useState<GameState>(() => session.uiState);
   const [roomMeta, setRoomMeta] = useState<RoomMeta>(() => createRoomMeta(player));
   const [view, setView] = useState<ViewKey>("overview");
   const [latestReportId, setLatestReportId] = useState<string | null>(null);
@@ -89,6 +99,9 @@ export default function App() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncRetryCount, setSyncRetryCount] = useState(0);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const applyingRemoteState = useRef(false);
   const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
@@ -97,6 +110,86 @@ export default function App() {
     risk: "standard",
     loadout: defaultLoadout
   }));
+  const [contributionDraft, setContributionDraft] = useState<ResourceBundle>(() => ({
+    ammo: 0,
+    food: 1,
+    fuel: 0,
+    materials: 1,
+    medicine: 0,
+    water: 1
+  }));
+
+  function applySession(nextSession: PlaytestSession) {
+    setSession(nextSession);
+    setState(nextSession.uiState);
+    savePlaytestSession(nextSession);
+    saveDemoState(nextSession.uiState);
+  }
+
+  async function sendMagicLink() {
+    if (!authEmail.trim()) {
+      setAuthNotice("Enter an email first.");
+      return;
+    }
+
+    try {
+      await requestMagicLink(authEmail.trim());
+      setAuthNotice("Magic link sent. Open it on this device to join the playtest.");
+    } catch (error) {
+      setAuthNotice(describeSyncError(error));
+    }
+  }
+
+  useEffect(() => {
+    if (!hasSupabaseConfig) {
+      return;
+    }
+
+    const parsed = readSessionFromHash();
+    if (!parsed) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
+    if (parsed.userId) {
+      setAuthSession(parsed);
+      return;
+    }
+
+    void fetchAuthUser(parsed.accessToken)
+      .then(setAuthSession)
+      .catch((error) => {
+        setSyncError(describeSyncError(error));
+        setSyncStatus("error");
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || !authSession) {
+      return;
+    }
+
+    setSyncStatus("loading");
+    setSyncError(null);
+    void loadRemotePlaytestSession(
+      authSession.accessToken,
+      authSession.userId,
+      player.name || authSession.email || "Player",
+      roomSlug
+    )
+      .then((loadedSession) => {
+        applySession(loadedSession);
+        setRemoteReady(true);
+        setSyncStatus("synced");
+      })
+      .catch((error) => {
+        setSyncError(describeSyncError(error));
+        setSyncStatus("error");
+      });
+  }, [authSession, roomSlug]);
 
   async function hydrateRemoteState() {
     if (!hasSupabaseConfig) {
@@ -147,7 +240,7 @@ export default function App() {
   }
 
   function retryRemoteSync() {
-    if (!hasSupabaseConfig) {
+    if (!hasSupabaseConfig || authSession) {
       return;
     }
 
@@ -174,18 +267,36 @@ export default function App() {
 
   function createNewRoom() {
     const nextRoomSlug = createRoomSlug();
+    const nextSession = createStarterSession(player.id, player.name, nextRoomSlug);
 
     latestRemoteUpdatedAt.current = null;
+    clearPlaytestSession();
     setRoomSlug(nextRoomSlug);
     setView("overview");
     setLatestReportId(null);
-    setState(createInitialState());
+    applySession(nextSession);
     setRoomMeta(createRoomMeta(player));
   }
 
   function updatePlayerName(name: string) {
     const updatedPlayer = renameLocalPlayer(player, name);
     setPlayer(updatedPlayer);
+    setSession((current) => ({
+      ...current,
+      account: {
+        ...current.account,
+        profile: {
+          ...current.account.profile,
+          displayName: updatedPlayer.name
+        }
+      },
+      room: {
+        ...current.room,
+        members: current.room.members.map((member) =>
+          member.userId === current.account.profile.userId ? { ...member, displayName: updatedPlayer.name } : member
+        )
+      }
+    }));
     setRoomMeta((current) => ({
       ...current,
       players: {
@@ -202,11 +313,14 @@ export default function App() {
     setRoomSlugInUrl(roomSlug);
     latestRemoteUpdatedAt.current = null;
     setRemoteReady(!hasSupabaseConfig);
+    if (!hasSupabaseConfig || authSession) {
+      return;
+    }
     void hydrateRemoteState();
-  }, [roomSlug]);
+  }, [authSession, roomSlug]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || syncStatus !== "error" || syncRetryCount >= 3) {
+    if (!hasSupabaseConfig || authSession || syncStatus !== "error" || syncRetryCount >= 3) {
       return;
     }
 
@@ -215,7 +329,7 @@ export default function App() {
     return () => {
       window.clearTimeout(retryTimer);
     };
-  }, [remoteReady, roomSlug, state, syncRetryCount, syncStatus]);
+  }, [authSession, remoteReady, roomSlug, state, syncRetryCount, syncStatus]);
 
   useEffect(() => {
     saveDemoState(state);
@@ -225,7 +339,7 @@ export default function App() {
       return;
     }
 
-    if (!hasSupabaseConfig || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !remoteReady) {
       return;
     }
 
@@ -255,10 +369,10 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [player, remoteReady, roomSlug, state]);
+  }, [authSession, player, remoteReady, roomSlug, state]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !remoteReady) {
       return;
     }
 
@@ -295,10 +409,10 @@ export default function App() {
       cancelled = true;
       window.clearInterval(pollTimer);
     };
-  }, [player, remoteReady, roomSlug, state]);
+  }, [authSession, player, remoteReady, roomSlug, state]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || !remoteReady) {
+    if (!hasSupabaseConfig || authSession || !remoteReady) {
       return;
     }
 
@@ -311,7 +425,7 @@ export default function App() {
     return () => {
       window.clearInterval(heartbeatTimer);
     };
-  }, [player, remoteReady, roomSlug]);
+  }, [authSession, player, remoteReady, roomSlug]);
 
   const selectedLocation = state.locations.find((location) => location.id === draft.locationId) ?? state.locations[0];
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
@@ -324,6 +438,20 @@ export default function App() {
   );
 
   function toggleSurvivor(id: string) {
+    if (!draft.squadIds.includes(id)) {
+      const nextSession = assignSurvivorToRoom(session, session.account.profile.userId, id);
+      applySession(nextSession);
+      const assignment = nextSession.room.assignedSurvivors.find(
+        (candidate) => candidate.userId === nextSession.account.profile.userId && candidate.survivorId === id
+      );
+      if (authSession && assignment) {
+        void saveAssignment(authSession.accessToken, assignment).catch((error) => {
+          setSyncError(describeSyncError(error));
+          setSyncStatus("error");
+        });
+      }
+    }
+
     setDraft((current) => {
       const alreadySelected = current.squadIds.includes(id);
       if (alreadySelected) {
@@ -348,17 +476,62 @@ export default function App() {
     }));
   }
 
+  function updateContribution(key: ResourceKey, delta: number) {
+    setContributionDraft((current) => ({
+      ...current,
+      [key]: Math.max(0, Math.min(session.account.resources[key], current[key] + delta))
+    }));
+  }
+
+  function submitContribution() {
+    const nextSession = applyContribution(session, session.account.profile.userId, contributionDraft);
+    applySession(nextSession);
+    const contribution = nextSession.room.contributions[0];
+    if (authSession && contribution) {
+      void saveContribution(authSession.accessToken, contribution).catch((error) => {
+        setSyncError(describeSyncError(error));
+        setSyncStatus("error");
+      });
+    }
+    setContributionDraft({
+      ammo: 0,
+      food: 1,
+      fuel: 0,
+      materials: 1,
+      medicine: 0,
+      water: 1
+    });
+  }
+
   function dispatchExpedition() {
     if (!squadReady || !canAffordLoadout) {
       return;
     }
 
-    const result = resolveExpedition(state, {
+    let preparedSession = session;
+    for (const survivorId of draft.squadIds) {
+      const alreadyAssigned = preparedSession.room.assignedSurvivors.some(
+        (assignment) => assignment.survivorId === survivorId && assignment.userId === preparedSession.account.profile.userId
+      );
+      if (!alreadyAssigned) {
+        preparedSession = assignSurvivorToRoom(preparedSession, preparedSession.account.profile.userId, survivorId);
+      }
+    }
+
+    const result = resolvePlaytestExpedition(preparedSession, {
       ...draft,
+      survivorIds: draft.squadIds,
+      userId: preparedSession.account.profile.userId,
       randomRolls: [Math.random(), Math.random(), Math.random()]
     });
 
-    setState(result.nextState);
+    applySession(result.session);
+    if (authSession) {
+      void saveSettlement(authSession.accessToken, result.session, result.report).catch((error) => {
+        setSyncError(describeSyncError(error));
+        setSyncStatus("error");
+      });
+    }
     setLatestReportId(result.report.id);
     setView("reports");
     setDraft((current) => ({
@@ -368,10 +541,11 @@ export default function App() {
   }
 
   function resetDemo() {
-    const initialState = createInitialState();
+    const initialSession = createStarterSession(player.id, player.name, roomSlug);
 
     clearDemoState();
-    setState(initialState);
+    clearPlaytestSession();
+    applySession(initialSession);
     setLatestReportId(null);
     setView("overview");
     setDraft({
@@ -381,9 +555,36 @@ export default function App() {
       loadout: defaultLoadout
     });
 
-    if (hasSupabaseConfig && remoteReady) {
-      void pushRemoteState(initialState);
+    if (hasSupabaseConfig && remoteReady && !authSession) {
+      void pushRemoteState(initialSession.uiState);
     }
+  }
+
+  if (hasSupabaseConfig && !authSession) {
+    return (
+      <main className="auth-shell">
+        <section className="panel auth-panel">
+          <div className="brand-lockup">
+            <span className="stamp">ED-12</span>
+            <div>
+              <p>余烬档案</p>
+              <strong>Ember Dossier</strong>
+            </div>
+          </div>
+          <p className="eyebrow">Playtest Login</p>
+          <h1>Join room {roomSlug}</h1>
+          <label className="auth-field">
+            <span>Email</span>
+            <input value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" />
+          </label>
+          <button className="primary-button full-width" type="button" onClick={sendMagicLink}>
+            <Send size={18} aria-hidden="true" />
+            Send magic link
+          </button>
+          {authNotice && <p className="muted-copy">{authNotice}</p>}
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -457,7 +658,16 @@ export default function App() {
           </div>
         </header>
 
-        {view === "overview" && <Overview state={state} goExpedition={() => setView("expedition")} />}
+        {view === "overview" && (
+          <Overview
+            state={state}
+            session={session}
+            contributionDraft={contributionDraft}
+            goExpedition={() => setView("expedition")}
+            onContributionChange={updateContribution}
+            onContribute={submitContribution}
+          />
+        )}
         {view === "survivors" && <Survivors state={state} selectedIds={draft.squadIds} onToggle={toggleSurvivor} />}
         {view === "expedition" && (
           <ExpeditionPrep
@@ -493,9 +703,59 @@ export default function App() {
   );
 }
 
-function Overview({ state, goExpedition }: { state: GameState; goExpedition: () => void }) {
+function Overview({
+  state,
+  session,
+  contributionDraft,
+  goExpedition,
+  onContributionChange,
+  onContribute
+}: {
+  state: GameState;
+  session: PlaytestSession;
+  contributionDraft: ResourceBundle;
+  goExpedition: () => void;
+  onContributionChange: (key: ResourceKey, delta: number) => void;
+  onContribute: () => void;
+}) {
+  const objective = session.room.base.objective;
+  const objectiveProgress = Math.round((objective.repairedParts / objective.requiredParts) * 100);
+
   return (
     <div className="view-grid">
+      <section className="panel account-band">
+        <p className="eyebrow">Account Base</p>
+        <h2>{session.account.profile.displayName}</h2>
+        <div className="metric-pair">
+          <span>Training</span>
+          <strong>{session.account.base.trainingRoomLevel}</strong>
+        </div>
+        <div className="metric-pair">
+          <span>Medical</span>
+          <strong>{session.account.base.medicalRoomLevel}</strong>
+        </div>
+        <div className="metric-pair">
+          <span>Warehouse</span>
+          <strong>{session.account.base.warehouseLevel}</strong>
+        </div>
+      </section>
+
+      <section className="panel objective-band">
+        <p className="eyebrow">Room Objective</p>
+        <h2>{objective.title}</h2>
+        <div className="readiness-meter">
+          <span>Repair Progress</span>
+          <div>
+            <i style={{ width: `${Math.max(6, objectiveProgress)}%` }} />
+          </div>
+          <strong>{objective.repairedParts}/{objective.requiredParts}</strong>
+        </div>
+        <div className="metric-pair">
+          <span>Deadline</span>
+          <strong>Day {objective.deadlineDay}</strong>
+        </div>
+      </section>
+
       <section className="panel wide">
         <div className="panel-heading">
           <div>
@@ -513,6 +773,36 @@ function Overview({ state, goExpedition }: { state: GameState; goExpedition: () 
               <span>{resourceLabels[key]}</span>
               <strong>{state.resources[key]}</strong>
             </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel wide">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Contribute</p>
+            <h2>Account supplies to room base</h2>
+          </div>
+          <button className="primary-button" type="button" onClick={onContribute}>
+            <Archive size={18} aria-hidden="true" />
+            Contribute
+          </button>
+        </div>
+        <div className="contribution-grid">
+          {resourceKeys.map((key) => (
+            <div className="loadout-row contribution-row" key={key}>
+              <span>{resourceLabels[key]}</span>
+              <small>Account {session.account.resources[key]}</small>
+              <div>
+                <button className="icon-button" type="button" onClick={() => onContributionChange(key, -1)} aria-label={`Decrease ${resourceLabels[key]}`}>
+                  <Minus size={16} />
+                </button>
+                <strong>{contributionDraft[key]}</strong>
+                <button className="icon-button" type="button" onClick={() => onContributionChange(key, 1)} aria-label={`Increase ${resourceLabels[key]}`}>
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </section>
