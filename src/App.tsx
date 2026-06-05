@@ -1462,6 +1462,13 @@ function ExpeditionPrep({
     { label: "Shop intel", sign: "+", value: support.shopIntel },
     { label: "Shop service", sign: "+", value: support.shopService }
   ].filter((item) => item.value > 0);
+  const startingSupplyItems = [
+    { label: "Start Food", value: support.startingSupplies.food ?? 0 },
+    { label: "Start Water", value: support.startingSupplies.water ?? 0 },
+    { label: "Start Ammo", value: support.startingSupplies.ammo ?? 0 },
+    { label: "Start Medicine", value: support.startingSupplies.medicine ?? 0 }
+  ].filter((item) => item.value > 0);
+  const hasBaseSupport = supportItems.length > 0 || startingSupplyItems.length > 0;
   const basePrepItems = [
     { label: "Prep food", sign: "+", value: basePrepSupport.startingSupplies.food ?? 0 },
     { label: "Prep water", sign: "+", value: basePrepSupport.startingSupplies.water ?? 0 },
@@ -1596,20 +1603,18 @@ function ExpeditionPrep({
         </div>
         <div className="support-grid">
           <span>Base support</span>
-          {supportItems.length ? (
-            supportItems.map((item) => (
-              <strong key={item.label}>
-                {item.label} {item.sign}
-                {item.value}
-              </strong>
-            ))
-          ) : (
-            <strong>No facility combat bonuses yet</strong>
-          )}
-          {(support.startingSupplies.food ?? 0) > 0 && <strong>Start Food +{support.startingSupplies.food}</strong>}
-          {(support.startingSupplies.water ?? 0) > 0 && <strong>Start Water +{support.startingSupplies.water}</strong>}
-          {(support.startingSupplies.ammo ?? 0) > 0 && <strong>Start Ammo +{support.startingSupplies.ammo}</strong>}
-          {(support.startingSupplies.medicine ?? 0) > 0 && <strong>Start Medicine +{support.startingSupplies.medicine}</strong>}
+          {supportItems.map((item) => (
+            <strong key={item.label}>
+              {item.label} {item.sign}
+              {item.value}
+            </strong>
+          ))}
+          {startingSupplyItems.map((item) => (
+            <strong key={item.label}>
+              {item.label} +{item.value}
+            </strong>
+          ))}
+          {!hasBaseSupport && <strong>No facility support yet</strong>}
           <span>Base prep</span>
           {basePrepItems.length ? (
             basePrepItems.map((item) => (

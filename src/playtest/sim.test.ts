@@ -534,7 +534,29 @@ describe("playtest room loop", () => {
     if (!kitchen) {
       throw new Error("Missing kitchen");
     }
-    expect(facilityUpgradePreview(kitchen)).toEqual(["Builds to Lv.1", "Lowers daily food and water upkeep."]);
+    expect(facilityUpgradePreview(kitchen)).toEqual([
+      "Builds to Lv.1",
+      "Base: food upkeep -1/day, water upkeep -0/day. Expedition: camp meal +1, shop rations +1."
+    ]);
+  });
+
+  test("facility previews show numeric base and expedition growth", () => {
+    const session = createStarterSession("user-a", "Alice", "facility-preview-room");
+    const training = session.room.base.facilities.find((facility) => facility.id === "training");
+    const radio = session.room.base.facilities.find((facility) => facility.id === "radio");
+    if (!training || !radio) {
+      throw new Error("Missing preview facilities");
+    }
+    radio.level = 1;
+
+    expect(facilityUpgradePreview(training)).toEqual([
+      "Builds to Lv.1",
+      "Base: no daily upkeep change. Expedition: combat stamina +2, carry capacity +0."
+    ]);
+    expect(facilityUpgradePreview(radio)).toEqual([
+      "Upgrades to Lv.2",
+      "Base: objective +1/day and repair shifts +1. Expedition: pressure relief +2, intel +2, camp scout +2."
+    ]);
   });
 
   test("kitchen and barricade change daily upkeep and danger", () => {

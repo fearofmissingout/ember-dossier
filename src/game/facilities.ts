@@ -52,11 +52,11 @@ export function facilityActionLabel(facility: Facility): "Build" | "Upgrade" | "
 
 export function facilityUpgradePreview(facility: Facility): string[] {
   if (isFacilityMaxed(facility)) {
-    return ["Fully developed", facilityGrowthSummary(facility.id)];
+    return ["Fully developed", facilityGrowthSummary(facility.id, facility.level)];
   }
 
   const nextLevel = isFacilityBuilt(facility) ? facility.level + 1 : 1;
-  return [`${isFacilityBuilt(facility) ? "Upgrades" : "Builds"} to Lv.${nextLevel}`, facilityGrowthSummary(facility.id)];
+  return [`${isFacilityBuilt(facility) ? "Upgrades" : "Builds"} to Lv.${nextLevel}`, facilityGrowthSummary(facility.id, nextLevel)];
 }
 
 export function facilityBaseEffect(facilityId: string): string {
@@ -71,17 +71,39 @@ export function isFacilityMaxed(facility: Facility): boolean {
   return facility.level >= maxFacilityLevel;
 }
 
-function facilityGrowthSummary(facilityId: string): string {
-  const summaries: Record<string, string> = {
-    barricade: "Reduces danger, strengthens guard shifts, and unlocks road-secure doctrine support.",
-    clinic: "Improves care shifts, field patching, and high-level medicine starts.",
-    dorm: "Improves daily recovery, guard endurance, and formation doctrine stamina.",
-    generator: "Improves ammo support, combat damage, and high-level starting ammo.",
-    kitchen: "Lowers daily food and water upkeep.",
-    radio: "Improves objective repair windows, route pressure relief, and intel recovery.",
-    training: "Improves expedition stamina, breach drills, and combat resilience.",
-    watchtower: "Improves route pressure relief, scouting, and road-search doctrine support.",
-    workshop: "Improves repair shifts, salvage, ammo damage, and road-secure support."
+function facilityGrowthSummary(facilityId: string, level: number): string {
+  const summaries: Record<string, (level: number) => string> = {
+    barricade: (value) =>
+      `Base: danger pressure -${value}/day, guard shifts +${value}. Expedition: guard +${value}, road secure +${value}, evade +${value}.`,
+    clinic: (value) => {
+      const advanced = Math.max(0, value - 1);
+      return `Base: care shifts +${value * 2}, recovery +${advanced * 2}. Expedition: patch +${advanced * 3}, medical loot +${advanced}, start medicine ${
+        value >= 3 ? "+1" : "+0"
+      }.`;
+    },
+    dorm: (value) => {
+      const advanced = Math.max(0, value - 1);
+      return `Base: daily recovery +${value * 3}. Expedition: max HP +${advanced * 4}, guard +${advanced}, camp rest +${advanced}.`;
+    },
+    generator: (value) => {
+      const advanced = Math.max(0, value - 1);
+      return `Base: powered starts stay online. Expedition: ammo damage +${advanced}, start ammo ${value >= 3 ? "+1" : "+0"}.`;
+    },
+    kitchen: (value) =>
+      `Base: food upkeep -${value}/day, water upkeep -${Math.floor(value / 2)}/day. Expedition: camp meal +${value}, shop rations +${value}.`,
+    radio: (value) =>
+      `Base: objective ${value >= 2 ? "+1/day and " : ""}repair shifts +${value >= 1 ? 1 : 0}. Expedition: pressure relief +${value}, intel +${value}, camp scout +${value}.`,
+    training: (value) => `Base: no daily upkeep change. Expedition: combat stamina +${value * 2}, carry capacity +${Math.floor(value / 2)}.`,
+    watchtower: (value) => {
+      const advanced = Math.max(0, value - 1);
+      return `Base: danger pressure -${value}/day. Expedition: pressure relief +${advanced * 2}, road search +${advanced}, road push +${advanced}.`;
+    },
+    workshop: (value) =>
+      `Base: repair shifts +${Math.floor(value / 2)}, materials on strong repairs. Expedition: ammo damage +${value}, salvage +${value}, shop service +${value}.`
   };
-  return summaries[facilityId] ?? "Improves base and expedition operations.";
+  const summarize = summaries[facilityId];
+  if (summarize) {
+    return summarize(level);
+  }
+  return "Improves base and expedition operations.";
 }
