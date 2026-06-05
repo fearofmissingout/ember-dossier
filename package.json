@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0",
+    "preview": "npm run build && wrangler dev",
     "test": "vitest run",
     "supabase:init": "node scripts/init-supabase.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
-    "supabase:check": "node scripts/check-supabase-demo.mjs"
+    "supabase:check": "node scripts/check-supabase-demo.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -19,6 +20,7 @@
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.40.0",
     "@types/node": "^22.19.1",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.8",
@@ -26,6 +28,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.16",
+    "wrangler": "^4.98.0"
   }
 }
