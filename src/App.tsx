@@ -9,10 +9,13 @@ import {
   Home,
   Link,
   Minus,
+  PackageCheck,
   Plus,
   RotateCcw,
   Send,
   Shield,
+  ShoppingCart,
+  Swords,
   Users,
   Wrench
 } from "lucide-react";
@@ -67,6 +70,39 @@ type ExpeditionDraft = {
   locationId: string;
   risk: RiskStrategy;
   loadout: ResourceBundle;
+};
+
+type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract";
+type CombatAction = "strike" | "guard" | "patch";
+
+type JourneyNode = {
+  id: string;
+  type: "event" | "combat" | "shop" | "extraction";
+  title: string;
+  body: string;
+};
+
+type JourneyCombat = {
+  enemyName: string;
+  enemyHp: number;
+  enemyMaxHp: number;
+  squadHp: number;
+  squadMaxHp: number;
+  attack: number;
+  round: number;
+};
+
+type JourneyState = {
+  combat: JourneyCombat | null;
+  currentNodeIndex: number;
+  id: string;
+  loadout: ResourceBundle;
+  locationId: string;
+  logs: string[];
+  nodes: JourneyNode[];
+  risk: RiskStrategy;
+  rollShift: number;
+  squadIds: string[];
 };
 
 type SyncStatus = "local" | "loading" | "initialized" | "saving" | "synced" | "error";
@@ -128,6 +164,7 @@ export default function App() {
     risk: "standard",
     loadout: defaultLoadout
   }));
+  const [journey, setJourney] = useState<JourneyState | null>(null);
   const [contributionDraft, setContributionDraft] = useState<ResourceBundle>(() => ({
     ammo: 0,
     food: 1,
@@ -632,11 +669,113 @@ export default function App() {
       }
     }
 
-    const result = resolvePlaytestExpedition(preparedSession, {
-      ...draft,
-      survivorIds: draft.squadIds,
-      userId: preparedSession.account.profile.userId,
-      randomRolls: [Math.random(), Math.random(), Math.random(), Math.random(), Math.random()]
+    applySession(preparedSession);
+    setJourney(createJourney(preparedSession, draft, selectedLocation.id, readiness));
+  }
+
+  function resolveJourneyAction(action: JourneyAction) {
+    if (!journey) {
+      return;
+    }
+
+    const node = journey.nodes[journey.currentNodeIndex];
+    if (!node || node.type === "extraction" || action === "extract") {
+      finishJourney({
+        ...journey,
+        logs: [...journey.logs, "The squad marks the extraction route and calls the base for pickup."]
+      });
+      return;
+    }
+
+    const next = structuredClone(journey) as JourneyState;
+    if (node.type === "event") {
+      if (action === "careful") {
+        next.rollShift -= 0.1;
+        next.logs.push(`${node.title}: slow search finds a safer path. Outcome pressure -10%.`);
+      } else {
+        next.rollShift += 0.08;
+        next.logs.push(`${node.title}: forced route saves time but raises noise. Outcome pressure +8%.`);
+      }
+    }
+
+    if (node.type === "shop") {
+      if (action === "trade") {
+        next.rollShift -= 0.06;
+        next.logs.push(`${node.title}: the trader swaps route gossip for a promise of future salvage. Outcome pressure -6%.`);
+      } else {
+        next.logs.push(`${node.title}: the squad keeps moving and saves its bargaining power.`);
+      }
+    }
+
+    next.currentNodeIndex += 1;
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
+    setJourney(next);
+  }
+
+  function resolveCombatAction(action: CombatAction) {
+    if (!journey?.combat) {
+      return;
+    }
+
+    const node = journey.nodes[journey.currentNodeIndex];
+    const next = structuredClone(journey) as JourneyState;
+    const combat = next.combat;
+    if (!combat) {
+      return;
+    }
+
+    let squadDamage = Math.max(4, Math.round(readiness / 12));
+    let incoming = combat.attack;
+
+    if (action === "strike") {
+      const ammoBonus = next.loadout.ammo > 0 ? 4 : 0;
+      squadDamage += ammoBonus;
+      combat.enemyHp = Math.max(0, combat.enemyHp - squadDamage);
+      next.logs.push(`${node.title}: round ${combat.round}, focused strike deals ${squadDamage} damage.`);
+    } else if (action === "guard") {
+      incoming = Math.max(1, Math.floor(incoming / 2));
+      next.rollShift -= 0.02;
+      next.logs.push(`${node.title}: round ${combat.round}, the squad guards and keeps formation.`);
+    } else {
+      const heal = next.loadout.medicine > 0 ? 10 : 4;
+      combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
+      next.rollShift -= 0.01;
+      next.logs.push(`${node.title}: round ${combat.round}, field patch restores ${heal} squad stamina.`);
+    }
+
+    if (combat.enemyHp > 0) {
+      combat.squadHp = Math.max(0, combat.squadHp - incoming);
+      next.logs.push(`${combat.enemyName} hits back for ${incoming}.`);
+      if (combat.squadHp <= 0) {
+        next.rollShift += 0.24;
+        next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
+        next.currentNodeIndex += 1;
+        next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
+      } else {
+        combat.round += 1;
+      }
+    } else {
+      next.rollShift -= 0.12;
+      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. Outcome pressure -12%.`);
+      next.currentNodeIndex += 1;
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
+    }
+
+    setJourney(next);
+  }
+
+  function finishJourney(completedJourney: JourneyState) {
+    const adjustedRolls = [Math.random(), Math.random(), Math.random(), Math.random(), Math.random()].map((roll) =>
+      Math.max(0.02, Math.min(0.98, roll + completedJourney.rollShift))
+    );
+    const result = resolvePlaytestExpedition(session, {
+      journeyLogs: completedJourney.logs,
+      loadout: completedJourney.loadout,
+      locationId: completedJourney.locationId,
+      randomRolls: adjustedRolls,
+      risk: completedJourney.risk,
+      survivorIds: completedJourney.squadIds,
+      userId: session.account.profile.userId
     });
 
     applySession(result.session);
@@ -647,6 +786,7 @@ export default function App() {
       });
     }
     setLatestReportId(result.report.id);
+    setJourney(null);
     setView("reports");
     setDraft((current) => ({
       ...current,
@@ -830,11 +970,20 @@ export default function App() {
             squadReady={squadReady}
             canAffordLoadout={canAffordLoadout && objectiveActive}
             objectiveActive={objectiveActive}
+            journey={journey}
             onToggleSurvivor={toggleSurvivor}
-            onLocationChange={(locationId) => setDraft((current) => ({ ...current, locationId }))}
-            onRiskChange={(risk) => setDraft((current) => ({ ...current, risk }))}
+            onLocationChange={(locationId) => {
+              setJourney(null);
+              setDraft((current) => ({ ...current, locationId }));
+            }}
+            onRiskChange={(risk) => {
+              setJourney(null);
+              setDraft((current) => ({ ...current, risk }));
+            }}
             onLoadoutChange={updateLoadout}
+            onCombatAction={resolveCombatAction}
             onDispatch={dispatchExpedition}
+            onJourneyAction={resolveJourneyAction}
           />
         )}
         {view === "reports" && <Reports state={state} latestReportId={latestReportId} />}
@@ -1100,11 +1249,14 @@ function ExpeditionPrep({
   squadReady,
   canAffordLoadout,
   objectiveActive,
+  journey,
   onToggleSurvivor,
   onLocationChange,
   onRiskChange,
   onLoadoutChange,
-  onDispatch
+  onCombatAction,
+  onDispatch,
+  onJourneyAction
 }: {
   state: GameState;
   draft: ExpeditionDraft;
@@ -1113,12 +1265,16 @@ function ExpeditionPrep({
   squadReady: boolean;
   canAffordLoadout: boolean;
   objectiveActive: boolean;
+  journey: JourneyState | null;
   onToggleSurvivor: (id: string) => void;
   onLocationChange: (locationId: string) => void;
   onRiskChange: (risk: RiskStrategy) => void;
   onLoadoutChange: (key: ResourceKey, delta: number) => void;
+  onCombatAction: (action: CombatAction) => void;
   onDispatch: () => void;
+  onJourneyAction: (action: JourneyAction) => void;
 }) {
+  const activeNode = journey?.nodes[journey.currentNodeIndex];
   return (
     <div className="expedition-layout">
       <section className="panel">
@@ -1221,7 +1377,15 @@ function ExpeditionPrep({
             <span key={tag}>{tag}</span>
           ))}
         </div>
-        <button className="primary-button full-width" type="button" disabled={!squadReady || !canAffordLoadout} onClick={onDispatch}>
+        {journey && activeNode && (
+          <JourneyPanel
+            activeNode={activeNode}
+            journey={journey}
+            onCombatAction={onCombatAction}
+            onJourneyAction={onJourneyAction}
+          />
+        )}
+        <button className="primary-button full-width" type="button" disabled={!squadReady || !canAffordLoadout || Boolean(journey)} onClick={onDispatch}>
           <Send size={18} aria-hidden="true" />
           派遣远征
         </button>
@@ -1229,6 +1393,102 @@ function ExpeditionPrep({
         {objectiveActive && !canAffordLoadout && <p className="warning-copy">携带物资超过基地库存。</p>}
         {!objectiveActive && <p className="warning-copy">This room objective is already resolved. Create a new room to start over.</p>}
       </section>
+    </div>
+  );
+}
+
+function JourneyPanel({
+  activeNode,
+  journey,
+  onCombatAction,
+  onJourneyAction
+}: {
+  activeNode: JourneyNode;
+  journey: JourneyState;
+  onCombatAction: (action: CombatAction) => void;
+  onJourneyAction: (action: JourneyAction) => void;
+}) {
+  return (
+    <div className="journey-panel">
+      <div className="journey-track" aria-label="Expedition route progress">
+        {journey.nodes.map((node, index) => (
+          <span className={index === journey.currentNodeIndex ? "active" : index < journey.currentNodeIndex ? "done" : ""} key={node.id}>
+            {index + 1}
+          </span>
+        ))}
+      </div>
+      <div className="journey-node">
+        <span className="subtle-pill">{activeNode.type}</span>
+        <h3>{activeNode.title}</h3>
+        <p>{activeNode.body}</p>
+        {journey.combat ? (
+          <div className="combat-card">
+            <div className="combat-bars">
+              <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
+              <CombatBar label="Squad" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
+            </div>
+            <div className="journey-actions">
+              <button className="primary-button" type="button" onClick={() => onCombatAction("strike")}>
+                <Swords size={17} aria-hidden="true" />
+                Strike
+              </button>
+              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("guard")}>
+                <Shield size={17} aria-hidden="true" />
+                Guard
+              </button>
+              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("patch")}>
+                <PackageCheck size={17} aria-hidden="true" />
+                Patch
+              </button>
+            </div>
+          </div>
+        ) : activeNode.type === "event" ? (
+          <div className="journey-actions">
+            <button className="primary-button" type="button" onClick={() => onJourneyAction("careful")}>
+              Careful search
+            </button>
+            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("force")}>
+              Force route
+            </button>
+          </div>
+        ) : activeNode.type === "shop" ? (
+          <div className="journey-actions">
+            <button className="primary-button" type="button" onClick={() => onJourneyAction("trade")}>
+              <ShoppingCart size={17} aria-hidden="true" />
+              Trade rumor
+            </button>
+            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
+              Skip
+            </button>
+          </div>
+        ) : (
+          <button className="primary-button full-width" type="button" onClick={() => onJourneyAction("extract")}>
+            Extract and settle
+          </button>
+        )}
+      </div>
+      <div className="journey-log">
+        {journey.logs.slice(-4).map((line, index) => (
+          <p key={`${journey.id}-log-${index}`}>{line}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CombatBar({ label, max, tone, value }: { label: string; max: number; tone: "danger" | "safe"; value: number }) {
+  const width = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+  return (
+    <div className={`combat-bar ${tone}`}>
+      <div>
+        <span>{label}</span>
+        <strong>
+          {value}/{max}
+        </strong>
+      </div>
+      <i>
+        <b style={{ width: `${width}%` }} />
+      </i>
     </div>
   );
 }
@@ -1406,6 +1666,73 @@ function calculateReadiness(squad: GameState["survivors"], recommendedStats: Gam
   }, 0);
 
   return total / squad.length;
+}
+
+function createJourney(session: PlaytestSession, draft: ExpeditionDraft, locationId: string, readiness: number): JourneyState {
+  const location = session.room.locations.find((candidate) => candidate.id === locationId);
+  const nodes: JourneyNode[] = [
+    {
+      body: `The squad reaches the edge of ${location?.name ?? "the site"} and must decide how loudly to move.`,
+      id: "route-event",
+      title: "Broken Approach",
+      type: "event"
+    },
+    {
+      body: "A hostile shape blocks the safest corridor. The team has to win space or retreat through the noise.",
+      id: "route-combat",
+      title: "Close Quarters",
+      type: "combat"
+    },
+    {
+      body: "A quiet trader has supplies, rumors, and a very strict no-refunds policy.",
+      id: "route-shop",
+      title: "Roadside Broker",
+      type: "shop"
+    },
+    {
+      body: "The exit is visible. One last signal check before the base opens the gate.",
+      id: "route-extraction",
+      title: "Extraction Window",
+      type: "extraction"
+    }
+  ];
+
+  return {
+    combat: null,
+    currentNodeIndex: 0,
+    id: `journey-${Date.now()}`,
+    loadout: { ...draft.loadout },
+    locationId,
+    logs: [`Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`],
+    nodes,
+    risk: draft.risk,
+    rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
+    squadIds: [...draft.squadIds]
+  };
+}
+
+function createCombatForNode(
+  node: JourneyNode | undefined,
+  squad: GameState["survivors"],
+  readiness: number
+): JourneyCombat | null {
+  if (!node || node.type !== "combat") {
+    return null;
+  }
+
+  const riskIndex = squad.length > 4 ? 2 : squad.length > 3 ? 1 : 0;
+  const enemyMaxHp = 22 + riskIndex * 6;
+  const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5);
+
+  return {
+    attack: 6 + riskIndex * 2,
+    enemyHp: enemyMaxHp,
+    enemyMaxHp,
+    enemyName: squad.length > 3 ? "Signal Nest" : "Relay Ghoul",
+    round: 1,
+    squadHp: squadMaxHp,
+    squadMaxHp
+  };
 }
 
 function loadGuestMode() {

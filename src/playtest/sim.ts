@@ -4,6 +4,7 @@ import { emptyLoadout, roomToGameState } from "./state";
 import type { PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
+  journeyLogs?: string[];
   survivorIds: string[];
   userId: string;
 };
@@ -95,7 +96,7 @@ export function resolvePlaytestExpedition(
   if (next.room.feed[0]) {
     next.room.feed[0] = {
       ...next.room.feed[0],
-      body: `${next.room.feed[0].body}\n${process.logs.slice(0, 4).join("\n")}`
+      body: `${next.room.feed[0].body}\n${process.logs.slice(0, 8).join("\n")}`
     };
   }
   next.account.survivors = next.account.survivors.map((survivor) => {
@@ -302,6 +303,9 @@ function buildProcess(session: PlaytestSession, request: PlaytestExpeditionReque
     `Departure: ${lead?.name ?? "The squad"} checks the route markers, spends the packed supplies, and leaves before the tower siren cycles again.`,
     `Approach: ${specialist?.name ?? "The specialist"} reads the site pressure. Risk posture is ${request.risk}; the team keeps one exit in mind.`
   ];
+  if (request.journeyLogs?.length) {
+    logs.push(...request.journeyLogs.map((line) => `Journey: ${line}`));
+  }
 
   const encounterRoll = rolls[3] ?? rolls[0] ?? 0.5;
   if (encounterRoll < 0.25) {

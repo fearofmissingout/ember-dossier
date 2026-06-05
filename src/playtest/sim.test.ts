@@ -163,6 +163,35 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("Encounter");
   });
 
+  test("expedition reports include journey node logs", () => {
+    let session = createStarterSession("user-a", "Alice", "room-a");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      journeyLogs: ["Broken Approach: careful search finds a safer path.", "Close Quarters: Relay Ghoul is driven off."],
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.report.logs.some((line) => line.includes("Journey: Broken Approach"))).toBe(true);
+    expect(result.session.room.feed[0]?.body).toContain("Journey: Close Quarters");
+  });
+
   test("treats injured survivors by spending medicine", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     const survivorId = session.account.survivors[0].id;
