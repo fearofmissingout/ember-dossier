@@ -7,6 +7,9 @@ export type JourneyAction =
   | "force"
   | "trade"
   | "skip"
+  | "shop-resupply"
+  | "shop-intel"
+  | "shop-service"
   | "extract"
   | "rest"
   | "cook"
@@ -59,7 +62,34 @@ export type JourneyEnemy = {
   traitText: string;
 };
 
+export type JourneyShopAction = "resupply" | "intel" | "service";
+
+export type JourneyShopOffer = {
+  costPriority: ResourceKey[];
+  failLog: string;
+  fatigue: number;
+  fieldSupplyReward: ResourceBundle;
+  hunger: number;
+  id: JourneyShopAction;
+  label: string;
+  objectiveBonus: number;
+  pressure: number;
+  pressureFail: number;
+  reward: ResourceBundle;
+  rollShiftFail: number;
+  rollShift: number;
+  successLog: string;
+  supportText?: string;
+  text: string;
+  thirst: number;
+};
+
 export type JourneyShop = {
+  label: string;
+  offers: Record<JourneyShopAction, JourneyShopOffer>;
+};
+
+type MaterializedLegacyShop = {
   label: string;
   costPriority: ResourceKey[];
   reward: ResourceBundle;
@@ -225,7 +255,7 @@ type EnemyTemplate = Omit<JourneyEnemy, "reward"> & {
   rewardKeys: ResourceKey[];
 };
 
-type ShopTemplate = Omit<JourneyShop, "reward"> & {
+type ShopTemplate = Omit<MaterializedLegacyShop, "reward"> & {
   rewardKeys: ResourceKey[];
 };
 
@@ -788,7 +818,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
   const family = location?.family ?? "urban";
   const event = materializeEvent(pick(familyEvents[family]));
   const enemy = materializeEnemy(pick(familyEnemies[family]));
-  const shop = materializeShop(pick(familyShops[family]));
+  const shop = materializeShop(pick(familyShops[family]), family);
   const camp = familyCamps[family];
 
   const nodes: JourneyNode[] = [
@@ -1184,6 +1214,42 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
   return next;
 }
 
+export function resolveShopAction(journey: JourneyState, action: JourneyShopAction): JourneyState {
+  const node = journey.nodes[journey.currentNodeIndex];
+  const next = structuredClone(journey) as JourneyState;
+  const baseOffer = node?.type === "shop" ? node.shop?.offers[action] : null;
+  if (!baseOffer || !node) {
+    return next;
+  }
+  const offer = shopOfferOutcome(action, baseOffer, next.support);
+  const spentKey = spendFieldSupplyFromPriority(next, offer.costPriority, 1);
+  if (!spentKey) {
+    next.pressure = clampPercent(next.pressure + offer.pressureFail);
+    next.rollShift += offer.rollShiftFail;
+    next.logs.push(`${node.title}: ${offer.failLog} Pressure ${formatSignedPercent(offer.pressureFail)}${offer.supportText ? `. ${offer.supportText}` : ""}.`);
+    return next;
+  }
+
+  addResources(next.fieldSupplies, offer.fieldSupplyReward);
+  addResources(next.bonusReward, offer.reward);
+  next.condition.fatigue = clampPercent(next.condition.fatigue + offer.fatigue);
+  next.condition.hunger = clampPercent(next.condition.hunger + offer.hunger);
+  next.condition.thirst = clampPercent(next.condition.thirst + offer.thirst);
+  next.objectiveBonus += offer.objectiveBonus;
+  next.pressure = clampPercent(next.pressure + offer.pressure);
+  next.rollShift += offer.rollShift;
+  next.logs.push(
+    `${node.title}: ${offer.successLog} ${resourceLabels[spentKey]} -1, field ${formatBundle(offer.fieldSupplyReward)}, stash ${formatBundle(
+      offer.reward
+    )}, fatigue ${formatSignedNumber(offer.fatigue)}, hunger ${formatSignedNumber(offer.hunger)}, thirst ${formatSignedNumber(
+      offer.thirst
+    )}, pressure ${formatSignedPercent(offer.pressure)}${offer.objectiveBonus > 0 ? `, objective +${offer.objectiveBonus}` : ""}${
+      offer.supportText ? `. ${offer.supportText}` : ""
+    }.`
+  );
+  return next;
+}
+
 export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCombatLootAction): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const pending = next.pendingCombatLoot;
@@ -1274,10 +1340,79 @@ function materializeEnemy(template: EnemyTemplate): JourneyEnemy {
   };
 }
 
-function materializeShop(template: ShopTemplate): JourneyShop {
+function materializeShop(template: ShopTemplate, family: LocationFamily): JourneyShop {
+  const serviceReward = bundleFromKeys(template.rewardKeys);
+  const resupplyText =
+    family === "wilds"
+      ? "Buy wrapped food, clean water, and field directions from the cart."
+      : family === "urban"
+        ? "Trade for sealed snack packs and a clean bottle before the last blocks."
+        : family === "weird"
+          ? "Pay for sealed water and things that still remember being food."
+          : "Buy dry rations and drinkable water from the road mechanic.";
+  const intelText =
+    family === "weird"
+      ? "Pay for a route omen and a mark that makes the exit less wrong."
+      : "Buy the kind of route note that saves one bad turn near extraction.";
+
   return {
-    ...template,
-    reward: bundleFromKeys(template.rewardKeys)
+    label: template.label,
+    offers: {
+      intel: {
+        costPriority: [...template.costPriority],
+        failLog: "No one sells directions for promises. The delay makes the route feel watched.",
+        fatigue: 1,
+        fieldSupplyReward: createEmptyResourceBundle(),
+        hunger: 0,
+        id: "intel",
+        label: "Buy route intel",
+        objectiveBonus: 1,
+        pressure: Math.min(-4, template.pressureSuccess - 2),
+        pressureFail: template.pressureFail + 3,
+        reward: createEmptyResourceBundle(),
+        rollShift: Math.min(-0.06, template.rollShiftSuccess - 0.03),
+        rollShiftFail: template.rollShiftFail + 0.02,
+        successLog: "The trader marks a cleaner extraction lane and a useful tower clue.",
+        text: intelText,
+        thirst: 0
+      },
+      resupply: {
+        costPriority: uniqueResourceKeys(["materials", "fuel", "ammo", ...template.costPriority]),
+        failLog: "The squad tries to barter for food, but the exchange has already packed the good crates.",
+        fatigue: -2,
+        fieldSupplyReward: lootReward({ food: 1, water: 1 }),
+        hunger: -8,
+        id: "resupply",
+        label: "Buy road rations",
+        objectiveBonus: 0,
+        pressure: -4,
+        pressureFail: template.pressureFail + 2,
+        reward: createEmptyResourceBundle(),
+        rollShift: -0.03,
+        rollShiftFail: template.rollShiftFail + 0.02,
+        successLog: "The squad trades for sealed rations and refills the field kit.",
+        text: resupplyText,
+        thirst: -8
+      },
+      service: {
+        costPriority: [...template.costPriority],
+        failLog: template.failLog,
+        fatigue: -4,
+        fieldSupplyReward: lootReward({ medicine: serviceReward.medicine > 0 ? 1 : 0, ammo: serviceReward.ammo > 0 ? 1 : 0 }),
+        hunger: 0,
+        id: "service",
+        label: template.label,
+        objectiveBonus: 0,
+        pressure: template.pressureSuccess,
+        pressureFail: template.pressureFail,
+        reward: serviceReward,
+        rollShift: template.rollShiftSuccess,
+        rollShiftFail: template.rollShiftFail,
+        successLog: template.successLog,
+        text: "Buy a field service package: parts for the base, plus a small immediate kit if the vendor has it.",
+        thirst: 0
+      }
+    }
   };
 }
 
@@ -1340,6 +1475,10 @@ function lootReward(resources: Partial<ResourceBundle>) {
 }
 
 const resourceKeys: ResourceKey[] = ["food", "water", "materials", "medicine", "fuel", "ammo"];
+
+function uniqueResourceKeys(keys: ResourceKey[]): ResourceKey[] {
+  return [...new Set(keys)];
+}
 
 const resourceLabels: Record<ResourceKey, string> = {
   ammo: "Ammo",
@@ -1545,6 +1684,61 @@ export function campOptionOutcome(
   };
 }
 
+export function shopOfferOutcome(
+  action: JourneyShopAction,
+  offer: JourneyShopOffer,
+  support: ExpeditionSupport = emptySupport()
+): JourneyShopOffer {
+  const fieldSupplyReward = { ...offer.fieldSupplyReward };
+  const reward = { ...offer.reward };
+  let fatigue = offer.fatigue;
+  let hunger = offer.hunger;
+  let objectiveBonus = offer.objectiveBonus;
+  let pressure = offer.pressure;
+  let rollShift = offer.rollShift;
+  let thirst = offer.thirst;
+  const notes: string[] = [];
+
+  if (action === "resupply" && support.shopRations > 0) {
+    fieldSupplyReward.food += support.shopRations;
+    fieldSupplyReward.water += support.shopRations;
+    hunger -= support.shopRations * 2;
+    pressure -= support.shopRations;
+    thirst -= support.shopRations * 2;
+    notes.push(`Kitchen +${support.shopRations} barter rations`);
+  }
+
+  if (action === "intel" && support.shopIntel > 0) {
+    objectiveBonus += support.shopIntel;
+    pressure -= support.shopIntel * 2;
+    rollShift -= support.shopIntel * 0.03;
+    notes.push(`Radio +${support.shopIntel} signal leverage`);
+  }
+
+  if (action === "service" && support.shopService > 0) {
+    reward.materials += support.shopService;
+    if (support.shopService >= 2) {
+      fieldSupplyReward.ammo += 1;
+    }
+    fatigue -= support.shopService;
+    pressure -= support.shopService;
+    notes.push(`Workshop +${support.shopService} service value`);
+  }
+
+  return {
+    ...offer,
+    fatigue,
+    fieldSupplyReward,
+    hunger,
+    objectiveBonus,
+    pressure,
+    reward,
+    rollShift,
+    supportText: notes.length > 0 ? `Shop support: ${notes.join(", ")}` : "",
+    thirst
+  };
+}
+
 const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: JourneyCombatIntent; incoming: number; label: string; text: string }> = {
   brace: {
     armor: 2,
@@ -1590,6 +1784,9 @@ function emptySupport(): ExpeditionSupport {
     maxHp: 0,
     patchHeal: 0,
     pressureRelief: 0,
+    shopIntel: 0,
+    shopRations: 0,
+    shopService: 0,
     startingSupplies: {}
   };
 }

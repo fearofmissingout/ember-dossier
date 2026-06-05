@@ -22,6 +22,9 @@ export type ExpeditionSupport = {
   maxHp: number;
   patchHeal: number;
   pressureRelief: number;
+  shopIntel: number;
+  shopRations: number;
+  shopService: number;
   startingSupplies: Partial<ResourceBundle>;
 };
 
@@ -90,6 +93,9 @@ export function supportFromFacilities(facilities: Facility[]): ExpeditionSupport
     maxHp: Math.max(0, dorm - 1) * 4 + training * 2,
     patchHeal: Math.max(0, clinic - 1) * 3,
     pressureRelief: Math.max(0, watchtower - 1) * 2 + radio,
+    shopIntel: radio,
+    shopRations: kitchen,
+    shopService: workshop,
     startingSupplies: {
       ammo: generator >= 3 ? 1 : 0,
       medicine: clinic >= 3 ? 1 : 0

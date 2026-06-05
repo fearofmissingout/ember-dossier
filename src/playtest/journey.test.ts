@@ -8,7 +8,9 @@ import {
   resolveCombatLootChoice,
   resolveCombatRound,
   resolveRoadEncounterChoice,
+  resolveShopAction,
   setJourneyTravelPlan,
+  shopOfferOutcome,
   spendFieldSupplyFromPriority
 } from "./journey";
 import { createStarterSession } from "./state";
@@ -82,6 +84,9 @@ describe("journey route generation", () => {
       maxHp: 8,
       patchHeal: 3,
       pressureRelief: 2,
+      shopIntel: 0,
+      shopRations: 0,
+      shopService: 0,
       startingSupplies: { ammo: 1, medicine: 1 }
     };
     const journey = createJourney(
@@ -340,6 +345,94 @@ describe("journey route generation", () => {
     expect(preview.objectiveBonus).toBeGreaterThan(scout!.objectiveBonus);
     expect(preview.pressure).toBeLessThan(scout!.pressure);
     expect(preview.supportText).toContain("Radio");
+  });
+
+  test("shop offers include resupply, intel, and field service choices", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "shop-offers-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    expect(journey.nodes[3].shop?.offers.resupply.label).toBe("Buy road rations");
+    expect(journey.nodes[3].shop?.offers.intel.label).toBe("Buy route intel");
+    expect(journey.nodes[3].shop?.offers.service.label).toBe("Buy repair kit");
+  });
+
+  test("shop resupply converts trade goods into field supplies with kitchen support", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "shop-resupply-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 0, fuel: 1, materials: 1, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 3;
+    journey.pressure = 42;
+    journey.support = {
+      ...journey.support,
+      shopIntel: 0,
+      shopRations: 1,
+      shopService: 0
+    };
+
+    const resolved = resolveShopAction(journey, "resupply");
+
+    expect(resolved.fieldSupplies.materials).toBe(0);
+    expect(resolved.fieldSupplies.food).toBeGreaterThan(1);
+    expect(resolved.fieldSupplies.water).toBeGreaterThan(1);
+    expect(resolved.pressure).toBeLessThan(42);
+    expect(resolved.logs.join("\n")).toContain("Shop support");
+  });
+
+  test("shop offer previews include radio and workshop support", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "shop-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    const shop = journey.nodes[3].shop;
+    expect(shop).toBeDefined();
+
+    const intel = shopOfferOutcome("intel", shop!.offers.intel, {
+      ...journey.support,
+      shopIntel: 2,
+      shopRations: 0,
+      shopService: 0
+    });
+    const service = shopOfferOutcome("service", shop!.offers.service, {
+      ...journey.support,
+      shopIntel: 0,
+      shopRations: 0,
+      shopService: 2
+    });
+
+    expect(intel.objectiveBonus).toBeGreaterThan(shop!.offers.intel.objectiveBonus);
+    expect(intel.supportText).toContain("Radio");
+    expect(service.reward.materials).toBeGreaterThan(shop!.offers.service.reward.materials);
+    expect(service.supportText).toContain("Workshop");
   });
 
   test("tactics expose armored enemies and improve later strike damage", () => {

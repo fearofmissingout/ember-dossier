@@ -43,7 +43,9 @@ import {
   resolveCampAction,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
+  resolveShopAction,
   setJourneyTravelPlan,
+  shopOfferOutcome,
   spendFieldSupplyFromPriority,
   travelPlanList,
   resolveCombatRound,
@@ -54,6 +56,7 @@ import {
   type JourneyChoice,
   type JourneyNode,
   type JourneyRoadEncounterAction,
+  type JourneyShopAction,
   type JourneyState,
   type JourneyTravelPlan
 } from "./playtest/journey";
@@ -138,6 +141,7 @@ const defaultLoadout: ResourceBundle = {
 };
 
 const campActionList: JourneyCampAction[] = ["rest", "cook", "scout"];
+const shopActionList: JourneyShopAction[] = ["resupply", "intel", "service"];
 
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "Rest" },
@@ -773,24 +777,9 @@ export default function App() {
     }
 
     if (node.type === "shop") {
-      if (action === "trade") {
-        const shop = node.shop;
-        const paidKey = shop ? spendFieldSupplyFromPriority(next, shop.costPriority, 1) : null;
-        if (shop && paidKey) {
-          addResources(next.bonusReward, shop.reward);
-          next.pressure = clampPercent(next.pressure + shop.pressureSuccess);
-          next.rollShift += shop.rollShiftSuccess;
-          next.logs.push(
-            `${node.title}: ${shop.successLog} ${resourceLabels[paidKey]} -1, ${formatResourceDelta(shop.reward)}, pressure ${formatSignedPercent(
-              shop.pressureSuccess
-            )}.`
-          );
-        } else {
-          const pressureFail = shop?.pressureFail ?? 3;
-          next.pressure = clampPercent(next.pressure + pressureFail);
-          next.rollShift += shop?.rollShiftFail ?? 0.03;
-          next.logs.push(`${node.title}: ${shop?.failLog ?? "No trade goods left."} Pressure ${formatSignedPercent(pressureFail)}.`);
-        }
+      const selectedShopAction = shopActionFromJourneyAction(action);
+      if (selectedShopAction) {
+        next = resolveShopAction(next, selectedShopAction);
       } else {
         next.logs.push(`${node.title}: the squad keeps moving and saves its bargaining power.`);
       }
@@ -1402,7 +1391,10 @@ function ExpeditionPrep({
     ["Evade", support.lootEvade],
     ["Camp meal", support.campCook],
     ["Camp rest", support.campRest],
-    ["Camp scout", support.campScout]
+    ["Camp scout", support.campScout],
+    ["Shop rations", support.shopRations],
+    ["Shop intel", support.shopIntel],
+    ["Shop service", support.shopService]
   ].filter(([, value]) => Number(value) > 0);
   return (
     <div className="expedition-layout">
@@ -1723,14 +1715,38 @@ function JourneyPanel({
             </button>
           </div>
         ) : activeNode.type === "shop" ? (
-          <div className="journey-actions">
-            <button className="primary-button" type="button" onClick={() => onJourneyAction("trade")}>
-              <ShoppingCart size={17} aria-hidden="true" />
-              {activeNode.shop?.label ?? "Trade rumor"}
-            </button>
-            <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
-              Skip
-            </button>
+          <div className="shop-choice-card">
+            <div>
+              <strong>Exchange decision</strong>
+              <span>Spend surviving field goods for rations, route intel, or a last repair package.</span>
+            </div>
+            <div className="combat-loot-grid">
+              {shopActionList.map((action) => {
+                const offer = activeNode.shop?.offers[action];
+                if (!offer) {
+                  return null;
+                }
+                const outcome = shopOfferOutcome(action, offer, journey.support);
+                return (
+                  <button key={action} type="button" onClick={() => onJourneyAction(`shop-${action}` as JourneyAction)}>
+                    <strong>{outcome.label}</strong>
+                    <span>{outcome.text}</span>
+                    <small>
+                      Cost {outcome.costPriority.map((key) => resourceLabels[key]).join("/") || "none"} | Field{" "}
+                      {formatResourceDelta(outcome.fieldSupplyReward)} | Stash {formatResourceDelta(outcome.reward)} | P{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
+                    </small>
+                    {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="journey-actions">
+              <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
+                <ShoppingCart size={17} aria-hidden="true" />
+                Skip exchange
+              </button>
+            </div>
           </div>
         ) : activeNode.type === "camp" ? (
           <div className="camp-choice-card">
@@ -2057,6 +2073,16 @@ function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombat
     "loot-salvage": "salvage"
   };
   return lootByAction[action] ?? null;
+}
+
+function shopActionFromJourneyAction(action: JourneyAction): JourneyShopAction | null {
+  const shopByAction: Partial<Record<JourneyAction, JourneyShopAction>> = {
+    "shop-intel": "intel",
+    "shop-resupply": "resupply",
+    "shop-service": "service",
+    trade: "service"
+  };
+  return shopByAction[action] ?? null;
 }
 
 function roadEncounterActionFromJourneyAction(action: JourneyAction): JourneyRoadEncounterAction | null {

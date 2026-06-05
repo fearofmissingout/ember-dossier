@@ -1146,6 +1146,7 @@ button:disabled {
 .combat-loot-card,
 .camp-choice-card,
 .road-choice-card,
+.shop-choice-card,
 .combat-bars,
 .journey-log {
   display: grid;
@@ -1221,15 +1222,26 @@ button:disabled {
   background: #f5fbef;
 }
 
+.shop-choice-card > div:first-child {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #d4c18e;
+  border-radius: 8px;
+  background: #fff8e7;
+}
+
 .combat-loot-card strong,
 .camp-choice-card strong,
-.road-choice-card strong {
+.road-choice-card strong,
+.shop-choice-card strong {
   color: #783924;
 }
 
 .combat-loot-card span,
 .camp-choice-card span,
-.road-choice-card span {
+.road-choice-card span,
+.shop-choice-card span {
   color: #667267;
   font-size: 12px;
 }
