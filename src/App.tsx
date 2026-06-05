@@ -35,8 +35,8 @@ import {
   addResources,
   createCombatForNode,
   createJourney,
-  spendFieldSupply,
   spendFieldSupplyFromPriority,
+  resolveCombatRound,
   type CombatAction,
   type JourneyAction,
   type JourneyChoice,
@@ -738,60 +738,7 @@ export default function App() {
       return;
     }
 
-    const node = journey.nodes[journey.currentNodeIndex];
-    const next = structuredClone(journey) as JourneyState;
-    const combat = next.combat;
-    if (!combat) {
-      return;
-    }
-
-    let squadDamage = Math.max(4, Math.round(readiness / 12));
-    let incoming = combat.attack;
-
-    if (action === "strike") {
-      const ammoBonus = spendFieldSupply(next, "ammo", 1) ? 5 : 0;
-      squadDamage += ammoBonus;
-      combat.enemyHp = Math.max(0, combat.enemyHp - squadDamage);
-      next.logs.push(
-        `${node.title}: round ${combat.round}, focused strike deals ${squadDamage} damage${ammoBonus > 0 ? " and spends 1 ammo" : ""}.`
-      );
-    } else if (action === "guard") {
-      incoming = Math.max(1, Math.floor(incoming / 2));
-      next.pressure = Math.max(0, next.pressure - 2);
-      next.rollShift -= 0.02;
-      next.logs.push(`${node.title}: round ${combat.round}, the squad guards, halves damage, and pressure -2%.`);
-    } else {
-      const spentMedicine = spendFieldSupply(next, "medicine", 1);
-      const heal = spentMedicine ? 12 : 4;
-      combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
-      next.rollShift -= spentMedicine ? 0.02 : 0.01;
-      next.logs.push(
-        `${node.title}: round ${combat.round}, field patch restores ${heal} squad stamina${spentMedicine ? " and spends 1 medicine" : ""}.`
-      );
-    }
-
-    if (combat.enemyHp > 0) {
-      combat.squadHp = Math.max(0, combat.squadHp - incoming);
-      next.logs.push(`${combat.enemyName} hits back for ${incoming}.`);
-      if (combat.squadHp <= 0) {
-        next.pressure = Math.min(100, next.pressure + 24);
-        next.rollShift += 0.24;
-        next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
-        next.currentNodeIndex += 1;
-        next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
-      } else {
-        combat.round += 1;
-      }
-    } else {
-      addResources(next.bonusReward, combat.reward);
-      next.pressure = Math.max(0, next.pressure - 12);
-      next.rollShift -= 0.12;
-      next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatResourceDelta(combat.reward)}, pressure -12%.`);
-      next.currentNodeIndex += 1;
-      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness);
-    }
-
-    setJourney(next);
+    setJourney(resolveCombatRound(journey, action, selectedSquad, readiness));
   }
 
   function finishJourney(completedJourney: JourneyState) {
@@ -1484,9 +1431,19 @@ function JourneyPanel({
         <p>{activeNode.body}</p>
         {journey.combat ? (
           <div className="combat-card">
+            <div className="combat-trait">
+              <strong>{journey.combat.enemyTraitLabel}</strong>
+              <span>{journey.combat.enemyTraitText}</span>
+            </div>
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
               <CombatBar label="Squad" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
+            </div>
+            <div className="combat-stats">
+              <span>Atk {journey.combat.attack}</span>
+              <span>Armor {Math.max(0, journey.combat.armor - journey.combat.exposed)}</span>
+              <span>Exposed {journey.combat.exposed}</span>
+              <span>Bleed {journey.combat.bleed}</span>
             </div>
             <div className="journey-actions">
               <button className="primary-button" type="button" onClick={() => onCombatAction("strike")}>
@@ -1500,6 +1457,12 @@ function JourneyPanel({
               <button className="ghost-button inline" type="button" onClick={() => onCombatAction("patch")}>
                 <PackageCheck size={17} aria-hidden="true" />
                 Patch
+              </button>
+              <button className="ghost-button inline" type="button" onClick={() => onCombatAction("tactic")}>
+                Tactic
+              </button>
+              <button className="ghost-button inline danger-action" type="button" onClick={() => onCombatAction("retreat")}>
+                Retreat
               </button>
             </div>
           </div>

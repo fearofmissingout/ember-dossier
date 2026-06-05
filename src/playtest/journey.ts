@@ -1,8 +1,8 @@
-import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrategy } from "../game/types";
+import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "../game/types";
 import type { PlaytestSession } from "./types";
 
 export type JourneyAction = "careful" | "force" | "trade" | "skip" | "extract";
-export type CombatAction = "strike" | "guard" | "patch";
+export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 
 export type JourneyDraft = {
   squadIds: string[];
@@ -22,10 +22,14 @@ export type JourneyChoice = {
 
 export type JourneyEnemy = {
   name: string;
+  armor: number;
   hpBonus: number;
   attackBonus: number;
   reward: ResourceBundle;
   intro: string;
+  trait: "armored" | "bleeder" | "swarm" | "dread";
+  traitLabel: string;
+  traitText: string;
 };
 
 export type JourneyShop = {
@@ -52,9 +56,15 @@ export type JourneyNode = {
 };
 
 export type JourneyCombat = {
+  armor: number;
+  bleed: number;
   enemyName: string;
   enemyHp: number;
   enemyMaxHp: number;
+  enemyTrait: JourneyEnemy["trait"];
+  enemyTraitLabel: string;
+  enemyTraitText: string;
+  exposed: number;
   squadHp: number;
   squadMaxHp: number;
   attack: number;
@@ -282,20 +292,100 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
 
 const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
   resources: [
-    { attackBonus: 0, hpBonus: 2, intro: "A maintenance thing drags a wrench behind it.", name: "Valve Ghoul", rewardKeys: ["materials"] },
-    { attackBonus: 1, hpBonus: 5, intro: "A nest of wet cables snaps awake.", name: "Cable Nest", rewardKeys: ["water", "materials"] }
+    {
+      armor: 2,
+      attackBonus: 0,
+      hpBonus: 2,
+      intro: "A maintenance thing drags a wrench behind it.",
+      name: "Valve Ghoul",
+      rewardKeys: ["materials"],
+      trait: "armored",
+      traitLabel: "Armored",
+      traitText: "Reduces strike damage unless ammo or tactics expose it."
+    },
+    {
+      armor: 1,
+      attackBonus: 1,
+      hpBonus: 5,
+      intro: "A nest of wet cables snaps awake.",
+      name: "Cable Nest",
+      rewardKeys: ["water", "materials"],
+      trait: "bleeder",
+      traitLabel: "Serrated",
+      traitText: "Hits leave a lingering bleed until patched."
+    }
   ],
   urban: [
-    { attackBonus: 2, hpBonus: 3, intro: "A hallway pack hears the squad before the squad sees it.", name: "Hallway Pack", rewardKeys: ["ammo"] },
-    { attackBonus: 1, hpBonus: 7, intro: "The locked ward is not empty enough.", name: "Ward Keeper", rewardKeys: ["medicine"] }
+    {
+      armor: 0,
+      attackBonus: 2,
+      hpBonus: 3,
+      intro: "A hallway pack hears the squad before the squad sees it.",
+      name: "Hallway Pack",
+      rewardKeys: ["ammo"],
+      trait: "swarm",
+      traitLabel: "Swarm",
+      traitText: "Pressure makes its counterattack sharper."
+    },
+    {
+      armor: 1,
+      attackBonus: 1,
+      hpBonus: 7,
+      intro: "The locked ward is not empty enough.",
+      name: "Ward Keeper",
+      rewardKeys: ["medicine"],
+      trait: "armored",
+      traitLabel: "Armored",
+      traitText: "Reduces strike damage unless ammo or tactics expose it."
+    }
   ],
   weird: [
-    { attackBonus: 3, hpBonus: 4, intro: "The shadow arrives half a step before its owner.", name: "Borrowed Shadow", rewardKeys: ["medicine", "materials"] },
-    { attackBonus: 2, hpBonus: 8, intro: "The room folds into a thing with too many corners.", name: "Glass Saint", rewardKeys: ["food", "medicine"] }
+    {
+      armor: 0,
+      attackBonus: 3,
+      hpBonus: 4,
+      intro: "The shadow arrives half a step before its owner.",
+      name: "Borrowed Shadow",
+      rewardKeys: ["medicine", "materials"],
+      trait: "dread",
+      traitLabel: "Dread",
+      traitText: "Each hit adds pressure unless guarded."
+    },
+    {
+      armor: 2,
+      attackBonus: 2,
+      hpBonus: 8,
+      intro: "The room folds into a thing with too many corners.",
+      name: "Glass Saint",
+      rewardKeys: ["food", "medicine"],
+      trait: "dread",
+      traitLabel: "Dread",
+      traitText: "Each hit adds pressure unless guarded."
+    }
   ],
   wilds: [
-    { attackBonus: 0, hpBonus: 4, intro: "A scarecrow drops from its pole and runs badly but fast.", name: "Running Scarecrow", rewardKeys: ["food"] },
-    { attackBonus: 1, hpBonus: 6, intro: "Something under the field moves like a plow.", name: "Burrower", rewardKeys: ["food", "materials"] }
+    {
+      armor: 0,
+      attackBonus: 0,
+      hpBonus: 4,
+      intro: "A scarecrow drops from its pole and runs badly but fast.",
+      name: "Running Scarecrow",
+      rewardKeys: ["food"],
+      trait: "swarm",
+      traitLabel: "Swarm",
+      traitText: "Pressure makes its counterattack sharper."
+    },
+    {
+      armor: 2,
+      attackBonus: 1,
+      hpBonus: 6,
+      intro: "Something under the field moves like a plow.",
+      name: "Burrower",
+      rewardKeys: ["food", "materials"],
+      trait: "bleeder",
+      traitLabel: "Serrated",
+      traitText: "Hits leave a lingering bleed until patched."
+    }
   ]
 };
 
@@ -427,15 +517,124 @@ export function createCombatForNode(
   const squadMaxHp = 28 + squad.length * 10 + Math.round(readiness / 5);
 
   return {
+    armor: enemy.armor,
     attack: 6 + riskIndex * 2 + enemy.attackBonus,
+    bleed: 0,
     enemyHp: enemyMaxHp,
     enemyMaxHp,
     enemyName: enemy.name,
+    enemyTrait: enemy.trait,
+    enemyTraitLabel: enemy.traitLabel,
+    enemyTraitText: enemy.traitText,
+    exposed: 0,
     reward: { ...enemy.reward },
     round: 1,
     squadHp: squadMaxHp,
     squadMaxHp
   };
+}
+
+export function resolveCombatRound(journey: JourneyState, action: CombatAction, squad: Survivor[], readiness: number): JourneyState {
+  const node = journey.nodes[journey.currentNodeIndex];
+  const next = structuredClone(journey) as JourneyState;
+  const combat = next.combat;
+  if (!combat || !node) {
+    return next;
+  }
+
+  if (action === "retreat") {
+    combat.squadHp = Math.max(0, combat.squadHp - Math.max(3, Math.ceil(combat.attack / 2)));
+    next.pressure = clampPercent(next.pressure + 18);
+    next.rollShift += 0.18;
+    next.logs.push(`${node.title}: the squad retreats under pressure. Squad stamina takes a hit, pressure +18%.`);
+    next.currentNodeIndex += 1;
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+    return next;
+  }
+
+  let incoming = combat.attack + (combat.enemyTrait === "swarm" ? Math.floor(next.pressure / 20) : 0);
+  const lead = bestBy(squad, "willpower");
+  const striker = bestBy(squad, "agility");
+  const tactician = bestBy(squad, "technical");
+  const medic = bestBy(squad, "medical");
+  const pressureLog: string[] = [];
+  let patchedThisRound = false;
+
+  if (action === "strike") {
+    const ammoSpent = spendFieldSupply(next, "ammo", 1);
+    const armorPenalty = Math.max(0, combat.armor - combat.exposed - (ammoSpent ? 2 : 0));
+    const damage = Math.max(3, Math.round(readiness / 14) + Math.floor(striker.attributes.agility / 18) + (ammoSpent ? 5 : 0) - armorPenalty);
+    combat.enemyHp = Math.max(0, combat.enemyHp - damage);
+    next.logs.push(
+      `${node.title}: round ${combat.round}, ${striker.name} leads a strike for ${damage} damage${ammoSpent ? " and spends 1 ammo" : ""}${
+        armorPenalty > 0 ? ` (${combat.enemyTraitLabel} absorbs ${armorPenalty})` : ""
+      }.`
+    );
+  } else if (action === "guard") {
+    const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30);
+    incoming = Math.max(1, Math.floor(incoming / 2) - guardValue);
+    combat.exposed = Math.min(3, combat.exposed + 1);
+    next.pressure = clampPercent(next.pressure - 3);
+    next.rollShift -= 0.02;
+    next.logs.push(`${node.title}: round ${combat.round}, ${lead.name} holds guard. Incoming damage drops, enemy exposed +1, pressure -3%.`);
+  } else if (action === "patch") {
+    patchedThisRound = true;
+    const medicineSpent = spendFieldSupply(next, "medicine", 1);
+    const heal = Math.floor(medic.attributes.medical / 9) + (medicineSpent ? 12 : 4);
+    combat.squadHp = Math.min(combat.squadMaxHp, combat.squadHp + heal);
+    if (combat.bleed > 0) {
+      combat.bleed = Math.max(0, combat.bleed - (medicineSpent ? 2 : 1));
+    }
+    next.rollShift -= medicineSpent ? 0.02 : 0.01;
+    next.logs.push(
+      `${node.title}: round ${combat.round}, ${medic.name} patches the line for ${heal} stamina${medicineSpent ? " and spends 1 medicine" : ""}.`
+    );
+  } else if (action === "tactic") {
+    const expose = 1 + Math.floor(tactician.attributes.technical / 35);
+    combat.exposed = Math.min(4, combat.exposed + expose);
+    next.pressure = clampPercent(next.pressure - Math.floor(tactician.attributes.luck / 25));
+    next.rollShift -= 0.04;
+    next.logs.push(`${node.title}: round ${combat.round}, ${tactician.name} calls the pattern. Enemy exposed +${expose}, pressure softens.`);
+  }
+
+  if (combat.enemyHp > 0) {
+    if (combat.bleed > 0) {
+      combat.squadHp = Math.max(0, combat.squadHp - combat.bleed);
+      pressureLog.push(`bleed deals ${combat.bleed}`);
+    }
+
+    combat.squadHp = Math.max(0, combat.squadHp - incoming);
+    if (combat.enemyTrait === "bleeder" && action !== "guard" && !patchedThisRound) {
+      combat.bleed = Math.min(6, combat.bleed + 2);
+      pressureLog.push("bleed +2");
+    }
+    if (combat.enemyTrait === "dread" && action !== "guard") {
+      next.pressure = clampPercent(next.pressure + 5);
+      next.rollShift += 0.04;
+      pressureLog.push("pressure +5%");
+    }
+
+    next.logs.push(`${combat.enemyName} hits back for ${incoming}${pressureLog.length ? ` (${pressureLog.join(", ")})` : ""}.`);
+    if (combat.squadHp <= 0) {
+      next.pressure = clampPercent(next.pressure + 24);
+      next.rollShift += 0.24;
+      next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
+      next.currentNodeIndex += 1;
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+    } else {
+      combat.round += 1;
+      combat.exposed = Math.max(0, combat.exposed - 1);
+    }
+  } else {
+    addResources(next.bonusReward, combat.reward);
+    next.pressure = clampPercent(next.pressure - 12);
+    next.rollShift -= 0.12;
+    next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, pressure -12%.`);
+    next.currentNodeIndex += 1;
+    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness);
+  }
+
+  return next;
 }
 
 export function addResources(target: ResourceBundle, source: ResourceBundle) {
@@ -512,6 +711,32 @@ function bundleFromKeys(keys: ResourceKey[]) {
 }
 
 const resourceKeys: ResourceKey[] = ["food", "water", "materials", "medicine", "fuel", "ammo"];
+
+const resourceLabels: Record<ResourceKey, string> = {
+  ammo: "Ammo",
+  food: "Food",
+  fuel: "Fuel",
+  materials: "Materials",
+  medicine: "Medicine",
+  water: "Water"
+};
+
+function bestBy(squad: Survivor[], stat: keyof Survivor["attributes"]) {
+  return squad.reduce((best, survivor) => (survivor.attributes[stat] > best.attributes[stat] ? survivor : best), squad[0]);
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function formatBundle(resources: ResourceBundle) {
+  const entries = resourceKeys.filter((key) => resources[key] > 0);
+  if (entries.length === 0) {
+    return "no salvage";
+  }
+
+  return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
+}
 
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length) % items.length];
