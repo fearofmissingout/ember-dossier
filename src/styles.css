@@ -1148,6 +1148,61 @@ button:disabled {
   color: #8a3524;
 }
 
+.march-forecast {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid #c7d0be;
+  border-radius: 8px;
+  background: #f8fbf4;
+}
+
+.march-forecast > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.march-forecast span {
+  color: #637060;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.march-forecast strong,
+.march-forecast small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.march-forecast strong {
+  color: #2f4633;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.march-forecast small {
+  color: #697568;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.march-forecast.strained {
+  border-color: #d4ba77;
+  background: #fff9e8;
+}
+
+.march-forecast.critical {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
 .travel-record-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2049,6 +2104,7 @@ button:disabled {
   .facility-grid,
   .frontline-grid,
   .journey-status-grid,
+  .march-forecast,
   .travel-record-strip,
   .road-event-strip {
     grid-template-columns: 1fr 1fr;
@@ -2137,6 +2193,7 @@ button:disabled {
   }
 
   .journey-plan-strip,
+  .march-forecast,
   .segment-tactic-strip,
   .segment-threat-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));

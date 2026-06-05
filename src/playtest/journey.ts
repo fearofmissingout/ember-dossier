@@ -196,6 +196,22 @@ export type JourneyTravelRecord = {
   tone: JourneyTravelTone;
 };
 
+export type JourneySegmentForecastRisk = "stable" | "strained" | "critical";
+
+export type JourneySegmentForecast = {
+  conditionDeltas: Omit<JourneyCondition, "distance">;
+  notes: string[];
+  planLabel: string;
+  pressureDelta: number;
+  resultingCondition: JourneyCondition;
+  resultingPressure: number;
+  riskLevel: JourneySegmentForecastRisk;
+  segment: number;
+  supplyUse: string[];
+  tacticLabel: string;
+  threatLabel: string;
+};
+
 export type JourneyRoadEncounterChoice = {
   fallbackLog?: string;
   fatigue: number;
@@ -1644,6 +1660,60 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   return next;
 }
 
+export function forecastNextSegment(journey: JourneyState, squad: Survivor[], readiness: number): JourneySegmentForecast {
+  const next = structuredClone(journey) as JourneyState;
+  const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
+  const tactic = segmentTacticOptions[next.segmentTactic] ?? segmentTacticOptions.observe;
+  const beforeCondition = { ...next.condition };
+  const beforePressure = next.pressure;
+  const tacticOutcome = applySegmentTactic(next, tactic);
+  const threat = segmentThreatFor(next);
+  const threatOutcome = applySegmentThreat(next, threat, tactic.id);
+  const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
+  const pressureFatigue = Math.floor(next.pressure / 25);
+  const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
+  const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount + tacticOutcome.routeSkill;
+  const burdenFatigue = next.burden?.fatiguePenalty ?? 0;
+  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue + tacticOutcome.fatigue + threatOutcome.fatigue - routeSkill);
+  const foodSpent = spendFieldSupply(next, "food", 1);
+  const waterSpent = spendFieldSupply(next, "water", 1);
+  const planSupplyResult = applyTravelPlanSupply(next, plan.id);
+  const rationPressure = (foodSpent ? 0 : 8) + (waterSpent ? 0 : 10);
+  const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure + threatOutcome.pressure;
+
+  next.condition.distance += 1;
+  next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
+  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger + threatOutcome.hunger);
+  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst + threatOutcome.thirst);
+  next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
+
+  const pressureDelta = next.pressure - beforePressure;
+  const notes = [
+    ...tacticOutcome.effects,
+    ...threatOutcome.effects,
+    ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
+    ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : [])
+  ];
+
+  return {
+    conditionDeltas: {
+      fatigue: next.condition.fatigue - beforeCondition.fatigue,
+      hunger: next.condition.hunger - beforeCondition.hunger,
+      thirst: next.condition.thirst - beforeCondition.thirst
+    },
+    notes,
+    planLabel: plan.label,
+    pressureDelta,
+    resultingCondition: { ...next.condition },
+    resultingPressure: next.pressure,
+    riskLevel: segmentForecastRisk(next),
+    segment: next.condition.distance,
+    supplyUse: [foodSpent ? "Food -1" : "No food", waterSpent ? "Water -1" : "No water"],
+    tacticLabel: tactic.label,
+    threatLabel: threat.label
+  };
+}
+
 export function setJourneySegmentTactic(journey: JourneyState, tactic: JourneySegmentTactic): JourneyState {
   const option = segmentTacticOptions[tactic];
   if (!option || journey.segmentTactic === tactic) {
@@ -2818,6 +2888,19 @@ function travelToneFor(journey: JourneyState): JourneyTravelTone {
   }
 
   return "safe";
+}
+
+function segmentForecastRisk(journey: Pick<JourneyState, "condition" | "pressure">): JourneySegmentForecastRisk {
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  if (journey.pressure >= 78 || worstCondition >= 82) {
+    return "critical";
+  }
+
+  if (journey.pressure >= 52 || worstCondition >= 58) {
+    return "strained";
+  }
+
+  return "stable";
 }
 
 function sentenceCase(text: string) {

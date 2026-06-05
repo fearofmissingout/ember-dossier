@@ -43,6 +43,7 @@ import {
   createCombatForNode,
   createJourney,
   enemyTraitPulse,
+  forecastNextSegment,
   resolveCampAction,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
@@ -1672,6 +1673,8 @@ function JourneyPanel({
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
+  const segmentForecast =
+    !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
   const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
   const counterLabels = segmentThreat.counterTactics
@@ -1747,6 +1750,37 @@ function JourneyPanel({
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
       </div>
+      {segmentForecast && (
+        <div className={`march-forecast ${segmentForecast.riskLevel}`} aria-label="Next march forecast">
+          <div>
+            <span>Next march</span>
+            <strong>Segment {segmentForecast.segment}</strong>
+            <small>
+              {segmentForecast.planLabel} / {segmentForecast.tacticLabel}
+            </small>
+          </div>
+          <div>
+            <span>Cost</span>
+            <strong>{segmentForecast.supplyUse.join(" / ")}</strong>
+            <small>{segmentForecast.threatLabel}</small>
+          </div>
+          <div>
+            <span>Change</span>
+            <strong>
+              F{formatSignedNumber(segmentForecast.conditionDeltas.fatigue)} H{formatSignedNumber(segmentForecast.conditionDeltas.hunger)} T
+              {formatSignedNumber(segmentForecast.conditionDeltas.thirst)} P{formatSignedPercent(segmentForecast.pressureDelta)}
+            </strong>
+            <small>{segmentForecast.notes.slice(0, 2).join(" / ") || "Clean segment"}</small>
+          </div>
+          <div>
+            <span>After</span>
+            <strong>
+              F{segmentForecast.resultingCondition.fatigue} H{segmentForecast.resultingCondition.hunger} T{segmentForecast.resultingCondition.thirst}
+            </strong>
+            <small>Pressure {segmentForecast.resultingPressure}%</small>
+          </div>
+        </div>
+      )}
       {journey.travelHistory.length > 0 && (
         <div className="travel-record-strip" aria-label="Road diary">
           {journey.travelHistory.slice(-3).map((record) => (

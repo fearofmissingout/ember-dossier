@@ -6,6 +6,7 @@ import {
   combatActionPreview,
   createJourney,
   createCombatForNode,
+  forecastNextSegment,
   resolveCampAction,
   resolveCombatLootChoice,
   resolveCombatRound,
@@ -346,6 +347,45 @@ describe("journey route generation", () => {
       tone: "safe"
     });
     expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 16");
+  });
+
+  test("next segment forecast previews Home Behind style road attrition", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "forecast-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const forecast = forecastNextSegment(setJourneySegmentTactic(journey, "brace"), squad, 55);
+
+    expect(forecast).toMatchObject({
+      planLabel: "Steady march",
+      riskLevel: "stable",
+      segment: 1,
+      tacticLabel: "Tight formation",
+      threatLabel: "Open ditch"
+    });
+    expect(forecast.supplyUse).toEqual(expect.arrayContaining(["Food -1", "No water"]));
+    expect(forecast.conditionDeltas).toMatchObject({
+      fatigue: 8,
+      hunger: 0,
+      thirst: 22
+    });
+    expect(forecast.resultingCondition).toMatchObject({
+      distance: 1,
+      fatigue: 13,
+      hunger: 0,
+      thirst: 22
+    });
+    expect(forecast.notes).toEqual(expect.arrayContaining(["Countered: Open ditch", "Tactic pressure -6%"]));
   });
 
   test("segment tactics change the next road advance then reset to watch mode", () => {
