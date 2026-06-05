@@ -1201,6 +1201,7 @@ export function createCombatForNode(
   const enemy = node.enemy ?? materializeEnemy(familyEnemies.urban[0]);
   const enemyMaxHp = 22 + riskIndex * 6 + enemy.hpBonus;
   const frontline = createCombatFrontline(squad, readiness, support);
+  applyOpeningGuard(frontline, support.openingGuard ?? 0);
   const squadMaxHp = frontline.reduce((sum, combatant) => sum + combatant.maxStamina, 0);
   const intent = nextCombatIntent(enemy.trait, 1, 0);
 
@@ -1214,7 +1215,7 @@ export function createCombatForNode(
     enemyTrait: enemy.trait,
     enemyTraitLabel: enemy.traitLabel,
     enemyTraitText: enemy.traitText,
-    exposed: 0,
+    exposed: Math.min(4, support.openingExpose ?? 0),
     intent: intent.id,
     intentLabel: intent.label,
     intentText: intent.text,
@@ -2768,6 +2769,8 @@ function emptySupport(): ExpeditionSupport {
     lootMedicine: 0,
     lootSalvage: 0,
     maxHp: 0,
+    openingExpose: 0,
+    openingGuard: 0,
     patchHeal: 0,
     pressureRelief: 0,
     roadPush: 0,
@@ -3366,6 +3369,18 @@ function createCombatFrontline(squad: Survivor[], readiness: number, support: Ex
       survivorId: survivor.id,
       wounds: 0
     };
+  });
+}
+
+function applyOpeningGuard(frontline: JourneyCombatant[], openingGuard: number) {
+  if (frontline.length === 0 || openingGuard <= 0) {
+    return;
+  }
+
+  const guardShare = Math.floor(openingGuard / frontline.length);
+  const guardRemainder = openingGuard % frontline.length;
+  frontline.forEach((combatant, index) => {
+    combatant.guard += guardShare + (index < guardRemainder ? 1 : 0);
   });
 }
 

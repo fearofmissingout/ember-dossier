@@ -1481,6 +1481,8 @@ function ExpeditionPrep({
     { label: "Patch", sign: "+", value: support.patchHeal },
     { label: "Guard", sign: "+", value: support.guardBlock },
     { label: "Ammo", sign: "+", value: support.ammoDamage },
+    { label: "Opening guard", sign: "+", value: support.openingGuard },
+    { label: "Opening expose", sign: "+", value: support.openingExpose },
     { label: "Pack", sign: "+", value: support.carryCapacity ?? 0 },
     { label: "Pressure", sign: "-", value: support.pressureRelief },
     { label: "Road secure", sign: "+", value: support.roadSecure },

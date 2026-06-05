@@ -163,6 +163,8 @@ describe("journey route generation", () => {
       lootMedicine: 0,
       lootSalvage: 0,
       maxHp: 8,
+      openingExpose: 0,
+      openingGuard: 0,
       patchHeal: 3,
       pressureRelief: 2,
       roadPush: 0,
@@ -191,6 +193,35 @@ describe("journey route generation", () => {
     expect(journey.fieldSupplies.ammo).toBe(1);
     expect(journey.fieldSupplies.medicine).toBe(1);
     expect((supported?.squadMaxHp ?? 0) - (unsupported?.squadMaxHp ?? 0)).toBe(8);
+  });
+
+  test("opening base orders create guard and enemy exposure at contact start", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "opening-order-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    const baseline = createCombatForNode(journey.nodes[1], squad, 60, supportFromFacilities([]))!;
+    const supported = createCombatForNode(journey.nodes[1], squad, 60, {
+      ...supportFromFacilities([]),
+      openingExpose: 2,
+      openingGuard: 3
+    })!;
+    const baselinePreview = combatActionPreview({ ...journey, combat: baseline, currentNodeIndex: 1 }, "strike", squad, 60)!;
+    const supportedPreview = combatActionPreview({ ...journey, combat: supported, currentNodeIndex: 1 }, "strike", squad, 60)!;
+
+    expect(supported.exposed).toBe(2);
+    expect(supported.frontline.reduce((sum, combatant) => sum + combatant.guard, 0)).toBe(3);
+    expect(supportedPreview.effect).not.toContain("armor absorbs");
+    expect(supportedPreview.effect).not.toBe(baselinePreview.effect);
   });
 
   test("combat actions show and apply actor strain", () => {

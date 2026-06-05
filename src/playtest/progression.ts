@@ -31,6 +31,8 @@ export type ExpeditionSupport = {
   lootMedicine: number;
   lootSalvage: number;
   maxHp: number;
+  openingExpose: number;
+  openingGuard: number;
   patchHeal: number;
   pressureRelief: number;
   roadPush: number;
@@ -93,7 +95,7 @@ export function xpForNextLevel(survivor: AccountSurvivor) {
 
 const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
   {
-    effect: "Max HP +6 / Guard +1",
+    effect: "Max HP +6 / Guard +1 / Opening guard +2",
     facilityId: "dorm",
     id: "hold-formation",
     label: "Hold Formation",
@@ -107,7 +109,7 @@ const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
     text: "The clinic pre-packs a treatment roll and assigns a clear casualty protocol."
   },
   {
-    effect: "Ammo +1 / Ammo damage +2",
+    effect: "Ammo +1 / Ammo damage +2 / Opening expose +2",
     facilityId: "generator",
     id: "hot-magazines",
     label: "Hot Magazines",
@@ -128,21 +130,21 @@ const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
     text: "The kitchen turns base stores into compact travel meals and clean canteens."
   },
   {
-    effect: "Guard +2 / Road secure +2",
+    effect: "Guard +2 / Road secure +2 / Opening guard +3",
     facilityId: "barricade",
     id: "shield-line",
     label: "Shield Line",
     text: "The barricade crew sends planks, shields, and gate drills with the squad."
   },
   {
-    effect: "Max HP +4 / Guard +1",
+    effect: "Max HP +4 / Guard +1 / Opening guard +1 / Opening expose +1",
     facilityId: "training",
     id: "breach-drill",
     label: "Breach Drill",
     text: "The training room rehearses contact roles before the route starts."
   },
   {
-    effect: "Salvage +2 / Road secure +1",
+    effect: "Salvage +2 / Road secure +1 / Opening expose +1",
     facilityId: "workshop",
     id: "salvage-rig",
     label: "Salvage Rig",
@@ -185,6 +187,8 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
     lootMedicine: Math.max(0, clinic - 1),
     lootSalvage: workshop,
     maxHp: Math.max(0, dorm - 1) * 4 + training * 2,
+    openingExpose: 0,
+    openingGuard: 0,
     patchHeal: Math.max(0, clinic - 1) * 3,
     pressureRelief: Math.max(0, watchtower - 1) * 2 + radio,
     roadPush: Math.max(0, watchtower - 1),
@@ -219,6 +223,8 @@ export function emptyExpeditionSupport(): ExpeditionSupport {
     lootMedicine: 0,
     lootSalvage: 0,
     maxHp: 0,
+    openingExpose: 0,
+    openingGuard: 0,
     patchHeal: 0,
     pressureRelief: 0,
     roadPush: 0,
@@ -296,6 +302,8 @@ const numericSupportKeys = [
   "lootMedicine",
   "lootSalvage",
   "maxHp",
+  "openingExpose",
+  "openingGuard",
   "patchHeal",
   "pressureRelief",
   "roadPush",
@@ -315,12 +323,14 @@ function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: Expedit
   if (doctrineId === "hold-formation") {
     next.maxHp += 6;
     next.guardBlock += 1;
+    next.openingGuard += 2;
   } else if (doctrineId === "field-triage") {
     next.patchHeal += 3;
     next.lootMedicine += 1;
     next.startingSupplies.medicine = (next.startingSupplies.medicine ?? 0) + 1;
   } else if (doctrineId === "hot-magazines") {
     next.ammoDamage += 2;
+    next.openingExpose += 2;
     next.startingSupplies.ammo = (next.startingSupplies.ammo ?? 0) + 1;
   } else if (doctrineId === "overwatch-route") {
     next.pressureRelief += 4;
@@ -337,14 +347,18 @@ function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: Expedit
   } else if (doctrineId === "shield-line") {
     next.guardBlock += 2;
     next.lootEvade += 1;
+    next.openingGuard += 3;
     next.roadSecure += 2;
   } else if (doctrineId === "breach-drill") {
     next.maxHp += 4;
     next.guardBlock += 1;
+    next.openingExpose += 1;
+    next.openingGuard += 1;
     next.roadSecure += 1;
   } else if (doctrineId === "salvage-rig") {
     next.ammoDamage += 1;
     next.lootSalvage += 2;
+    next.openingExpose += 1;
     next.roadSecure += 1;
     next.shopService += 1;
   } else if (doctrineId === "signal-map") {

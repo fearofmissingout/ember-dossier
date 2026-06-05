@@ -16,7 +16,7 @@ describe("expedition doctrines", () => {
       "overwatch-route"
     ]);
     expect(doctrines[0]).toMatchObject({
-      effect: "Max HP +6 / Guard +1",
+      effect: "Max HP +6 / Guard +1 / Opening guard +2",
       facilityId: "dorm",
       label: "Hold Formation"
     });
@@ -30,7 +30,9 @@ describe("expedition doctrines", () => {
 
     expect(formation.maxHp).toBe(passive.maxHp + 6);
     expect(formation.guardBlock).toBe(passive.guardBlock + 1);
+    expect(formation.openingGuard).toBe(passive.openingGuard + 2);
     expect(magazines.ammoDamage).toBe(passive.ammoDamage + 2);
+    expect(magazines.openingExpose).toBe(passive.openingExpose + 2);
     expect(magazines.startingSupplies.ammo).toBe((passive.startingSupplies.ammo ?? 0) + 1);
     expect(passive.startingSupplies.ammo).toBe(0);
   });
