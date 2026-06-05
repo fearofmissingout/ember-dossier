@@ -6,6 +6,7 @@ import {
   resolveCampAction,
   resolveCombatLootChoice,
   resolveCombatRound,
+  resolveRoadEncounterChoice,
   setJourneyTravelPlan,
   spendFieldSupplyFromPriority
 } from "./journey";
@@ -137,10 +138,11 @@ describe("journey route generation", () => {
     expect(advanced.condition.fatigue).toBeGreaterThan(journey.condition.fatigue);
     expect(advanced.fieldSupplies.food).toBe(0);
     expect(advanced.fieldSupplies.water).toBe(0);
+    expect(advanced.pendingRoadEvent?.title).toBe("Thorn Wire Ditch");
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
   });
 
-  test("travel segments surface road encounters with visible outcomes", () => {
+  test("travel segments pause on road encounters before the next node", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.99);
     const session = createStarterSession("user-a", "Alice", "road-event-room");
     const squad = session.account.survivors.slice(0, 3);
@@ -156,16 +158,20 @@ describe("journey route generation", () => {
     );
 
     const advanced = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 55);
-    const salvageTotal = Object.values(advanced.bonusReward).reduce((sum, value) => sum + value, 0);
+    const resolved = resolveRoadEncounterChoice(advanced, "search");
+    const salvageTotal = Object.values(resolved.bonusReward).reduce((sum, value) => sum + value, 0);
 
-    expect(advanced.roadEvents).toHaveLength(1);
-    expect(advanced.roadEvents[0]).toMatchObject({
+    expect(advanced.pendingRoadEvent).toMatchObject({
       segment: 1,
       title: "Thorn Wire Ditch",
       tone: "find"
     });
+    expect(advanced.currentNodeIndex).toBe(0);
+    expect(resolved.pendingRoadEvent).toBeNull();
+    expect(resolved.currentNodeIndex).toBe(1);
+    expect(resolved.roadEvents[0]).toMatchObject({ title: "Thorn Wire Ditch", tone: "find" });
     expect(salvageTotal).toBeGreaterThan(0);
-    expect(advanced.logs.join("\n")).toContain("Road event: Thorn Wire Ditch");
+    expect(resolved.logs.join("\n")).toContain("Road event: Thorn Wire Ditch");
   });
 
   test("road hazards spend matching field supplies to mitigate damage", () => {
@@ -184,14 +190,15 @@ describe("journey route generation", () => {
     );
 
     const advanced = advanceJourneyTravel(journey, squad, 55);
+    const secured = resolveRoadEncounterChoice(advanced, "secure");
 
-    expect(advanced.fieldSupplies.materials).toBe(0);
-    expect(advanced.roadEvents[0]).toMatchObject({
+    expect(advanced.pendingRoadEvent).toMatchObject({
       title: "Collapsed Stairwell",
       tone: "hazard"
     });
-    expect(advanced.roadEvents[0].outcome).toContain("Materials -1");
-    expect(advanced.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
+    expect(secured.fieldSupplies.materials).toBe(0);
+    expect(secured.roadEvents[0].outcome).toContain("Materials -1");
+    expect(secured.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
   });
 
   test("travel plans change road risk and salvage rhythm", () => {

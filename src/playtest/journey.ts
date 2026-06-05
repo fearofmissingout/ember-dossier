@@ -15,6 +15,9 @@ export type JourneyAction =
   | "loot-medicine"
   | "loot-intel"
   | "loot-evade"
+  | "road-secure"
+  | "road-search"
+  | "road-push"
   | "plan-steady"
   | "plan-scavenge"
   | "plan-rush"
@@ -22,6 +25,7 @@ export type JourneyAction =
 export type CombatAction = "strike" | "guard" | "patch" | "tactic" | "retreat";
 export type JourneyCombatLootAction = "salvage" | "medicine" | "intel" | "evade";
 export type JourneyCombatIntent = "maul" | "windup" | "brace" | "prowl";
+export type JourneyRoadEncounterAction = "secure" | "search" | "push";
 export type JourneyExtractionStatus = "in-progress" | "early" | "complete";
 export type JourneyTravelPlan = "steady" | "scavenge" | "rush" | "sneak";
 export type JourneyRoadEventTone = "find" | "hazard" | "road";
@@ -101,6 +105,31 @@ export type JourneyRoadEventRecord = {
   tone: JourneyRoadEventTone;
 };
 
+export type JourneyRoadEncounterChoice = {
+  fallbackLog?: string;
+  fatigue: number;
+  hunger: number;
+  id: JourneyRoadEncounterAction;
+  label: string;
+  pressure: number;
+  reward: ResourceBundle;
+  rollShift: number;
+  successLog: string;
+  supplyPriority: ResourceKey[];
+  text: string;
+  thirst: number;
+};
+
+export type JourneyPendingRoadEncounter = {
+  body: string;
+  choices: JourneyRoadEncounterChoice[];
+  id: string;
+  nextNodeIndex: number;
+  segment: number;
+  title: string;
+  tone: JourneyRoadEventTone;
+};
+
 export type JourneyCombat = {
   armor: number;
   bleed: number;
@@ -148,6 +177,7 @@ export type JourneyState = {
   logs: string[];
   nodes: JourneyNode[];
   pendingCombatLoot: JourneyCombatLoot | null;
+  pendingRoadEvent: JourneyPendingRoadEncounter | null;
   pressure: number;
   risk: RiskStrategy;
   rollShift: number;
@@ -819,6 +849,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     ],
     nodes,
     pendingCombatLoot: null,
+    pendingRoadEvent: null,
     pressure: draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18,
     risk: draft.risk,
     rollShift: draft.risk === "cautious" ? -0.03 : draft.risk === "greedy" ? 0.05 : 0,
@@ -1055,7 +1086,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   return next;
 }
 
-export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number): JourneyState {
+export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], readiness: number, nextNodeIndex = journey.currentNodeIndex + 1): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
@@ -1086,7 +1117,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
     )}.`
   );
 
-  resolveRoadBeat(next, squad, readiness, plan.id, routeSkill);
+  queueRoadEncounter(next, squad, plan.id, routeSkill, nextNodeIndex);
 
   const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) - next.pressure / 250;
   if (scavengeRoll > 0.72) {
@@ -1552,7 +1583,7 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
   };
 }
 
-function resolveRoadBeat(journey: JourneyState, squad: Survivor[], readiness: number, plan: JourneyTravelPlan, routeSkill: number) {
+function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: JourneyTravelPlan, routeSkill: number, nextNodeIndex: number) {
   const table = familyRoadBeats[journey.locationFamily] ?? familyRoadBeats.urban;
   const beat = table[Math.max(0, journey.condition.distance - 1) % table.length];
   const bestLuck = bestBy(squad, "luck").attributes.luck;
@@ -1565,63 +1596,120 @@ function resolveRoadBeat(journey: JourneyState, squad: Survivor[], readiness: nu
     journey.pressure / 260 -
     worstCondition / 260;
 
+  let tone: JourneyRoadEventTone = "road";
+  let body = beat.neutralLog;
   if (roll >= 0.78) {
-    const key = beat.rewardKeys[(journey.condition.distance + Math.floor(roll * 100)) % beat.rewardKeys.length];
-    const pressureRelief = plan === "scavenge" ? 6 : 4;
-    journey.bonusReward[key] += 1;
-    journey.pressure = clampPercent(journey.pressure - pressureRelief);
-    journey.rollShift -= pressureRelief / 100;
-    pushRoadEvent(journey, beat.title, "find", `${beat.opportunityLog} ${resourceLabels[key]} +1, pressure -${pressureRelief}%.`);
-    return;
+    tone = "find";
+    body = beat.opportunityLog;
+  } else if (roll <= 0.22) {
+    tone = "hazard";
+    body = beat.hazardLog;
   }
 
-  if (roll <= 0.22) {
-    const spentKey = spendFieldSupplyFromPriority(journey, beat.supplyPriority, 1);
-    if (spentKey) {
-      const mitigatedPressure = Math.max(2, beat.pressure - 7);
-      const mitigatedFatigue = Math.max(1, Math.ceil(beat.fatigue / 2));
-      journey.condition.fatigue = clampPercent(journey.condition.fatigue + mitigatedFatigue);
-      journey.pressure = clampPercent(journey.pressure + mitigatedPressure);
-      journey.rollShift += Math.max(0.02, beat.rollShift / 2);
-      pushRoadEvent(
-        journey,
-        beat.title,
-        "hazard",
-        `${beat.mitigationLog} ${resourceLabels[spentKey]} -1, fatigue +${mitigatedFatigue}, pressure ${formatSignedPercent(mitigatedPressure)}.`
-      );
-      return;
-    }
-
-    const rushPenalty = plan === "rush" ? 4 : 0;
-    const hazardPressure = beat.pressure + rushPenalty;
-    journey.condition.fatigue = clampPercent(journey.condition.fatigue + beat.fatigue);
-    journey.condition.hunger = clampPercent(journey.condition.hunger + beat.hunger);
-    journey.condition.thirst = clampPercent(journey.condition.thirst + beat.thirst);
-    journey.pressure = clampPercent(journey.pressure + hazardPressure);
-    journey.rollShift += beat.rollShift + rushPenalty / 100;
-    pushRoadEvent(
-      journey,
-      beat.title,
-      "hazard",
-      `${beat.hazardLog} Fatigue ${formatSignedNumber(beat.fatigue)}, hunger ${formatSignedNumber(beat.hunger)}, thirst ${formatSignedNumber(
-        beat.thirst
-      )}, pressure ${formatSignedPercent(hazardPressure)}.`
-    );
-    return;
-  }
-
-  const steadyRelief = plan === "steady" ? 1 : 0;
-  if (steadyRelief > 0) {
-    journey.pressure = clampPercent(journey.pressure - steadyRelief);
-    journey.rollShift -= steadyRelief / 100;
-  }
-  pushRoadEvent(journey, beat.title, "road", `${beat.neutralLog}${steadyRelief > 0 ? " Pressure -1%." : ""}`);
+  journey.pendingRoadEvent = {
+    body,
+    choices: createRoadEncounterChoices(beat, tone, plan),
+    id: `road-${journey.condition.distance}-${beat.title.replace(/\s+/g, "-").toLowerCase()}`,
+    nextNodeIndex,
+    segment: journey.condition.distance,
+    title: beat.title,
+    tone
+  };
+  journey.logs.push(`Road fork: ${beat.title}. ${body}`);
 }
 
-function pushRoadEvent(journey: JourneyState, title: string, tone: JourneyRoadEventTone, outcome: string) {
+function createRoadEncounterChoices(beat: JourneyRoadBeatTemplate, tone: JourneyRoadEventTone, plan: JourneyTravelPlan): JourneyRoadEncounterChoice[] {
+  const securePressure = tone === "hazard" ? Math.max(2, beat.pressure - 7) : tone === "find" ? 1 : 2;
+  const searchRewardKeys = beat.rewardKeys.slice(0, tone === "find" ? 2 : 1);
+  const searchPressure = tone === "find" ? (plan === "scavenge" ? -6 : -4) : tone === "hazard" ? Math.ceil(beat.pressure / 2) + 4 : 5;
+  const pushPressure = tone === "hazard" ? beat.pressure + (plan === "rush" ? 2 : 0) : tone === "find" ? 2 : plan === "steady" ? 1 : 3;
+
+  return [
+    {
+      fallbackLog: `${beat.hazardLog} No matching gear is ready, so the squad has to improvise.`,
+      fatigue: Math.max(1, Math.ceil(beat.fatigue / 2)),
+      hunger: 0,
+      id: "secure",
+      label: "Secure route",
+      pressure: securePressure,
+      reward: createEmptyResourceBundle(),
+      rollShift: Math.max(0.02, beat.rollShift / 2),
+      successLog: beat.mitigationLog,
+      supplyPriority: beat.supplyPriority,
+      text: "Spend matching field gear to control the problem before it spreads.",
+      thirst: 0
+    },
+    {
+      fatigue: tone === "find" ? 2 : beat.fatigue,
+      hunger: tone === "hazard" ? beat.hunger : 1,
+      id: "search",
+      label: "Search margins",
+      pressure: searchPressure,
+      reward: bundleFromKeys(searchRewardKeys),
+      rollShift: tone === "find" ? -0.06 : beat.rollShift,
+      successLog: beat.opportunityLog,
+      supplyPriority: [],
+      text: "Slow down and squeeze value out of the route.",
+      thirst: tone === "hazard" ? beat.thirst : 1
+    },
+    {
+      fatigue: Math.max(1, Math.ceil(beat.fatigue / 2) + (plan === "rush" ? 2 : 0)),
+      hunger: tone === "hazard" ? Math.ceil(beat.hunger / 2) : 0,
+      id: "push",
+      label: "Push onward",
+      pressure: pushPressure,
+      reward: createEmptyResourceBundle(),
+      rollShift: tone === "hazard" ? beat.rollShift : 0.02,
+      successLog: tone === "find" ? "The squad notes the opportunity and keeps the route clock clean." : "The squad keeps moving before the road can demand more.",
+      supplyPriority: [],
+      text: "Take no detour and preserve tempo.",
+      thirst: tone === "hazard" ? Math.ceil(beat.thirst / 2) : 0
+    }
+  ];
+}
+
+export function resolveRoadEncounterChoice(journey: JourneyState, action: JourneyRoadEncounterAction): JourneyState {
+  const next = structuredClone(journey) as JourneyState;
+  const pending = next.pendingRoadEvent;
+  const choice = pending?.choices.find((candidate) => candidate.id === action);
+  if (!pending || !choice) {
+    return next;
+  }
+
+  const spentKey = choice.supplyPriority.length > 0 ? spendFieldSupplyFromPriority(next, choice.supplyPriority, 1) : null;
+  let outcome: string;
+  if (choice.supplyPriority.length > 0 && !spentKey) {
+    const fallbackPressure = Math.max(4, choice.pressure + 6);
+    const fallbackFatigue = choice.fatigue + 2;
+    next.condition.fatigue = clampPercent(next.condition.fatigue + fallbackFatigue);
+    next.pressure = clampPercent(next.pressure + fallbackPressure);
+    next.rollShift += Math.max(0.04, choice.rollShift);
+    outcome = `${withoutTerminalPunctuation(choice.fallbackLog ?? choice.successLog)}. Fatigue +${fallbackFatigue}, pressure ${formatSignedPercent(fallbackPressure)}.`;
+  } else {
+    addResources(next.bonusReward, choice.reward);
+    next.condition.fatigue = clampPercent(next.condition.fatigue + choice.fatigue);
+    next.condition.hunger = clampPercent(next.condition.hunger + choice.hunger);
+    next.condition.thirst = clampPercent(next.condition.thirst + choice.thirst);
+    next.pressure = clampPercent(next.pressure + choice.pressure);
+    next.rollShift += choice.rollShift;
+    const rewardText = formatBundle(choice.reward);
+    outcome = `${withoutTerminalPunctuation(choice.successLog)}${spentKey ? `, ${resourceLabels[spentKey]} -1` : ""}${
+      rewardText !== "no salvage" ? `, ${rewardText}` : ""
+    }, fatigue ${formatSignedNumber(choice.fatigue)}, hunger ${formatSignedNumber(choice.hunger)}, thirst ${formatSignedNumber(
+      choice.thirst
+    )}, pressure ${formatSignedPercent(choice.pressure)}.`;
+  }
+
+  pushRoadEvent(next, pending.title, pending.tone, outcome, pending.segment);
+  next.pendingRoadEvent = null;
+  next.currentNodeIndex = pending.nextNodeIndex;
+  return next;
+}
+
+function pushRoadEvent(journey: JourneyState, title: string, tone: JourneyRoadEventTone, outcome: string, segment = journey.condition.distance) {
   const record = {
     outcome,
-    segment: journey.condition.distance,
+    segment,
     title,
     tone
   };
@@ -1700,6 +1788,10 @@ function formatSignedPercent(value: number) {
 
 function formatSignedNumber(value: number) {
   return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+function withoutTerminalPunctuation(value: string) {
+  return value.replace(/[.!?]+$/, "");
 }
 
 function combatTrophyFor(trait: JourneyEnemy["trait"]) {

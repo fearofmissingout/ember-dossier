@@ -41,6 +41,7 @@ import {
   createJourney,
   resolveCampAction,
   resolveCombatLootChoice,
+  resolveRoadEncounterChoice,
   setJourneyTravelPlan,
   spendFieldSupplyFromPriority,
   travelPlanList,
@@ -50,6 +51,7 @@ import {
   type JourneyCombatLootAction,
   type JourneyChoice,
   type JourneyNode,
+  type JourneyRoadEncounterAction,
   type JourneyState,
   type JourneyTravelPlan
 } from "./playtest/journey";
@@ -708,9 +710,15 @@ export default function App() {
       return;
     }
 
-    const selectedTravelPlan = travelPlanFromAction(action);
-    if (selectedTravelPlan) {
-      setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
+    const selectedRoadAction = roadEncounterActionFromJourneyAction(action);
+    if (journey.pendingRoadEvent) {
+      if (!selectedRoadAction) {
+        return;
+      }
+
+      const next = resolveRoadEncounterChoice(journey, selectedRoadAction);
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      setJourney(next);
       return;
     }
 
@@ -722,9 +730,17 @@ export default function App() {
 
       let next = resolveCombatLootChoice(journey, selectedLootAction);
       next = advanceJourneyTravel(next, selectedSquad, readiness);
-      next.currentNodeIndex += 1;
-      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      if (!next.pendingRoadEvent) {
+        next.currentNodeIndex += 1;
+        next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+      }
       setJourney(next);
+      return;
+    }
+
+    const selectedTravelPlan = travelPlanFromAction(action);
+    if (selectedTravelPlan) {
+      setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
       return;
     }
 
@@ -781,8 +797,10 @@ export default function App() {
     }
 
     next = advanceJourneyTravel(next, selectedSquad, readiness);
-    next.currentNodeIndex += 1;
-    next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+    if (!next.pendingRoadEvent) {
+      next.currentNodeIndex += 1;
+      next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
+    }
     setJourney(next);
   }
 
@@ -793,7 +811,11 @@ export default function App() {
 
     const resolved = resolveCombatRound(journey, action, selectedSquad, readiness);
     if (resolved.currentNodeIndex !== journey.currentNodeIndex) {
-      setJourney(advanceJourneyTravel(resolved, selectedSquad, readiness));
+      const traveled = advanceJourneyTravel(resolved, selectedSquad, readiness, resolved.currentNodeIndex);
+      if (!traveled.pendingRoadEvent) {
+        traveled.combat = createCombatForNode(traveled.nodes[traveled.currentNodeIndex], selectedSquad, readiness, traveled.support);
+      }
+      setJourney(traveled);
       return;
     }
 
@@ -1523,7 +1545,11 @@ function JourneyPanel({
   onJourneyAction: (action: JourneyAction) => void;
 }) {
   const outlook = getJourneyOutlook(journey);
-  const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && activeNode.type !== "extraction";
+  const pendingRoad = journey.pendingRoadEvent;
+  const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction";
+  const nodeTypeLabel = pendingRoad ? `road ${pendingRoad.tone}` : activeNode.type;
+  const nodeTitle = pendingRoad?.title ?? activeNode.title;
+  const nodeBody = pendingRoad?.body ?? activeNode.body;
 
   return (
     <div className="journey-panel">
@@ -1592,10 +1618,30 @@ function JourneyPanel({
         </div>
       )}
       <div className="journey-node">
-        <span className="subtle-pill">{activeNode.type}</span>
-        <h3>{activeNode.title}</h3>
-        <p>{activeNode.body}</p>
-        {journey.pendingCombatLoot ? (
+        <span className="subtle-pill">{nodeTypeLabel}</span>
+        <h3>{nodeTitle}</h3>
+        <p>{nodeBody}</p>
+        {pendingRoad ? (
+          <div className="road-choice-card">
+            <div>
+              <strong>Road decision</strong>
+              <span>Segment {pendingRoad.segment} blocks the next stop. Resolve it before the squad reaches the next node.</span>
+            </div>
+            <div className="combat-loot-grid">
+              {pendingRoad.choices.map((choice) => (
+                <button key={choice.id} type="button" onClick={() => onJourneyAction(`road-${choice.id}` as JourneyAction)}>
+                  <strong>{choice.label}</strong>
+                  <span>{choice.text}</span>
+                  <small>
+                    {choice.supplyPriority.length > 0 ? `Cost ${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}; ` : ""}
+                    {formatResourceDelta(choice.reward)} 路 F{formatSignedNumber(choice.fatigue)} H{formatSignedNumber(choice.hunger)} T
+                    {formatSignedNumber(choice.thirst)} P{formatSignedPercent(choice.pressure)}
+                  </small>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : journey.pendingCombatLoot ? (
           <div className="combat-loot-card">
             <div>
               <strong>{journey.pendingCombatLoot.enemyName} down</strong>
@@ -1988,6 +2034,15 @@ function combatLootActionFromJourneyAction(action: JourneyAction): JourneyCombat
     "loot-salvage": "salvage"
   };
   return lootByAction[action] ?? null;
+}
+
+function roadEncounterActionFromJourneyAction(action: JourneyAction): JourneyRoadEncounterAction | null {
+  const roadByAction: Partial<Record<JourneyAction, JourneyRoadEncounterAction>> = {
+    "road-push": "push",
+    "road-search": "search",
+    "road-secure": "secure"
+  };
+  return roadByAction[action] ?? null;
 }
 
 function getJourneyOutlook(journey: JourneyState) {
