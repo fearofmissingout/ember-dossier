@@ -12,6 +12,7 @@ import {
   resolveRoadEncounterChoice,
   resolveShopAction,
   routePaceFor,
+  segmentThreatFor,
   setJourneySegmentTactic,
   setJourneyTravelPlan,
   shopOfferOutcome,
@@ -283,13 +284,13 @@ describe("journey route generation", () => {
     expect(advanced.pendingRoadEvent?.title).toBe("Thorn Wire Ditch");
     expect(advanced.logs.join("\n")).toContain("Road: segment 1");
     expect(advanced.travelHistory[0]).toMatchObject({
-      effects: expect.arrayContaining(["Food -1", "Water -1", "Fatigue +7", "Pressure -1%"]),
+      effects: expect.arrayContaining(["Food -1", "Water -1", "Threat: Open ditch", "Threat pressure +7%", "Fatigue +11", "Pressure +6%"]),
       planLabel: "Steady march",
       segment: 1,
       title: "Field Hush",
       tone: "safe"
     });
-    expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 12");
+    expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 16");
   });
 
   test("segment tactics change the next road advance then reset to watch mode", () => {
@@ -308,6 +309,61 @@ describe("journey route generation", () => {
     expect(braced.pressure).toBeLessThan(baseline.pressure);
     expect(braced.travelHistory[0].effects).toEqual(expect.arrayContaining(["Tactic: Tight formation", "Tactic pressure -6%"]));
     expect(braced.logs.join("\n")).toContain("Segment tactic: Tight formation");
+  });
+
+  test("route segments preview deterministic threats by location family", () => {
+    const session = createStarterSession("user-a", "Alice", "threat-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const farmJourney = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+    const hospitalJourney = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      55
+    );
+
+    expect(segmentThreatFor(farmJourney)).toMatchObject({
+      counterTactics: ["brace"],
+      label: "Open ditch",
+      pressure: 7
+    });
+    expect(segmentThreatFor(hospitalJourney)).toMatchObject({
+      counterTactics: ["prospect"],
+      label: "Glass choke",
+      pressure: 8
+    });
+  });
+
+  test("segment tactics can counter the next route threat", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "threat-counter-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const draft = {
+      loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 1 },
+      risk: "standard" as const,
+      squadIds: squad.map((survivor) => survivor.id)
+    };
+
+    const exposed = advanceJourneyTravel(createJourney(session, draft, "farm", 55), squad, 55);
+    const countered = advanceJourneyTravel(setJourneySegmentTactic(createJourney(session, draft, "farm", 55), "brace"), squad, 55);
+
+    expect(exposed.travelHistory[0].effects).toEqual(expect.arrayContaining(["Threat: Open ditch", "Threat pressure +7%"]));
+    expect(countered.travelHistory[0].effects).toEqual(expect.arrayContaining(["Countered: Open ditch"]));
+    expect(countered.pressure).toBeLessThan(exposed.pressure);
+    expect(countered.logs.join("\n")).toContain("Threat counter: Open ditch");
   });
 
   test("prospecting a segment spends gear and can turn the road into a find", () => {

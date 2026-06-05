@@ -49,6 +49,7 @@ import {
   resolveShopAction,
   routePaceFor,
   segmentTacticList,
+  segmentThreatFor,
   setJourneySegmentTactic,
   setJourneyTravelPlan,
   shopOfferOutcome,
@@ -1665,6 +1666,10 @@ function JourneyPanel({
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
+  const segmentThreat = segmentThreatFor(journey);
+  const counterLabels = segmentThreat.counterTactics
+    .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
+    .join(" / ");
 
   return (
     <div className="journey-panel">
@@ -1776,6 +1781,20 @@ function JourneyPanel({
             </small>
           </button>
         ))}
+      </div>
+      <div className="segment-threat-card" aria-label="Segment threat">
+        <div>
+          <span>Segment threat</span>
+          <strong>{segmentThreat.label}</strong>
+          <small>{segmentThreat.text}</small>
+        </div>
+        <div>
+          <span>Counter</span>
+          <strong>{counterLabels}</strong>
+          <small>
+            F+{segmentThreat.fatigue} H+{segmentThreat.hunger} T+{segmentThreat.thirst} P+{segmentThreat.pressure}%
+          </small>
+        </div>
       </div>
       <div className="segment-tactic-strip" aria-label="Next segment tactic">
         {segmentTacticList.map((tactic) => (

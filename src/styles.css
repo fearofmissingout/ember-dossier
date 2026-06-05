@@ -1367,6 +1367,46 @@ button:disabled {
   color: #437257;
 }
 
+.segment-threat-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #c9a16e;
+  border-radius: 8px;
+  background: #fff1d8;
+}
+
+.segment-threat-card div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.segment-threat-card span {
+  color: #83542f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.segment-threat-card strong,
+.segment-threat-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.segment-threat-card strong {
+  color: #4f321e;
+  font-size: 14px;
+}
+
+.segment-threat-card small {
+  color: #6b533c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .journey-aftermath {
   display: flex;
   flex-wrap: wrap;
@@ -2097,7 +2137,8 @@ button:disabled {
   }
 
   .journey-plan-strip,
-  .segment-tactic-strip {
+  .segment-tactic-strip,
+  .segment-threat-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

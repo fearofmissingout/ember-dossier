@@ -329,6 +329,18 @@ export type JourneySegmentTacticOption = {
   thirst: number;
 };
 
+export type JourneySegmentThreat = {
+  counterTactics: JourneySegmentTactic[];
+  fatigue: number;
+  hunger: number;
+  id: string;
+  label: string;
+  pressure: number;
+  scavengePenalty: number;
+  text: string;
+  thirst: number;
+};
+
 export type JourneyCombatLootOption = {
   battleScarRelief: number;
   fatigue: number;
@@ -1542,23 +1554,25 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   const plan = travelPlanOptions[next.travelPlan] ?? travelPlanOptions.steady;
   const tactic = segmentTacticOptions[next.segmentTactic] ?? segmentTacticOptions.observe;
   const tacticOutcome = applySegmentTactic(next, tactic);
+  const threat = segmentThreatFor(next);
+  const threatOutcome = applySegmentThreat(next, threat, tactic.id);
   const beforePressure = next.pressure;
   const riskFatigue = next.risk === "greedy" ? 12 : next.risk === "cautious" ? 6 : 9;
   const pressureFatigue = Math.floor(next.pressure / 25);
   const fieldRunnerCount = squad.filter((survivor) => hasPerk(survivor, "field_runner")).length;
   const routeSkill = Math.floor(readiness / 25) + fieldRunnerCount + tacticOutcome.routeSkill;
   const burdenFatigue = next.burden?.fatiguePenalty ?? 0;
-  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue + tacticOutcome.fatigue - routeSkill);
+  const fatigueGain = Math.max(2, riskFatigue + pressureFatigue + plan.fatigue + burdenFatigue + tacticOutcome.fatigue + threatOutcome.fatigue - routeSkill);
   const foodSpent = spendFieldSupply(next, "food", 1);
   const waterSpent = spendFieldSupply(next, "water", 1);
   const planSupplyResult = applyTravelPlanSupply(next, plan.id);
   const rationPressure = (foodSpent ? 0 : 8) + (waterSpent ? 0 : 10);
-  const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure;
+  const planPressure = plan.pressure + planSupplyResult.pressure + tacticOutcome.pressure + threatOutcome.pressure;
 
   next.condition.distance += 1;
   next.condition.fatigue = clampPercent(next.condition.fatigue + fatigueGain);
-  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger);
-  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst);
+  next.condition.hunger = clampPercent(next.condition.hunger + (foodSpent ? -12 : 18) + plan.hunger + tacticOutcome.hunger + threatOutcome.hunger);
+  next.condition.thirst = clampPercent(next.condition.thirst + (waterSpent ? -15 : 22) + plan.thirst + tacticOutcome.thirst + threatOutcome.thirst);
   next.pressure = clampPercent(next.pressure + rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief);
   next.rollShift += (rationPressure + planPressure) / 100 + next.condition.fatigue / 350;
 
@@ -1579,6 +1593,7 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
         waterSpent ? "Water -1" : "No water",
         ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
         ...tacticOutcome.effects,
+        ...threatOutcome.effects,
         ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
         `Fatigue +${fatigueGain}`,
         `Pressure ${formatSignedPercent(pressureDelta)}`
@@ -1589,7 +1604,8 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
 
   queueRoadEncounter(next, squad, plan.id, routeSkill, nextNodeIndex);
 
-  const scavengeRoll = Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) + tacticOutcome.scavengeBonus - next.pressure / 250;
+  const scavengeRoll =
+    Math.random() + routeSkill * 0.04 + planScavengeBonus(plan.id) + tacticOutcome.scavengeBonus - threatOutcome.scavengePenalty - next.pressure / 250;
   if (scavengeRoll > 0.72) {
     const key = travelScavengeKeys[next.condition.distance % travelScavengeKeys.length];
     next.bonusReward[key] += 1;
@@ -2104,6 +2120,155 @@ const segmentTacticOptions: Record<JourneySegmentTactic, JourneySegmentTacticOpt
   segmentTacticList.map((option) => [option.id, option])
 ) as Record<JourneySegmentTactic, JourneySegmentTacticOption>;
 
+export function segmentThreatFor(journey: Pick<JourneyState, "condition" | "locationFamily">): JourneySegmentThreat {
+  const pool = segmentThreats[journey.locationFamily] ?? segmentThreats.urban;
+  const nextSegment = Math.max(1, journey.condition.distance + 1);
+  return pool[(nextSegment - 1) % pool.length];
+}
+
+const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
+  resources: [
+    {
+      counterTactics: ["ration"],
+      fatigue: 2,
+      hunger: 3,
+      id: "chlorine-fog",
+      label: "Chlorine fog",
+      pressure: 6,
+      scavengePenalty: 0.06,
+      text: "Chemical fog turns every breath into a small negotiation.",
+      thirst: 5
+    },
+    {
+      counterTactics: ["brace"],
+      fatigue: 4,
+      hunger: 0,
+      id: "service-ladder",
+      label: "Service ladder",
+      pressure: 7,
+      scavengePenalty: 0.04,
+      text: "A vertical maintenance climb splits the squad's pace.",
+      thirst: 1
+    },
+    {
+      counterTactics: ["prospect"],
+      fatigue: 1,
+      hunger: 0,
+      id: "locked-meter",
+      label: "Locked meter",
+      pressure: 5,
+      scavengePenalty: 0.12,
+      text: "Useful parts sit behind old utility locks.",
+      thirst: 0
+    }
+  ],
+  urban: [
+    {
+      counterTactics: ["prospect"],
+      fatigue: 3,
+      hunger: 0,
+      id: "glass-choke",
+      label: "Glass choke",
+      pressure: 8,
+      scavengePenalty: 0.08,
+      text: "Broken storefronts make every shortcut loud unless someone works the debris.",
+      thirst: 1
+    },
+    {
+      counterTactics: ["brace"],
+      fatigue: 4,
+      hunger: 0,
+      id: "blind-corner",
+      label: "Blind corner",
+      pressure: 7,
+      scavengePenalty: 0.04,
+      text: "Tight alleys hide too much movement.",
+      thirst: 0
+    },
+    {
+      counterTactics: ["ration"],
+      fatigue: 2,
+      hunger: 5,
+      id: "long-stairwell",
+      label: "Long stairwell",
+      pressure: 5,
+      scavengePenalty: 0.04,
+      text: "A long stairwell burns legs and tempers.",
+      thirst: 4
+    }
+  ],
+  weird: [
+    {
+      counterTactics: ["observe"],
+      fatigue: 2,
+      hunger: 0,
+      id: "wrong-echo",
+      label: "Wrong echo",
+      pressure: 9,
+      scavengePenalty: 0.1,
+      text: "The route repeats sounds half a second before they happen.",
+      thirst: 0
+    },
+    {
+      counterTactics: ["brace"],
+      fatigue: 5,
+      hunger: 0,
+      id: "soft-floor",
+      label: "Soft floor",
+      pressure: 6,
+      scavengePenalty: 0.06,
+      text: "The floor flexes like something breathing under tile.",
+      thirst: 2
+    },
+    {
+      counterTactics: ["prospect"],
+      fatigue: 2,
+      hunger: 3,
+      id: "mirror-growth",
+      label: "Mirror growth",
+      pressure: 8,
+      scavengePenalty: 0.14,
+      text: "Reflective vines hide supplies and exits in the same shimmer.",
+      thirst: 3
+    }
+  ],
+  wilds: [
+    {
+      counterTactics: ["brace"],
+      fatigue: 4,
+      hunger: 0,
+      id: "open-ditch",
+      label: "Open ditch",
+      pressure: 7,
+      scavengePenalty: 0.04,
+      text: "A washed-out ditch breaks the road into exposed crossings.",
+      thirst: 1
+    },
+    {
+      counterTactics: ["prospect"],
+      fatigue: 2,
+      hunger: 0,
+      id: "overgrown-cache",
+      label: "Overgrown cache",
+      pressure: 6,
+      scavengePenalty: 0.16,
+      text: "Useful shapes sit under brush, but every minute searching widens the trail.",
+      thirst: 2
+    },
+    {
+      counterTactics: ["ration"],
+      fatigue: 2,
+      hunger: 5,
+      id: "dry-field",
+      label: "Dry field",
+      pressure: 5,
+      scavengePenalty: 0.04,
+      text: "Dry stalks cut shade out of the route.",
+      thirst: 6
+    }
+  ]
+};
+
 export const combatLootList: JourneyCombatLootOption[] = [
   {
     battleScarRelief: 0,
@@ -2510,6 +2675,31 @@ function applySegmentTactic(journey: JourneyState, tactic: JourneySegmentTacticO
     routeSkill: effective ? tactic.routeSkill : 0,
     scavengeBonus: effective ? tactic.scavengeBonus : 0,
     thirst: effective ? tactic.thirst : tactic.failThirst
+  };
+}
+
+function applySegmentThreat(journey: JourneyState, threat: JourneySegmentThreat, tactic: JourneySegmentTactic) {
+  const countered = threat.counterTactics.includes(tactic);
+  if (countered) {
+    journey.logs.push(`Threat counter: ${threat.label}. ${threat.text}`);
+    return {
+      effects: [`Countered: ${threat.label}`],
+      fatigue: 0,
+      hunger: 0,
+      pressure: -Math.max(1, Math.floor(threat.pressure / 2)),
+      scavengePenalty: 0,
+      thirst: 0
+    };
+  }
+
+  journey.logs.push(`Segment threat: ${threat.label}. ${threat.text}`);
+  return {
+    effects: [`Threat: ${threat.label}`, `Threat pressure ${formatSignedPercent(threat.pressure)}`],
+    fatigue: threat.fatigue,
+    hunger: threat.hunger,
+    pressure: threat.pressure,
+    scavengePenalty: threat.scavengePenalty,
+    thirst: threat.thirst
   };
 }
 
