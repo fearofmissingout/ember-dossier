@@ -1,6 +1,6 @@
 import type { GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "../game/types";
 import type { ExpeditionSupport } from "./progression";
-import type { PlaytestSession } from "./types";
+import type { PlaytestSession, RoomObjective } from "./types";
 
 export type JourneyAction =
   | "careful"
@@ -421,6 +421,57 @@ export type JourneyBaseCommandOption = {
   remainingUses: number;
   text: string;
 };
+
+export type JourneyObjectivePreview = {
+  currentParts: number;
+  hint: string;
+  progressPercent: number;
+  projectedParts: number;
+  projectedPercent: number;
+  remainingAfterRoute: number;
+  requiredParts: number;
+  routeBonus: number;
+  routeLabel: string;
+  statusLabel: string;
+  summary: string;
+  title: string;
+};
+
+export function journeyObjectivePreview(
+  journey: Pick<JourneyState, "extractionStatus" | "objectiveBonus">,
+  objective: RoomObjective
+): JourneyObjectivePreview {
+  const requiredParts = Math.max(1, objective.requiredParts);
+  const currentParts = Math.max(0, Math.min(requiredParts, objective.repairedParts));
+  const routeBonus = Math.max(0, Math.floor(journey.objectiveBonus));
+  const projectedParts = Math.min(requiredParts, currentParts + routeBonus);
+  const remainingAfterRoute = Math.max(0, requiredParts - projectedParts);
+  const statusLabel = objective.status === "active" ? "进行中" : objective.status === "won" ? "已完成" : "已失败";
+  const routeLabel = routeBonus > 0 ? `本次线索 +${routeBonus}` : "本次尚无线索";
+  const summary =
+    routeBonus > 0
+      ? `撤离后预计推进到 ${projectedParts}/${requiredParts}，还差 ${remainingAfterRoute}。`
+      : "营地侦察、交易情报和战后分析会转化为目标线索。";
+  const hint =
+    journey.extractionStatus === "early"
+      ? "提前返程会保留已取得线索，但不会获得地点主体进度。"
+      : "完整撤离会把目标线索和地点进度一起回传基地。";
+
+  return {
+    currentParts,
+    hint,
+    progressPercent: Math.round((currentParts / requiredParts) * 100),
+    projectedParts,
+    projectedPercent: Math.round((projectedParts / requiredParts) * 100),
+    remainingAfterRoute,
+    requiredParts,
+    routeBonus,
+    routeLabel,
+    statusLabel,
+    summary,
+    title: objective.title
+  };
+}
 
 export function routePaceFor(journey: JourneyState): JourneyRoutePace {
   const totalStops = journey.nodes.length;
@@ -3069,14 +3120,14 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
 
   if (plan === "scavenge") {
     return {
-      log: "extra search time",
+      log: "额外搜索耗时",
       pressure: 0
     };
   }
 
   if (plan === "rush") {
     return {
-      log: "no stops",
+      log: "不作停留",
       pressure: 0
     };
   }

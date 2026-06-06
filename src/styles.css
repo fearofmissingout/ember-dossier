@@ -1223,6 +1223,67 @@ button:disabled {
   color: #8a3524;
 }
 
+.journey-objective-card {
+  display: grid;
+  grid-template-columns: 1fr 0.75fr 1.1fr 1.1fr;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #b9c7a6;
+  border-radius: 8px;
+  background: #f7fbef;
+}
+
+.journey-objective-card > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+  padding: 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.journey-objective-card span {
+  color: #63725b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-objective-card strong,
+.journey-objective-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-objective-card strong {
+  color: #2f5438;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.journey-objective-card small {
+  color: #65715c;
+  font-size: 11px;
+  line-height: 1.28;
+}
+
+.journey-objective-card i {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #d9e4ce;
+}
+
+.journey-objective-card b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #53795b;
+}
+
 .base-command-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2421,6 +2482,7 @@ button:disabled {
   .frontline-grid,
   .journey-status-grid,
   .route-pacing,
+  .journey-objective-card,
   .base-command-strip,
   .march-forecast,
   .travel-record-strip,
@@ -2507,6 +2569,7 @@ button:disabled {
   .archive-grid,
   .journey-status-grid,
   .route-pacing,
+  .journey-objective-card,
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,

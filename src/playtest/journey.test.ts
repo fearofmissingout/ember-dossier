@@ -8,6 +8,7 @@ import {
   createJourney,
   createCombatForNode,
   forecastNextSegment,
+  journeyObjectivePreview,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -884,6 +885,29 @@ describe("journey route generation", () => {
     expect(planned.travelPlan).toBe("scavenge");
     expect(advanced.bonusReward.food).toBe(1);
     expect(advanced.logs.join("\n")).toContain("搜刮沿途");
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining(["额外搜索耗时"]));
+    expect(advanced.logs.join("\n")).not.toContain("extra search time");
+  });
+
+  test("rush travel uses Chinese route effect logs", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "rush-zh-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(setJourneyTravelPlan(journey, "rush"), squad, 55);
+
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining(["不作停留"]));
+    expect(advanced.logs.join("\n")).not.toContain("no stops");
   });
 
   test("sneak travel spends cover gear to lower route pressure", () => {
@@ -933,6 +957,44 @@ describe("journey route generation", () => {
     expect(scouted.objectiveBonus).toBe(1);
     expect(scouted.pressure).toBeLessThan(journey.pressure);
     expect(scouted.logs.join("\n")).toContain("目标线索 +1");
+  });
+
+  test("objective preview turns route clues into visible room progress", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "objective-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 1, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 2;
+    session.room.base.objective.repairedParts = 4;
+
+    const before = journeyObjectivePreview(journey, session.room.base.objective);
+    const scouted = resolveCampAction(journey, "scout");
+    const after = journeyObjectivePreview(scouted, session.room.base.objective);
+
+    expect(before).toMatchObject({
+      currentParts: 4,
+      projectedParts: 4,
+      routeBonus: 0,
+      routeLabel: "本次尚无线索"
+    });
+    expect(after).toMatchObject({
+      currentParts: 4,
+      projectedParts: 5,
+      remainingAfterRoute: session.room.base.objective.requiredParts - 5,
+      routeBonus: 1,
+      routeLabel: "本次线索 +1"
+    });
+    expect(after.summary).toContain("撤离后预计推进到 5/");
+    expect(after.hint).toContain("完整撤离");
   });
 
   test("base facility support strengthens camp recovery choices", () => {

@@ -49,6 +49,7 @@ import {
   createJourney,
   enemyTraitPulse,
   forecastNextSegment,
+  journeyObjectivePreview,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -1084,6 +1085,7 @@ export default function App() {
             readiness={readiness}
             squadReady={squadReady}
             canAffordLoadout={canAffordLoadout && objectiveActive}
+            objective={session.room.base.objective}
             objectiveActive={objectiveActive}
             userId={session.account.profile.userId}
             journey={journey}
@@ -1443,6 +1445,7 @@ function ExpeditionPrep({
   readiness,
   squadReady,
   canAffordLoadout,
+  objective,
   objectiveActive,
   userId,
   journey,
@@ -1463,6 +1466,7 @@ function ExpeditionPrep({
   readiness: number;
   squadReady: boolean;
   canAffordLoadout: boolean;
+  objective: PlaytestSession["room"]["base"]["objective"];
   objectiveActive: boolean;
   userId: string;
   journey: JourneyState | null;
@@ -1681,6 +1685,7 @@ function ExpeditionPrep({
           <JourneyPanel
             activeNode={activeNode}
             journey={journey}
+            objective={objective}
             onCombatAction={onCombatAction}
             onJourneyAction={onJourneyAction}
             readiness={readiness}
@@ -1702,6 +1707,7 @@ function ExpeditionPrep({
 function JourneyPanel({
   activeNode,
   journey,
+  objective,
   onCombatAction,
   onJourneyAction,
   readiness,
@@ -1709,6 +1715,7 @@ function JourneyPanel({
 }: {
   activeNode: JourneyNode;
   journey: JourneyState;
+  objective: PlaytestSession["room"]["base"]["objective"];
   onCombatAction: (action: CombatAction) => void;
   onJourneyAction: (action: JourneyAction) => void;
   readiness: number;
@@ -1727,6 +1734,7 @@ function JourneyPanel({
   const segmentThreat = segmentThreatFor(journey);
   const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
   const baseCommands = baseCommandOptions(journey);
+  const objectivePreview = journeyObjectivePreview(journey, objective);
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
@@ -1804,6 +1812,37 @@ function JourneyPanel({
       <div className={`journey-outlook ${outlook.tone}`}>
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
+      </div>
+      <div className="journey-objective-card" aria-label="出征目标线索">
+        <div>
+          <span>房间目标</span>
+          <strong>{objectivePreview.title}</strong>
+          <small>{objectivePreview.statusLabel}</small>
+        </div>
+        <div>
+          <span>基地进度</span>
+          <strong>
+            {objectivePreview.currentParts}/{objectivePreview.requiredParts}
+          </strong>
+          <i>
+            <b style={{ width: `${Math.max(6, objectivePreview.progressPercent)}%` }} />
+          </i>
+        </div>
+        <div>
+          <span>本次线索</span>
+          <strong>{objectivePreview.routeLabel}</strong>
+          <small>{objectivePreview.summary}</small>
+        </div>
+        <div>
+          <span>预计回传</span>
+          <strong>
+            {objectivePreview.projectedParts}/{objectivePreview.requiredParts}
+          </strong>
+          <i>
+            <b style={{ width: `${Math.max(6, objectivePreview.projectedPercent)}%` }} />
+          </i>
+          <small>{objectivePreview.hint}</small>
+        </div>
       </div>
       <div className="base-command-strip" aria-label="基地指令">
         {baseCommands.map((command) => (
@@ -2095,10 +2134,10 @@ function JourneyPanel({
         ) : activeNode.type === "event" ? (
           <div className="journey-actions">
             <button className="primary-button" type="button" onClick={() => onJourneyAction("careful")}>
-              {activeNode.careful?.label ?? "Careful search"}
+              {activeNode.careful?.label ?? "谨慎搜索"}
             </button>
             <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("force")}>
-              {activeNode.force?.label ?? "Force route"}
+              {activeNode.force?.label ?? "强行推进"}
             </button>
           </div>
         ) : activeNode.type === "shop" ? (
