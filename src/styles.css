@@ -1109,6 +1109,93 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.support-plan-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #b9c7a6;
+  border-radius: 8px;
+  background: #f7fbef;
+}
+
+.support-plan-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-plan-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.support-plan-heading span,
+.support-plan-stage span {
+  color: #63725b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.support-plan-heading strong,
+.support-plan-heading small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.support-plan-heading strong {
+  color: #2f5438;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.support-plan-heading small {
+  max-width: 38ch;
+  color: #65715c;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.support-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.support-plan-stage {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #cad8bd;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.support-plan-stage strong,
+.support-plan-stage small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.support-plan-stage strong {
+  color: #334f38;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.support-plan-stage small {
+  color: #65715c;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .journey-panel {
   display: grid;
   gap: 12px;
@@ -2790,6 +2877,7 @@ button:disabled {
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,
+  .support-plan-grid,
   .base-command-strip,
   .march-forecast,
   .travel-record-strip,
@@ -2880,6 +2968,7 @@ button:disabled {
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,
+  .support-plan-grid,
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,

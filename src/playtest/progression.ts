@@ -1,4 +1,5 @@
 import type { Facility, ResourceBundle } from "../game/types";
+import { resourceKeys, resourceLabels } from "../game/labels";
 import type { AccountSurvivor, RoomBaseAssignment } from "./types";
 
 export type SurvivorPerkId = "field_runner" | "steady_hands" | "base_instinct";
@@ -50,6 +51,19 @@ export type ExpeditionDoctrineOption = {
   id: ExpeditionDoctrineId;
   label: string;
   text: string;
+};
+
+export type ExpeditionSupportPlanStage = {
+  id: "camp" | "combat" | "departure" | "road";
+  items: string[];
+  label: string;
+  summary: string;
+};
+
+export type ExpeditionSupportPlan = {
+  stages: ExpeditionSupportPlanStage[];
+  summary: string;
+  totalEffects: number;
 };
 
 export const survivorPerks: Record<SurvivorPerkId, SurvivorPerk> = {
@@ -290,6 +304,85 @@ export function mergeExpeditionSupport(left: ExpeditionSupport, right: Expeditio
   return merged;
 }
 
+export function expeditionSupportPlan(support: ExpeditionSupport): ExpeditionSupportPlan {
+  const stages: ExpeditionSupportPlanStage[] = [];
+  const departureItems = [
+    ...resourceKeys
+      .map((key) => ({ label: resourceLabels[key], value: support.startingSupplies[key] ?? 0 }))
+      .filter((item) => item.value > 0)
+      .map((item) => `${item.label} +${item.value}`),
+    ...supportLine("生命上限", support.maxHp),
+    ...supportLine("开局防护", support.openingGuard),
+    ...supportLine("开局暴露", support.openingExpose),
+    ...supportLine("背包容量", support.carryCapacity ?? 0)
+  ];
+  if (departureItems.length > 0) {
+    stages.push({
+      id: "departure",
+      items: departureItems,
+      label: "出门准备",
+      summary: "把设施、纪律和留守人员的准备转成开局物资、队伍耐力和携带空间。"
+    });
+  }
+
+  const roadItems = [
+    ...supportLine("压力缓解", support.pressureRelief),
+    ...supportLine("路线稳固", support.roadSecure),
+    ...supportLine("路线搜索", support.roadSearch),
+    ...supportLine("强行推进", support.roadPush),
+    ...supportLine("撤离回避", support.lootEvade)
+  ];
+  if (roadItems.length > 0) {
+    stages.push({
+      id: "road",
+      items: roadItems,
+      label: "路上控制",
+      summary: "降低路线失控概率，并让路上险情有更多稳住、搜索或绕开的办法。"
+    });
+  }
+
+  const combatItems = [
+    ...supportLine("防守", support.guardBlock),
+    ...supportLine("弹药伤害", support.ammoDamage),
+    ...supportLine("包扎", support.patchHeal),
+    ...supportLine("医疗战利", support.lootMedicine),
+    ...supportLine("拆解战利", support.lootSalvage),
+    ...supportLine("战后情报", support.lootIntel)
+  ];
+  if (combatItems.length > 0) {
+    stages.push({
+      id: "combat",
+      items: combatItems,
+      label: "战斗医疗",
+      summary: "把基地的训练、医疗和工坊能力带进回合战斗与战后选择。"
+    });
+  }
+
+  const campItems = [
+    ...supportLine("营地热食", support.campCook),
+    ...supportLine("营地休整", support.campRest),
+    ...supportLine("营地侦察", support.campScout),
+    ...supportLine("商店口粮", support.shopRations),
+    ...supportLine("商店情报", support.shopIntel),
+    ...supportLine("商店服务", support.shopService)
+  ];
+  if (campItems.length > 0) {
+    stages.push({
+      id: "camp",
+      items: campItems,
+      label: "营地交易",
+      summary: "提高营地、商店和撤离前补给点的选择质量。"
+    });
+  }
+
+  const totalEffects = supportTotal(support);
+  return {
+    stages,
+    summary: stages.length > 0 ? `${stages.length} 条后勤线，${totalEffects} 点支援已编入出征预案。` : "暂无后勤支援",
+    totalEffects
+  };
+}
+
 const numericSupportKeys = [
   "ammoDamage",
   "campCook",
@@ -313,6 +406,16 @@ const numericSupportKeys = [
   "shopRations",
   "shopService"
 ] as const;
+
+function supportLine(label: string, value: number): string[] {
+  return value > 0 ? [`${label} +${value}`] : [];
+}
+
+function supportTotal(support: ExpeditionSupport) {
+  const numericTotal = numericSupportKeys.reduce((sum, key) => sum + Math.max(0, support[key] ?? 0), 0);
+  const supplyTotal = resourceKeys.reduce((sum, key) => sum + Math.max(0, support.startingSupplies[key] ?? 0), 0);
+  return numericTotal + supplyTotal;
+}
 
 function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: ExpeditionDoctrineId): ExpeditionSupport {
   const next: ExpeditionSupport = {

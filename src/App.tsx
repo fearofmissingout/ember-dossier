@@ -85,6 +85,7 @@ import {
 import {
   basePrepSupportFromAssignments,
   expeditionDoctrineOptions,
+  expeditionSupportPlan,
   mergeExpeditionSupport,
   supportFromFacilities,
   survivorPerkDetails,
@@ -1529,6 +1530,7 @@ function ExpeditionPrep({
   const facilitySupport = supportFromFacilities(state.facilities, selectedDoctrine?.id);
   const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
   const support = mergeExpeditionSupport(facilitySupport, basePrepSupport);
+  const supportPlan = expeditionSupportPlan(support);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const previewFieldSupplies: ResourceBundle = {
     ...draft.loadout
@@ -1723,6 +1725,28 @@ function ExpeditionPrep({
             ))
           ) : (
             <strong>暂无空闲人员准备</strong>
+          )}
+        </div>
+        <div className="support-plan-card" aria-label="后勤预案">
+          <div className="support-plan-heading">
+            <div>
+              <span>后勤预案</span>
+              <strong>{supportPlan.summary}</strong>
+            </div>
+            <small>设施、出征纪律和留守班次会在不同路段触发。</small>
+          </div>
+          {supportPlan.stages.length > 0 ? (
+            <div className="support-plan-grid">
+              {supportPlan.stages.map((stage) => (
+                <article className={`support-plan-stage ${stage.id}`} key={stage.id}>
+                  <span>{stage.label}</span>
+                  <strong>{stage.items.slice(0, 3).join(" / ")}</strong>
+                  <small>{stage.summary}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted-copy">建造设施、选择出征纪律，或让未出征幸存者执行基地班次，就能形成可用的后勤线。</p>
           )}
         </div>
         {journey && activeNode && (

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { completeFacilities } from "../game/facilities";
 import { starterRoomFacilities } from "./content";
-import { basePrepSupportFromAssignments, expeditionDoctrineOptions, mergeExpeditionSupport, supportFromFacilities } from "./progression";
+import { basePrepSupportFromAssignments, expeditionDoctrineOptions, expeditionSupportPlan, mergeExpeditionSupport, supportFromFacilities } from "./progression";
 import { createStarterSession } from "./state";
 
 describe("expedition doctrines", () => {
@@ -85,5 +85,40 @@ describe("expedition doctrines", () => {
     expect(merged.startingSupplies.food).toBe(1);
     expect(merged.startingSupplies.medicine).toBe(1);
     expect(facilities.startingSupplies.food).toBeUndefined();
+  });
+
+  test("expedition support plan groups base support into readable expedition phases", () => {
+    const facilities = supportFromFacilities(completeFacilities(starterRoomFacilities()), "overwatch-route");
+    const prep = {
+      ...supportFromFacilities([]),
+      carryCapacity: 2,
+      guardBlock: 1,
+      roadSecure: 1,
+      shopRations: 1,
+      startingSupplies: { food: 1, medicine: 1, water: 1 }
+    };
+    const support = mergeExpeditionSupport(facilities, prep);
+
+    const plan = expeditionSupportPlan(support);
+
+    expect(plan.summary).toContain("4 条后勤线");
+    expect(plan.totalEffects).toBeGreaterThan(8);
+    expect(plan.stages.map((stage) => stage.id)).toEqual(["departure", "road", "combat", "camp"]);
+    expect(plan.stages[0]).toMatchObject({
+      id: "departure",
+      label: "出门准备"
+    });
+    expect(plan.stages[0].items.join(" / ")).toContain("食物 +1");
+    expect(plan.stages[1].items.join(" / ")).toContain("路线搜索");
+    expect(plan.stages[2].items.join(" / ")).toContain("防守");
+    expect(plan.stages[3].items.join(" / ")).toContain("商店口粮");
+  });
+
+  test("expedition support plan explains when no logistics are available", () => {
+    const plan = expeditionSupportPlan(supportFromFacilities([]));
+
+    expect(plan.summary).toBe("暂无后勤支援");
+    expect(plan.totalEffects).toBe(0);
+    expect(plan.stages).toHaveLength(0);
   });
 });
