@@ -3,15 +3,15 @@ import type { Facility } from "./types";
 export const maxFacilityLevel = 3;
 
 export const facilityBlueprints: Facility[] = [
-  { category: "core", id: "dorm", name: "Dormitory", level: 1, status: "stable", effect: "Rest beds improve daily fatigue recovery and guard endurance." },
-  { category: "core", id: "clinic", name: "Clinic", level: 1, status: "strained", effect: "Treatment improves care shifts and field patching." },
-  { category: "core", id: "generator", name: "Generator", level: 1, status: "strained", effect: "Power improves ammo support and field starts." },
-  { category: "core", id: "watchtower", name: "Watchtower", level: 1, status: "stable", effect: "Lookouts lower daily danger and route pressure." },
-  { category: "survival", id: "kitchen", name: "Kitchen", level: 0, status: "critical", effect: "Unbuilt. Lowers daily food and water upkeep once built." },
-  { category: "survival", id: "barricade", name: "Barricade Line", level: 0, status: "critical", effect: "Unbuilt. Reduces daily danger and strengthens guard actions." },
-  { category: "expedition", id: "training", name: "Training Room", level: 0, status: "critical", effect: "Unbuilt. Improves expedition XP and combat stamina once built." },
-  { category: "expedition", id: "workshop", name: "Workshop", level: 0, status: "critical", effect: "Unbuilt. Improves repair shifts and ammo damage once built." },
-  { category: "utility", id: "radio", name: "Radio Bench", level: 0, status: "critical", effect: "Unbuilt. Improves objective progress and lowers route pressure." }
+  { category: "core", id: "dorm", name: "宿舍", level: 1, status: "stable", effect: "床位改善每日疲劳恢复，并提升守卫耐久。" },
+  { category: "core", id: "clinic", name: "医务室", level: 1, status: "strained", effect: "治疗区提升护理班次和野外包扎效果。" },
+  { category: "core", id: "generator", name: "发电机", level: 1, status: "strained", effect: "供电提升弹药支援和出征开局准备。" },
+  { category: "core", id: "watchtower", name: "瞭望塔", level: 1, status: "stable", effect: "瞭望降低每日危险和路线压力。" },
+  { category: "survival", id: "kitchen", name: "厨房", level: 0, status: "critical", effect: "降低每日食物和饮水消耗。" },
+  { category: "survival", id: "barricade", name: "路障线", level: 0, status: "critical", effect: "降低每日危险，并强化守卫行动。" },
+  { category: "expedition", id: "training", name: "训练室", level: 0, status: "critical", effect: "提升远征经验和战斗耐力。" },
+  { category: "expedition", id: "workshop", name: "工坊", level: 0, status: "critical", effect: "提升修理班次和弹药伤害。" },
+  { category: "utility", id: "radio", name: "电台台架", level: 0, status: "critical", effect: "提升目标进度，并降低路线压力。" }
 ];
 
 const buildCosts: Record<string, number> = {
@@ -52,15 +52,15 @@ export function facilityActionLabel(facility: Facility): "Build" | "Upgrade" | "
 
 export function facilityUpgradePreview(facility: Facility): string[] {
   if (isFacilityMaxed(facility)) {
-    return ["Fully developed", facilityGrowthSummary(facility.id, facility.level)];
+    return ["已完全发展", facilityGrowthSummary(facility.id, facility.level)];
   }
 
   const nextLevel = isFacilityBuilt(facility) ? facility.level + 1 : 1;
-  return [`${isFacilityBuilt(facility) ? "Upgrades" : "Builds"} to Lv.${nextLevel}`, facilityGrowthSummary(facility.id, nextLevel)];
+  return [`${isFacilityBuilt(facility) ? "升级" : "建造"}到 Lv.${nextLevel}`, facilityGrowthSummary(facility.id, nextLevel)];
 }
 
 export function facilityBaseEffect(facilityId: string): string {
-  return facilityBlueprints.find((facility) => facility.id === facilityId)?.effect ?? "Improves base operations.";
+  return facilityBlueprints.find((facility) => facility.id === facilityId)?.effect ?? "改善基地运转。";
 }
 
 export function isFacilityBuilt(facility: Facility): boolean {
@@ -74,36 +74,36 @@ export function isFacilityMaxed(facility: Facility): boolean {
 function facilityGrowthSummary(facilityId: string, level: number): string {
   const summaries: Record<string, (level: number) => string> = {
     barricade: (value) =>
-      `Base: danger pressure -${value}/day, guard shifts +${value}. Expedition: guard +${value}, road secure +${value}, evade +${value}.`,
+      `基地：每日危险压力 -${value}，守卫班次 +${value}。出征：防守 +${value}，稳固路线 +${value}，撤离回避 +${value}。`,
     clinic: (value) => {
       const advanced = Math.max(0, value - 1);
-      return `Base: care shifts +${value * 2}, recovery +${advanced * 2}. Expedition: patch +${advanced * 3}, medical loot +${advanced}, start medicine ${
+      return `基地：护理班次 +${value * 2}，恢复 +${advanced * 2}。出征：包扎 +${advanced * 3}，医疗战利 +${advanced}，开局药品 ${
         value >= 3 ? "+1" : "+0"
       }.`;
     },
     dorm: (value) => {
       const advanced = Math.max(0, value - 1);
-      return `Base: daily recovery +${value * 3}. Expedition: max HP +${advanced * 4}, guard +${advanced}, camp rest +${advanced}.`;
+      return `基地：每日恢复 +${value * 3}。出征：生命上限 +${advanced * 4}，防守 +${advanced}，营地休整 +${advanced}。`;
     },
     generator: (value) => {
       const advanced = Math.max(0, value - 1);
-      return `Base: powered starts stay online. Expedition: ammo damage +${advanced}, start ammo ${value >= 3 ? "+1" : "+0"}.`;
+      return `基地：供电系统保持在线。出征：弹药伤害 +${advanced}，开局弹药 ${value >= 3 ? "+1" : "+0"}。`;
     },
     kitchen: (value) =>
-      `Base: food upkeep -${value}/day, water upkeep -${Math.floor(value / 2)}/day. Expedition: camp meal +${value}, shop rations +${value}.`,
+      `基地：每日食物消耗 -${value}，每日饮水消耗 -${Math.floor(value / 2)}。出征：营地餐食 +${value}，商店口粮 +${value}。`,
     radio: (value) =>
-      `Base: objective ${value >= 2 ? "+1/day and " : ""}repair shifts +${value >= 1 ? 1 : 0}. Expedition: pressure relief +${value}, intel +${value}, camp scout +${value}.`,
-    training: (value) => `Base: no daily upkeep change. Expedition: combat stamina +${value * 2}, carry capacity +${Math.floor(value / 2)}.`,
+      `基地：目标${value >= 2 ? "每日 +1，" : ""}修理班次 +${value >= 1 ? 1 : 0}。出征：压力缓解 +${value}，情报 +${value}，营地侦察 +${value}。`,
+    training: (value) => `基地：不改变每日消耗。出征：战斗耐力 +${value * 2}，背包容量 +${Math.floor(value / 2)}。`,
     watchtower: (value) => {
       const advanced = Math.max(0, value - 1);
-      return `Base: danger pressure -${value}/day. Expedition: pressure relief +${advanced * 2}, road search +${advanced}, road push +${advanced}.`;
+      return `基地：每日危险压力 -${value}。出征：压力缓解 +${advanced * 2}，路线搜索 +${advanced}，强行推进 +${advanced}。`;
     },
     workshop: (value) =>
-      `Base: repair shifts +${Math.floor(value / 2)}, materials on strong repairs. Expedition: ammo damage +${value}, salvage +${value}, shop service +${value}.`
+      `基地：修理班次 +${Math.floor(value / 2)}，高效修理可产出材料。出征：弹药伤害 +${value}，拆解战利 +${value}，商店服务 +${value}。`
   };
   const summarize = summaries[facilityId];
   if (summarize) {
     return summarize(level);
   }
-  return "Improves base and expedition operations.";
+  return "改善基地与出征运转。";
 }

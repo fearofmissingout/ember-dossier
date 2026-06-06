@@ -79,7 +79,7 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
     existingRooms[0] ??
     (await insertReturning<PlaytestRoomRow>(accessToken, "playtest_rooms", {
       host_user_id: account.profile.userId,
-      name: "Tower Run",
+      name: "塔楼据点",
       slug: roomSlug,
       status: "active"
     }));
@@ -150,11 +150,11 @@ export async function loadOrCreateRoom(accessToken: string, roomSlug: string, ac
           }))
         : [
             {
-              body: "Room base initialized. Members can contribute supplies and assign survivors.",
+              body: "共享基地已经建立。成员可以捐入物资、编队出征，也可以安排幸存者处理基地班次。",
               id: `feed-${room.id}-init`,
               kind: "system",
-              timestamp: "Day 1",
-              title: "Shared base online"
+              timestamp: "第 1 天",
+              title: "共享基地上线"
             }
           ],
     hostUserId: room.host_user_id,
@@ -377,7 +377,7 @@ function serializeStarterRoomBase(roomId: string): PlaytestRoomBaseRow {
     day: 1,
     facilities: completeFacilities(starterRoomFacilities()),
     morale: 62,
-    name: "Tower Run Base",
+    name: "塔楼据点基地",
     objective: {
       ...starterObjective(),
       assignments: []

@@ -34,7 +34,7 @@ export function createStarterAccount(userId: string, displayName: string): Accou
   };
 }
 
-export function createStarterRoom(slug: string, name = "Tower Run", hostUserId = "host"): PlaytestRoom {
+export function createStarterRoom(slug: string, name = "塔楼据点", hostUserId = "host"): PlaytestRoom {
   const roomId = `room-${slug}`;
 
   return {
@@ -44,7 +44,7 @@ export function createStarterRoom(slug: string, name = "Tower Run", hostUserId =
       day: 1,
       facilities: completeFacilities(starterRoomFacilities()),
       morale: 62,
-      name: `${name} Base`,
+      name: `${name}基地`,
       objective: starterObjective(),
       resources: starterRoomResources(),
       roomId
@@ -54,11 +54,11 @@ export function createStarterRoom(slug: string, name = "Tower Run", hostUserId =
     createdAt: nowIso(),
     feed: [
       {
-        body: "Room base initialized. Members can contribute supplies and assign survivors.",
+        body: "共享基地已经建立。成员可以捐入物资、编队出征，也可以安排幸存者处理基地班次。",
         id: `feed-${roomId}-init`,
         kind: "system",
-        timestamp: "Day 1",
-        title: "Shared base online"
+        timestamp: "第 1 天",
+        title: "共享基地上线"
       }
     ],
     hostUserId,
@@ -72,7 +72,7 @@ export function createStarterRoom(slug: string, name = "Tower Run", hostUserId =
 
 export function createStarterSession(userId: string, displayName: string, roomSlug: string): PlaytestSession {
   const account = createStarterAccount(userId, displayName);
-  const room = createStarterRoom(roomSlug, "Tower Run", userId);
+  const room = createStarterRoom(roomSlug, "塔楼据点", userId);
   const joinedAt = nowIso();
 
   room.members = [

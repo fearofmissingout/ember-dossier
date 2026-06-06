@@ -172,11 +172,11 @@ const combatActionList: CombatAction[] = ["strike", "guard", "patch", "tactic", 
 const shopActionList: JourneyShopAction[] = ["resupply", "intel", "service"];
 
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
-  { key: "idle", label: "Rest" },
-  { key: "forage", label: "Forage" },
-  { key: "repair", label: "Repair" },
+  { key: "idle", label: "休息" },
+  { key: "forage", label: "搜寻" },
+  { key: "repair", label: "修理" },
   { key: "guard", label: "守卫" },
-  { key: "care", label: "Care" }
+  { key: "care", label: "护理" }
 ];
 
 const guestModeStorageKey = "ember-dossier-guest-mode";
@@ -1309,22 +1309,22 @@ function Survivors({
     <section className="panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Roster</p>
+          <p className="eyebrow">幸存者</p>
           <h2>幸存者档案</h2>
         </div>
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
       </div>
-      <div className="recovery-plan-card" aria-label="Base recovery plan">
+      <div className="recovery-plan-card" aria-label="基地恢复计划">
         <div>
-          <span>Recovery plan</span>
+          <span>恢复计划</span>
           <strong>{recoveryPlan.summary}</strong>
           <small>
-            Clinic Lv.{recoveryPlan.clinicLevel} / Dorm Lv.{recoveryPlan.dormLevel} / {recoveryPlan.recoveringCount} recovering
+            医务室 Lv.{recoveryPlan.clinicLevel} / 宿舍 Lv.{recoveryPlan.dormLevel} / 恢复中 {recoveryPlan.recoveringCount}
           </small>
         </div>
         <div className="recovery-plan-metrics">
           <span>
-            Care shifts <b>{recoveryPlan.careShifts}</b>
+            护理班 <b>{recoveryPlan.careShifts}</b>
           </span>
           <span>
             伤病恢复 <b>{recoveryPlan.likelyInjuryClears}/{recoveryPlan.injuredCount}</b>
@@ -1385,7 +1385,7 @@ function Survivors({
               </div>
               {accountSurvivor && (
                 <div className="xp-line">
-                  <span>XP</span>
+                  <span>经验</span>
                   <div>
                     <i style={{ width: `${Math.max(5, Math.min(100, Math.round((accountSurvivor.xp / xpTarget) * 100)))}%` }} />
                   </div>
@@ -1402,7 +1402,7 @@ function Survivors({
                 <strong>{survivor.fatigue}</strong>
               </div>
               <div className="work-row">
-                <span>Base shift</span>
+                <span>基地班次</span>
                 <select
                   value={baseAssignments.find((assignment) => assignment.survivorId === survivor.id)?.type ?? "idle"}
                   onChange={(event) => onWorkChange(survivor.id, event.target.value as BaseWorkType | "idle")}
@@ -2272,7 +2272,7 @@ function Reports({ state, latestReportId }: { state: GameState; latestReportId: 
     <section className="panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Reports</p>
+          <p className="eyebrow">战报</p>
           <h2>战报与动态流</h2>
         </div>
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
@@ -2303,16 +2303,16 @@ function Facilities({
 }) {
   return (
     <section className="panel">
-      <p className="eyebrow">Facilities</p>
-      <h2>Base development</h2>
-      <div className="development-plan-card" aria-label="Base development plan">
+      <p className="eyebrow">设施</p>
+      <h2>基地发展</h2>
+      <div className="development-plan-card" aria-label="基地发展计划">
         <div>
-          <span>Development plan</span>
+          <span>发展计划</span>
           <strong>{developmentPlan.summary}</strong>
           <small>
             {developmentPlan.recommended.length
-              ? "Recommended projects for the next build cycle"
-              : "All facilities are fully developed"}
+              ? "下一轮建造周期推荐项目"
+              : "所有设施已经完全发展"}
           </small>
         </div>
         <div className="development-project-strip">
@@ -2323,13 +2323,13 @@ function Facilities({
             >
               <div>
                 <strong>{project.name}</strong>
-                <span>{project.action} to Lv.{project.nextLevel}</span>
+                <span>{facilityProjectActionLabel(project.action)}到 Lv.{project.nextLevel}</span>
               </div>
               <small>
-                {project.canAfford ? `${project.cost} materials ready` : `Need ${project.materialDeficit} more materials`}
+                {project.canAfford ? `材料 ${project.cost} 已备齐` : `还缺 ${project.materialDeficit} 材料`}
               </small>
-              <p>{project.baseImpact}</p>
-              <p>{project.expeditionImpact}</p>
+              <p>基地：{project.baseImpact}</p>
+              <p>出征：{project.expeditionImpact}</p>
             </article>
           ))}
         </div>
@@ -2345,9 +2345,9 @@ function Facilities({
             <article className={`facility-card ${facility.status} ${built ? "" : "unbuilt"}`} key={facility.id}>
               <div className="facility-title-row">
                 <h3>{facility.name}</h3>
-                <small>{facility.category ?? "core"}</small>
+                <small>{facilityCategoryLabel(facility.category)}</small>
               </div>
-              <span>{built ? `Level ${facility.level}` : "Blueprint"}</span>
+              <span>{built ? `Lv.${facility.level}` : "蓝图"}</span>
               <p>{facility.effect}</p>
               <div className="facility-upgrade-preview">
                 <strong>{preview[0]}</strong>
@@ -2360,7 +2360,7 @@ function Facilities({
                 onClick={() => onUpgrade(facility.id)}
               >
                 <Wrench size={16} aria-hidden="true" />
-                {maxed ? "Fully developed" : `${actionLabel}: ${cost} materials`}
+                {maxed ? "已完全发展" : `${facilityProjectActionLabel(actionLabel)}：${cost} 材料`}
               </button>
             </article>
           );
@@ -2389,7 +2389,7 @@ function RoomMembers({
 }) {
   return (
     <section className="panel">
-      <p className="eyebrow">Room</p>
+      <p className="eyebrow">房间</p>
       <div className="panel-heading">
         <div>
           <h2>房间与成员</h2>
@@ -2439,7 +2439,7 @@ function Members() {
 
   return (
     <section className="panel">
-      <p className="eyebrow">Room</p>
+      <p className="eyebrow">房间</p>
       <h2>成员与权限</h2>
       <div className="member-list">
         {members.map(([name, role]) => (
@@ -2603,6 +2603,25 @@ function combatCounterTagLabel(tag: "Counter" | "Risk" | "Standard") {
     Standard: "常规"
   };
   return labels[tag];
+}
+
+function facilityProjectActionLabel(action: "Build" | "Upgrade" | "Maxed") {
+  const labels: Record<"Build" | "Upgrade" | "Maxed", string> = {
+    Build: "建造",
+    Upgrade: "升级",
+    Maxed: "满级"
+  };
+  return labels[action];
+}
+
+function facilityCategoryLabel(category?: string) {
+  const labels: Record<string, string> = {
+    core: "核心",
+    expedition: "出征",
+    survival: "生存",
+    utility: "支援"
+  };
+  return labels[category ?? "core"] ?? "核心";
 }
 
 function shopActionFromJourneyAction(action: JourneyAction): JourneyShopAction | null {

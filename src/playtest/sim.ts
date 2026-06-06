@@ -24,7 +24,7 @@ export function applyContribution(session: PlaytestSession, userId: string, reso
   for (const key of resourceKeys) {
     const amount = Math.max(0, Math.floor(resources[key]));
     if (amount > next.account.resources[key]) {
-      throw new Error(`Not enough ${key} to contribute.`);
+      throw new Error(`个人库存里的${resourceLabels[key]}不足，无法捐入。`);
     }
 
     next.account.resources[key] -= amount;
@@ -39,11 +39,11 @@ export function applyContribution(session: PlaytestSession, userId: string, reso
     userId
   });
   next.room.feed.unshift({
-    body: `${actorName(next, userId)} moved supplies from their account stash into the shared base: ${formatResources(resources)}.`,
+    body: `${actorName(next, userId)}把个人库存转入共同基地：${formatResources(resources)}。`,
     id: `feed-contribution-${Date.now()}`,
     kind: "member",
-    timestamp: "Just now",
-    title: "Base supplies contributed"
+    timestamp: "刚刚",
+    title: "基地收到捐入物资"
   });
 
   refreshUiState(next);
@@ -56,7 +56,7 @@ export function assignSurvivorToRoom(session: PlaytestSession, userId: string, s
 
   const survivor = next.account.survivors.find((candidate) => candidate.id === survivorId);
   if (!survivor) {
-    throw new Error(`Unknown survivor: ${survivorId}`);
+    throw new Error(`未知幸存者：${survivorId}`);
   }
 
   survivor.status = "assigned";
@@ -80,11 +80,11 @@ export function setBaseAssignment(session: PlaytestSession, userId: string, surv
 
   const survivor = next.account.survivors.find((candidate) => candidate.id === survivorId);
   if (!survivor) {
-    throw new Error(`Unknown survivor: ${survivorId}`);
+    throw new Error(`未知幸存者：${survivorId}`);
   }
 
   if (survivor.status === "assigned") {
-    throw new Error("Assigned expedition survivors cannot work a base shift.");
+    throw new Error("已派遣出征的幸存者不能安排基地班次。");
   }
 
   next.room.baseAssignments = next.room.baseAssignments.filter(
@@ -103,12 +103,12 @@ export function setBaseAssignment(session: PlaytestSession, userId: string, surv
   next.room.feed.unshift({
     body:
       type === "idle"
-        ? `${survivor.name} is off shift and will focus on rest.`
-        : `${survivor.name} is assigned to ${baseWorkLabels[type]} until the next day settlement.`,
+        ? `${survivor.name} 下班休息，优先恢复状态。`
+        : `${survivor.name} 已安排到${baseWorkLabels[type]}，将在下次日结时生效。`,
     id: `feed-base-assignment-${Date.now()}`,
     kind: "member",
-    timestamp: "Just now",
-    title: "Base shift updated"
+    timestamp: "刚刚",
+    title: "基地班次已更新"
   });
 
   refreshUiState(next);
@@ -130,7 +130,7 @@ export function resolvePlaytestExpedition(
 
   for (const survivorId of request.survivorIds) {
     if (!assignedIds.has(survivorId)) {
-      throw new Error(`Survivor ${survivorId} is not assigned to this room.`);
+      throw new Error(`幸存者 ${survivorId} 尚未加入这个房间。`);
     }
   }
 
@@ -172,7 +172,7 @@ export function resolvePlaytestExpedition(
         (perk) => !survivorPerkDetails(survivor).some((existing) => existing.id === perk.id)
       );
       progressionLogs.push(
-        `${survivor.name} reached level ${nextLevel}${unlocked.length ? ` and unlocked ${unlocked.map((perk) => perk.label).join(", ")}` : ""}.`
+        `${survivor.name} 升到 ${nextLevel} 级${unlocked.length ? `，解锁 ${unlocked.map((perk) => perk.label).join("、")}` : ""}。`
       );
     }
 
@@ -219,11 +219,11 @@ export function treatSurvivor(session: PlaytestSession, userId: string, survivor
 
   const survivor = next.account.survivors.find((candidate) => candidate.id === survivorId);
   if (!survivor) {
-    throw new Error(`Unknown survivor: ${survivorId}`);
+    throw new Error(`未知幸存者：${survivorId}`);
   }
 
   if (next.room.base.resources.medicine < 1) {
-    throw new Error("Not enough medicine to treat a survivor.");
+    throw new Error("基地药品不足，无法治疗幸存者。");
   }
 
   next.room.base.resources.medicine -= 1;
@@ -231,11 +231,11 @@ export function treatSurvivor(session: PlaytestSession, userId: string, survivor
   survivor.fatigue = clamp(survivor.fatigue - 18, 0, 100);
   survivor.status = survivor.injuries.length > 0 ? "recovering" : "available";
   next.room.feed.unshift({
-    body: `${survivor.name} spent a quiet shift in the medical corner. Medicine -1, fatigue eased, and one injury was cleared.`,
+    body: `${survivor.name} 在医务角安静处理了一班。药品 -1，疲劳下降，并清除 1 个伤病。`,
     id: `feed-treatment-${Date.now()}`,
     kind: "system",
     timestamp: "刚刚",
-    title: "Treatment completed"
+    title: "治疗完成"
   });
 
   refreshUiState(next);
@@ -248,31 +248,31 @@ export function upgradeFacility(session: PlaytestSession, userId: string, facili
 
   const facility = next.room.base.facilities.find((candidate) => candidate.id === facilityId);
   if (!facility) {
-    throw new Error(`Unknown facility: ${facilityId}`);
+    throw new Error(`未知设施：${facilityId}`);
   }
 
   const wasBuilt = isFacilityBuilt(facility);
   if (isFacilityMaxed(facility)) {
-    throw new Error(`${facility.name} is already fully developed.`);
+    throw new Error(`${facility.name} 已经完全发展。`);
   }
 
   const materialCost = facilityActionCost(facility);
   if (next.room.base.resources.materials < materialCost) {
-    throw new Error(`Not enough materials to ${wasBuilt ? "upgrade" : "build"} this facility.`);
+    throw new Error(`基地材料不足，无法${wasBuilt ? "升级" : "建造"}该设施。`);
   }
 
   next.room.base.resources.materials -= materialCost;
   facility.level = wasBuilt ? facility.level + 1 : 1;
   facility.status = facility.level >= 3 ? "stable" : "strained";
-  facility.effect = `${facilityBaseEffect(facility.id)} / Lv.${facility.level}: stronger base and expedition support.`;
+  facility.effect = `${facilityBaseEffect(facility.id)} / Lv.${facility.level}：基地与出征支援增强。`;
   next.room.feed.unshift({
-    body: `${facility.name} ${wasBuilt ? "reached" : "came online at"} level ${facility.level}. Materials -${materialCost}; ${facilityEffectSummary(
+    body: `${facility.name}${wasBuilt ? "升级到" : "建成并达到"} Lv.${facility.level}。材料 -${materialCost}；${facilityEffectSummary(
       facility.id
-    )}.`,
+    )}。`,
     id: `feed-facility-${Date.now()}`,
     kind: "system",
     timestamp: "刚刚",
-    title: wasBuilt ? "Facility upgraded" : "Facility built"
+    title: wasBuilt ? "设施升级完成" : "设施建造完成"
   });
 
   refreshUiState(next);
@@ -284,7 +284,7 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
   ensureUser(next, userId);
 
   if (next.room.base.objective.status !== "active") {
-    throw new Error("This room objective is already resolved.");
+    throw new Error("这个房间目标已经结算。");
   }
 
   const previousDay = next.room.base.day;
@@ -318,35 +318,35 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
 
   const logs = [
     ...shift.logs,
-    `Upkeep: food -${foodNeed - foodShortage}/${foodNeed}, water -${waterNeed - waterShortage}/${waterNeed}.`,
+    `日常消耗：食物 -${foodNeed - foodShortage}/${foodNeed}，水 -${waterNeed - waterShortage}/${waterNeed}。`,
     shortagePressure > 0
-      ? `Pressure: shortages hit morale and make the base louder. Morale -${shortagePressure * 6}, danger +${shortagePressure * 3}.`
-      : "Pressure: the base makes it through the night without ration panic. Morale +2.",
-    `Recovery: ${recoveredCount} survivor${recoveredCount === 1 ? "" : "s"} rested. Fatigue -${recovery} before injuries.`,
+      ? `压力：短缺打击士气，也让基地更容易暴露。士气 -${shortagePressure * 6}，危险 +${shortagePressure * 3}。`
+      : "压力：基地没有发生口粮恐慌，平稳熬过夜晚。士气 +2。",
+    `恢复：${recoveredCount} 名幸存者休息。伤病惩罚前疲劳 -${recovery}。`,
     ...baseEvent.logs
   ];
   if (kitchenLevel > 0) {
-    logs.push(`Kitchen: upkeep reduced by level ${kitchenLevel}.`);
+    logs.push(`厨房：Lv.${kitchenLevel} 降低了日常消耗。`);
   }
   if (barricadeLevel > 0) {
-    logs.push(`Barricade: danger pressure -${barricadeLevel}.`);
+    logs.push(`路障线：危险压力 -${barricadeLevel}。`);
   }
   if (radioObjectiveBonus > 0) {
-    logs.push(`Radio: tower coordination adds Objective +${radioObjectiveBonus}.`);
+    logs.push(`电台：塔台协同让目标 +${radioObjectiveBonus}。`);
   }
 
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
-    logs.push("Objective: the communications tower is stable. The room survives this scenario.");
+    logs.push("目标：通讯塔稳定上线，房间撑过了这一局。");
   } else if (next.room.base.day > next.room.base.objective.deadlineDay) {
     next.room.base.objective.status = "lost";
-    logs.push("Objective: the repair deadline passed before the tower came online.");
+    logs.push("目标：修复期限已过，通讯塔没能上线。");
   } else {
     logs.push(
-      `Objective: ${next.room.base.objective.repairedParts}/${next.room.base.objective.requiredParts} repaired, ${Math.max(
+      `目标：已修复 ${next.room.base.objective.repairedParts}/${next.room.base.objective.requiredParts}，还剩 ${Math.max(
         0,
         next.room.base.objective.deadlineDay - next.room.base.day + 1
-      )} day(s) remain.`
+      )} 天。`
     );
   }
   next.room.baseAssignments = [];
@@ -355,8 +355,8 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
     body: logs.join("\n"),
     id: `feed-day-${Date.now()}`,
     kind: "system",
-    timestamp: `Day ${nextDay}`,
-    title: next.room.base.objective.status === "lost" ? "Objective failed" : `Day ${nextDay}: ${baseEvent.title}`
+    timestamp: `第 ${nextDay} 天`,
+    title: next.room.base.objective.status === "lost" ? "目标失败" : `第 ${nextDay} 天：${baseEvent.title}`
   });
 
   refreshUiState(next);
@@ -366,37 +366,37 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
 const resourceKeys = ["food", "water", "materials", "medicine", "fuel", "ammo"] as const;
 
 const resourceLabels: Record<ResourceKey, string> = {
-  ammo: "Ammo",
-  food: "Food",
-  fuel: "Fuel",
-  materials: "Materials",
-  medicine: "Medicine",
-  water: "Water"
+  ammo: "弹药",
+  food: "食物",
+  fuel: "燃料",
+  materials: "材料",
+  medicine: "药品",
+  water: "水"
 };
 
 const baseWorkLabels: Record<BaseWorkType, string> = {
-  care: "clinic care",
-  forage: "foraging",
-  guard: "watch duty",
-  repair: "tower repair"
+  care: "护理班",
+  forage: "搜寻班",
+  guard: "守卫班",
+  repair: "修理班"
 };
 
 const facilityEffectSummaries: Record<string, string> = {
-  barricade: "daily danger and guard pressure improve",
-  clinic: "care shifts and field patching improve",
-  dorm: "recovery and guard endurance improve",
-  generator: "ammo support and powered field starts improve",
-  kitchen: "daily upkeep and foraging improve",
-  radio: "tower coordination and route pressure improve",
-  training: "expedition XP and combat stamina improve",
-  watchtower: "daily danger and route pressure improve",
-  workshop: "repair shifts and ammo damage improve"
+  barricade: "每日危险和守卫压力得到改善",
+  clinic: "护理班次和野外包扎得到改善",
+  dorm: "恢复效率和守卫耐久得到改善",
+  generator: "弹药支援和出征供电开局得到改善",
+  kitchen: "日常消耗和搜寻收益得到改善",
+  radio: "塔台协同和路线压力得到改善",
+  training: "远征经验和战斗耐力得到改善",
+  watchtower: "每日危险和路线压力得到改善",
+  workshop: "修理班次和弹药伤害得到改善"
 };
 
-const combatScarNames = ["cracked ribs", "torn shoulder", "infected bite", "shrapnel cut"];
+const combatScarNames = ["肋骨裂伤", "肩部撕裂", "感染咬伤", "弹片割伤"];
 
 function facilityEffectSummary(facilityId: string) {
-  return facilityEffectSummaries[facilityId] ?? "base operations improve";
+  return facilityEffectSummaries[facilityId] ?? "基地运转得到改善";
 }
 
 function ensureUser(session: PlaytestSession, userId: string) {
@@ -415,12 +415,30 @@ function formatResources(resources: ResourceBundle) {
     .map((key) => `${resourceLabels[key]} +${resources[key]}`)
     .join(", ");
 
-  return summary || "no usable supplies";
+  return summary || "没有可用物资";
 }
 
 function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
-  const status = request.extractionStatus === "early" ? "returned early" : "completed the route";
-  return `${report.squadNames.join(", ")} ${status} at ${report.locationName}. Outcome ${report.outcome}. Main reward: ${formatResources(report.reward)}.`;
+  const status = request.extractionStatus === "early" ? "提前折返" : "完成路线";
+  return `${report.squadNames.join("、")}在${report.locationName}${status}。结果：${expeditionOutcomeLabel(report.outcome)}。主要收获：${formatResources(report.reward)}。`;
+}
+
+function expeditionOutcomeLabel(outcome: ExpeditionReport["outcome"]) {
+  const labels: Record<ExpeditionReport["outcome"], string> = {
+    clean: "干净完成",
+    costly: "代价惨重",
+    rough: "艰难完成"
+  };
+  return labels[outcome];
+}
+
+function riskStrategyLabel(risk: PlaytestExpeditionRequest["risk"]) {
+  const labels: Record<PlaytestExpeditionRequest["risk"], string> = {
+    cautious: "保守",
+    greedy: "贪婪",
+    standard: "标准"
+  };
+  return labels[risk];
 }
 
 function pickResources(resources: ResourceBundle & { morale?: number; danger?: number }): ResourceBundle {
@@ -457,7 +475,7 @@ function applyExtractionRewardScale(resources: ResourceBundle & { morale?: numbe
   }
 
   report.logs.unshift(
-    `Early extraction: the squad returns before reaching the site core. Main site reward reduced${reduced.length ? ` (${reduced.join(", ")})` : ""}.`
+    `提前撤离：队伍在抵达地点核心前折返。主要地点奖励降低${reduced.length ? `（${reduced.join("，")}）` : ""}。`
   );
 }
 
@@ -551,9 +569,7 @@ export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
     likelyInjuryClears,
     priorityPatients,
     recoveringCount,
-    summary: `${careWorkers.length} care shift${careWorkers.length === 1 ? "" : "s"}, ${likelyInjuryClears} injury clear${
-      likelyInjuryClears === 1 ? "" : "s"
-    } likely, fatigue -${dailyRecovery} baseline.`
+    summary: `${careWorkers.length} 个护理班，预计清除 ${likelyInjuryClears} 个伤病，基础疲劳恢复 -${dailyRecovery}。`
   };
 }
 
@@ -591,7 +607,7 @@ export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPl
     materials,
     projects,
     recommended: activeProjects.slice(0, 3),
-    summary: `${materials} materials available. ${affordableCount} project${affordableCount === 1 ? "" : "s"} affordable, ${blockedCount} gated.`
+    summary: `当前材料 ${materials}。可推进 ${affordableCount} 个项目，仍受材料限制 ${blockedCount} 个。`
   };
 }
 
@@ -610,15 +626,15 @@ function buildProcess(session: PlaytestSession, request: PlaytestExpeditionReque
     resourceBonus: {}
   };
   const logs = [
-    `Departure: ${lead?.name ?? "The squad"} checks the route markers, spends the packed supplies, and leaves before the tower siren cycles again.`,
-    `Approach: ${specialist?.name ?? "The specialist"} reads the site pressure. Risk posture is ${request.risk}; the team keeps one exit in mind.`
+    `出发：${lead?.name ?? "队伍"}检查路线标记，消耗打包物资，并赶在塔台警报再次循环前离开。`,
+    `接近：${specialist?.name ?? "专精队员"}判断地点压力。风险策略为${riskStrategyLabel(request.risk)}，队伍始终记着一条撤离线。`
   ];
   if (request.journeyLogs?.length) {
-    logs.push(...request.journeyLogs.map((line) => `Journey: ${line}`));
+    logs.push(...request.journeyLogs.map((line) => `路线：${line}`));
   }
 
   if (request.extractionStatus === "early") {
-    logs.push("Extraction: the team cuts the route short, keeps field salvage, and avoids committing deeper injuries.");
+    logs.push("撤离：队伍提前截断路线，保住野外战利，并避免更深伤病。");
     return {
       ...process,
       logs
@@ -630,24 +646,24 @@ function buildProcess(session: PlaytestSession, request: PlaytestExpeditionReque
     process.dangerDelta = 1;
     process.injury = "擦伤";
     const target = squad[0];
-    logs.push(`Encounter: a blocked stairwell turns into a noisy detour. Danger +1${target ? `, ${target.name} suffers 擦伤` : ""}.`);
+    logs.push(`遭遇：堵死的楼梯间变成吵闹绕路。危险 +1${target ? `，${target.name} 受到擦伤` : ""}。`);
   } else if (encounterRoll < 0.5) {
     process.resourceBonus.materials = 1;
-    logs.push("Encounter: the team strips a maintenance locker before leaving. Materials +1.");
+    logs.push("遭遇：队伍离开前拆空一个检修柜。材料 +1。");
   } else if (encounterRoll < 0.75) {
     process.objectiveBonus = 1;
-    logs.push("Encounter: a clean relay diagram matches the tower problem. Objective +1.");
+    logs.push("遭遇：一张清晰中继图正好对应塔台问题。目标 +1。");
   } else {
     process.resourceBonus.medicine = 1;
-    logs.push("Encounter: a sealed first-aid cache survives under a collapsed desk. Medicine +1.");
+    logs.push("遭遇：坍塌桌下还压着一个密封急救缓存。药品 +1。");
   }
 
   const pressureRoll = rolls[4] ?? rolls[1] ?? 0.5;
   if (pressureRoll > 0.72 && report.outcome !== "clean") {
     process.moraleDelta = -1;
-    logs.push("Complication: the retreat gets messy and everyone hears it over the radio. Morale -1.");
+    logs.push("变故：撤退过程有些混乱，所有人都从电台里听见了。士气 -1。");
   } else {
-    logs.push("Extraction: the squad returns with enough detail for the next team to make better choices.");
+    logs.push("撤离：队伍带回足够细节，下一队能做出更好的路线选择。");
   }
 
   return {
@@ -678,7 +694,7 @@ function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpedit
   if (trophies.length) {
     session.room.base.resources.materials += Math.min(2, trophies.length);
     report.reward.materials += Math.min(2, trophies.length);
-    report.logs.unshift(`Combat trophies recovered: ${trophies.join(", ")}. Materials +${Math.min(2, trophies.length)}.`);
+    report.logs.unshift(`战斗战利品回收：${trophies.join("、")}。材料 +${Math.min(2, trophies.length)}。`);
   }
 
   if (scars <= 0) {
@@ -704,10 +720,10 @@ function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpedit
     if (!target.injuries.includes(injury)) {
       target.injuries = [...target.injuries, injury];
       target.status = "recovering";
-      report.logs.unshift(`${target.name} returns with ${injury} from the fight.`);
+      report.logs.unshift(`${target.name} 从战斗中带回${injury}。`);
     } else {
       target.fatigue = clamp(target.fatigue + 10, 0, 100);
-      report.logs.unshift(`${target.name} aggravates ${injury}. Fatigue +10.`);
+      report.logs.unshift(`${target.name} 加重了${injury}。疲劳 +10。`);
     }
   }
 }
@@ -736,46 +752,46 @@ function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage
   const logs: string[] = [];
 
   if (eventIndex === 0) {
-    const title = "Fence breach";
+    const title = "围栏缺口";
     const support = coverage.guard + facilityLevel(session, "watchtower") + facilityLevel(session, "barricade");
     if (support >= 3) {
       const relief = Math.min(6, support);
       session.room.base.danger = clamp(session.room.base.danger - relief, 0, 100);
       session.room.base.morale = clamp(session.room.base.morale + 1, 0, 100);
-      logs.push(`Base event: ${title}. Guards, tower sightlines, and barricades close the gap before dawn. Danger -${relief}, morale +1.`);
+      logs.push(`基地事件：${title}。守卫、瞭望塔视野和路障在天亮前堵住缺口。危险 -${relief}，士气 +1。`);
     } else if (support > 0) {
       session.room.base.danger = clamp(session.room.base.danger + 2, 0, 100);
-      logs.push(`Base event: ${title}. The watch catches it late, but stops a worse breach. Danger +2.`);
+      logs.push(`基地事件：${title}。值守发现得有点晚，但阻止了更糟的突破。危险 +2。`);
     } else {
       session.room.base.danger = clamp(session.room.base.danger + 8, 0, 100);
       session.room.base.morale = clamp(session.room.base.morale - 3, 0, 100);
-      logs.push(`Base event: ${title}. No one is watching the blind side. Danger +8, morale -3.`);
+      logs.push(`基地事件：${title}。盲侧无人看守。危险 +8，士气 -3。`);
     }
     return { logs, title };
   }
 
   if (eventIndex === 1) {
-    const title = "Spoiled stores";
+    const title = "库存变质";
     const support = coverage.forage + facilityLevel(session, "kitchen");
     if (support >= 2) {
       const food = 1 + Math.floor(support / 2);
       session.room.base.resources.food += food;
       session.room.base.resources.water += 1;
-      logs.push(`Base event: ${title}. The kitchen crew catches the rot and turns safe scraps into rations. Food +${food}, Water +1.`);
+      logs.push(`基地事件：${title}。厨房班发现霉变，并把安全边料转成口粮。食物 +${food}，水 +1。`);
     } else if (support > 0) {
-      logs.push(`Base event: ${title}. A forager isolates the bad crates before they spread. No extra loss.`);
+      logs.push(`基地事件：${title}。搜寻员在坏箱扩散前隔离了它。没有额外损失。`);
     } else {
       const foodLoss = spendWithShortage(session.room.base.resources, "food", 2);
       const waterLoss = spendWithShortage(session.room.base.resources, "water", 1);
       const pressure = foodLoss + waterLoss;
       session.room.base.morale = clamp(session.room.base.morale - 2 - pressure * 2, 0, 100);
-      logs.push(`Base event: ${title}. A sour crate contaminates the shelf. Food -${2 - foodLoss}/2, Water -${1 - waterLoss}/1, morale -${2 + pressure * 2}.`);
+      logs.push(`基地事件：${title}。一箱酸败物资污染了货架。食物 -${2 - foodLoss}/2，水 -${1 - waterLoss}/1，士气 -${2 + pressure * 2}。`);
     }
     return { logs, title };
   }
 
   if (eventIndex === 2) {
-    const title = "Sick bay rush";
+    const title = "医务高峰";
     const support = coverage.care + facilityLevel(session, "clinic");
     const patient = session.account.survivors
       .filter((survivor) => survivor.status !== "assigned")
@@ -788,26 +804,26 @@ function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage
           patient.injuries = patient.injuries.slice(1);
         }
         patient.status = patient.injuries.length > 0 ? "recovering" : "available";
-        logs.push(`Base event: ${title}. Clinic coverage stabilizes ${patient.name}. Fatigue -${fatigueRelief}, one injury cleared if present.`);
+        logs.push(`基地事件：${title}。医务覆盖稳定了 ${patient.name}。疲劳 -${fatigueRelief}，若有伤病则清除 1 个。`);
       } else {
         session.room.base.resources.medicine += 1;
-        logs.push(`Base event: ${title}. The clinic has a quiet day and repacks field kits. Medicine +1.`);
+        logs.push(`基地事件：${title}。医务室难得安静，重新整理了野外药包。药品 +1。`);
       }
     } else if (support > 0) {
       session.room.base.resources.medicine += 1;
-      logs.push(`Base event: ${title}. One caretaker keeps the line moving and saves usable supplies. Medicine +1.`);
+      logs.push(`基地事件：${title}。一名护理员维持队列，省下可用药品。药品 +1。`);
     } else {
       const shortage = spendWithShortage(session.room.base.resources, "medicine", 1);
       if (patient) {
         patient.fatigue = clamp(patient.fatigue + 6, 0, 100);
       }
       session.room.base.morale = clamp(session.room.base.morale - (shortage > 0 ? 4 : 2), 0, 100);
-      logs.push(`Base event: ${title}. No care shift is ready. Medicine -${1 - shortage}/1${patient ? `, ${patient.name} fatigue +6` : ""}, morale -${shortage > 0 ? 4 : 2}.`);
+      logs.push(`基地事件：${title}。没有护理班准备好。药品 -${1 - shortage}/1${patient ? `，${patient.name} 疲劳 +6` : ""}，士气 -${shortage > 0 ? 4 : 2}。`);
     }
     return { logs, title };
   }
 
-  const title = "Signal window";
+  const title = "信号窗口";
   const support = coverage.repair + facilityLevel(session, "radio") + Math.floor(facilityLevel(session, "workshop") / 2);
   if (support >= 2) {
     const objective = Math.min(2, Math.max(1, Math.floor(support / 2)));
@@ -816,13 +832,13 @@ function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage
       session.room.base.objective.repairedParts + objective
     );
     session.room.base.resources.materials += 1;
-    logs.push(`Base event: ${title}. The room catches a clean tower ping and acts fast. Objective +${objective}, Materials +1.`);
+    logs.push(`基地事件：${title}。房间捕捉到一次干净的塔台回波，并快速行动。目标 +${objective}，材料 +1。`);
   } else if (support > 0) {
     session.room.base.objective.repairedParts = Math.min(session.room.base.objective.requiredParts, session.room.base.objective.repairedParts + 1);
-    logs.push(`Base event: ${title}. A rough signal still gives the repair crew one useful tower note. Objective +1.`);
+    logs.push(`基地事件：${title}。粗糙信号仍给修理队一条可用塔台笔记。目标 +1。`);
   } else {
     session.room.base.danger = clamp(session.room.base.danger + 3, 0, 100);
-    logs.push(`Base event: ${title}. The tower clicks through an unanswered frequency. Danger +3.`);
+    logs.push(`基地事件：${title}。塔台在无人应答的频段里咔哒作响。危险 +3。`);
   }
   return { logs, title };
 }
@@ -853,9 +869,9 @@ function resolveBaseAssignments(session: PlaytestSession) {
       session.room.base.resources.water += Math.max(1, yieldScore - 1);
       survivor.fatigue = clamp(survivor.fatigue + 6, 0, 100);
       logs.push(
-        `${survivor.name} foraged: Food +${yieldScore}, Water +${Math.max(1, yieldScore - 1)}, fatigue +6${
-          kitchenBonus > 0 ? `, kitchen bonus +${kitchenBonus}` : ""
-        }.`
+        `${survivor.name} 执行搜寻：食物 +${yieldScore}，水 +${Math.max(1, yieldScore - 1)}，疲劳 +6${
+          kitchenBonus > 0 ? `，厨房加成 +${kitchenBonus}` : ""
+        }。`
       );
     }
 
@@ -870,9 +886,9 @@ function resolveBaseAssignments(session: PlaytestSession) {
       session.room.base.resources.materials += repairScore > 1 ? 1 : 0;
       survivor.fatigue = clamp(survivor.fatigue + 5, 0, 100);
       logs.push(
-        `${survivor.name} repaired the tower: Objective +${repairScore}${repairScore > 1 ? ", Materials +1" : ""}, fatigue +5${
-          workshopBonus + radioBonus > 0 ? `, facility bonus +${workshopBonus + radioBonus}` : ""
-        }.`
+        `${survivor.name} 修理通讯塔：目标 +${repairScore}${repairScore > 1 ? "，材料 +1" : ""}，疲劳 +5${
+          workshopBonus + radioBonus > 0 ? `，设施加成 +${workshopBonus + radioBonus}` : ""
+        }。`
       );
     }
 
@@ -884,7 +900,7 @@ function resolveBaseAssignments(session: PlaytestSession) {
       );
       dangerReduction += guardScore;
       survivor.fatigue = clamp(survivor.fatigue + 4, 0, 100);
-      logs.push(`${survivor.name} kept watch: danger pressure -${guardScore}, fatigue +4${barricadeBonus > 0 ? `, barricade +${barricadeBonus}` : ""}.`);
+      logs.push(`${survivor.name} 执行守卫：危险压力 -${guardScore}，疲劳 +4${barricadeBonus > 0 ? `，路障 +${barricadeBonus}` : ""}。`);
     }
 
     if (assignment.type === "care") {
@@ -896,16 +912,16 @@ function resolveBaseAssignments(session: PlaytestSession) {
           patient.injuries = patient.injuries.slice(1);
         }
         patient.status = patient.injuries.length > 0 ? "recovering" : "available";
-        logs.push(`${survivor.name} handled care: ${patient.name} fatigue -${healScore}${healScore >= 10 ? ", one injury cleared if present" : ""}.`);
+        logs.push(`${survivor.name} 执行护理：${patient.name} 疲劳 -${healScore}${healScore >= 10 ? "，若有伤病则清除 1 个" : ""}。`);
       } else {
-        logs.push(`${survivor.name} handled care, but no patient needed help.`);
+        logs.push(`${survivor.name} 执行护理，但当前没有需要处理的患者。`);
       }
       survivor.fatigue = clamp(survivor.fatigue + 3, 0, 100);
     }
   }
 
   if (logs.length === 0) {
-    logs.push("Base shifts: no one was assigned, so the base only handled upkeep.");
+    logs.push("基地班次：无人分配，基地只处理基础维持。");
   }
 
   return {
@@ -949,46 +965,46 @@ function developmentProjectScore(facilityId: string, category: string, action: "
 function facilityDevelopmentImpact(facilityId: string): { base: string; expedition: string } {
   const impacts: Record<string, { base: string; expedition: string }> = {
     barricade: {
-      base: "Lowers danger and makes guard shifts stronger.",
-      expedition: "Improves guard, route secure, and extraction evade choices."
+      base: "降低危险，并让守卫班更强。",
+      expedition: "强化防守、稳固路线和撤离回避选择。"
     },
     clinic: {
-      base: "Improves care shifts, fatigue recovery, and injury clearing.",
-      expedition: "Improves patch actions, medical loot, and field treatment."
+      base: "提升护理班、疲劳恢复和伤病清除。",
+      expedition: "强化包扎行动、医疗战利和野外治疗。"
     },
     dorm: {
-      base: "Improves daily fatigue recovery and keeps the roster usable.",
-      expedition: "Raises squad stamina and improves camp rest value."
+      base: "提升每日疲劳恢复，让队伍更可持续。",
+      expedition: "提高队伍耐力，并提升营地休整价值。"
     },
     generator: {
-      base: "Keeps powered systems online and supports ammo prep.",
-      expedition: "Improves ammo damage and can add starting ammo."
+      base: "保持供电系统在线，并支撑弹药准备。",
+      expedition: "提升弹药伤害，并可能增加开局弹药。"
     },
     kitchen: {
-      base: "Reduces food and water pressure during day settlement.",
-      expedition: "Improves camp meals, shop rations, and road supplies."
+      base: "降低日结时的食物和饮水压力。",
+      expedition: "强化营地餐食、商店口粮和路线补给。"
     },
     radio: {
-      base: "Improves objective repair windows and coordination.",
-      expedition: "Improves pressure relief, route intel, scout camps, and shop intel."
+      base: "改善目标修复窗口和基地协同。",
+      expedition: "强化减压、路线情报、营地侦察和商店情报。"
     },
     training: {
-      base: "Adds a long-term combat development track.",
-      expedition: "Improves stamina, carry capacity, and opening combat drills."
+      base: "提供长期战斗成长轨道。",
+      expedition: "提升耐力、背包容量和开局战斗演练。"
     },
     watchtower: {
-      base: "Lowers daily danger and helps guards catch problems early.",
-      expedition: "Improves pressure relief, route search, route push, and evade."
+      base: "降低每日危险，并帮助守卫更早发现问题。",
+      expedition: "强化减压、路线搜索、强行推进和回避。"
     },
     workshop: {
-      base: "Improves repair shifts and turns strong repairs into materials.",
-      expedition: "Improves ammo damage, salvage, shop service, and opening exposes."
+      base: "强化修理班，并把高效修理转成材料。",
+      expedition: "强化弹药伤害、拆解、商店服务和开局暴露。"
     }
   };
 
   return impacts[facilityId] ?? {
-    base: "Improves base operations.",
-    expedition: "Improves expedition support."
+    base: "改善基地运转。",
+    expedition: "改善出征支援。"
   };
 }
 

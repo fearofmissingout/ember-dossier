@@ -91,11 +91,11 @@ describe("playtest room loop", () => {
     expect(next.room.feed[0]).toEqual(
       expect.objectContaining({
         kind: "member",
-        title: "Base supplies contributed"
+        title: "基地收到捐入物资"
       })
     );
     expect(next.room.feed[0]?.body).toContain("Alice");
-    expect(next.room.feed[0]?.body).toContain("Food +2");
+    expect(next.room.feed[0]?.body).toContain("食物 +2");
   });
 
   test("assigns an account survivor to the room without transferring ownership", () => {
@@ -131,7 +131,7 @@ describe("playtest room loop", () => {
     session = setBaseAssignment(session, "user-a", session.account.survivors[2].id, "guard");
 
     expect(session.room.baseAssignments).toHaveLength(3);
-    expect(session.room.feed[0]?.title).toBe("Base shift updated");
+    expect(session.room.feed[0]?.title).toBe("基地班次已更新");
 
     const next = advanceRoomDay(session, "user-a");
 
@@ -139,9 +139,9 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.food).toBeGreaterThan(6);
     expect(next.room.base.objective.repairedParts).toBeGreaterThan(0);
     expect(next.room.base.danger).toBeLessThan(20);
-    expect(next.room.feed[0]?.body).toContain("foraged");
-    expect(next.room.feed[0]?.body).toContain("repaired the tower");
-    expect(next.room.feed[0]?.body).toContain("kept watch");
+    expect(next.room.feed[0]?.body).toContain("执行搜寻");
+    expect(next.room.feed[0]?.body).toContain("修理通讯塔");
+    expect(next.room.feed[0]?.body).toContain("执行守卫");
   });
 
   test("base instinct perk improves base shift output", () => {
@@ -155,7 +155,7 @@ describe("playtest room loop", () => {
     const next = advanceRoomDay(session, "user-a");
 
     expect(next.room.base.objective.repairedParts).toBeGreaterThanOrEqual(3);
-    expect(next.room.feed[0]?.body).toContain("repaired the tower");
+    expect(next.room.feed[0]?.body).toContain("修理通讯塔");
   });
 
   test("previews base recovery capacity from care shifts and facilities", () => {
@@ -186,7 +186,7 @@ describe("playtest room loop", () => {
       injuries: 1,
       name: session.account.survivors[0].name
     });
-    expect(plan.summary).toContain("1 injury clear");
+    expect(plan.summary).toContain("清除 1 个伤病");
   });
 
   test("previews base development priorities and material gates", () => {
@@ -208,13 +208,13 @@ describe("playtest room loop", () => {
       action: "Build",
       canAfford: true,
       cost: 10,
-      expeditionImpact: expect.stringContaining("salvage")
+      expeditionImpact: expect.stringContaining("拆解")
     });
     expect(radio).toMatchObject({
       canAfford: false,
       materialDeficit: 2
     });
-    expect(plan.summary).toContain("10 materials");
+    expect(plan.summary).toContain("当前材料 10");
   });
 
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {
@@ -275,8 +275,8 @@ describe("playtest room loop", () => {
     });
 
     expect(result.session.account.survivors[0].level).toBe(2);
-    expect(result.report.logs.join("\n")).toContain("unlocked");
-    expect(result.session.room.feed[0]?.body).toContain("reached level 2");
+    expect(result.report.logs.join("\n")).toContain("解锁");
+    expect(result.session.room.feed[0]?.body).toContain("升到 2 级");
   });
 
   test("expedition reports include process beats and random encounters", () => {
@@ -304,9 +304,9 @@ describe("playtest room loop", () => {
     });
 
     expect(result.report.logs.length).toBeGreaterThanOrEqual(5);
-    expect(result.report.logs.some((line) => line.includes("Encounter"))).toBe(true);
+    expect(result.report.logs.some((line) => line.includes("遭遇"))).toBe(true);
     expect(result.session.account.survivors[0].injuries).toContain("擦伤");
-    expect(result.session.room.feed[0]?.body).toContain("Encounter");
+    expect(result.session.room.feed[0]?.body).toContain("遭遇");
   });
 
   test("expedition reports include journey node logs", () => {
@@ -334,8 +334,8 @@ describe("playtest room loop", () => {
       userId: "user-a"
     });
 
-    expect(result.report.logs.some((line) => line.includes("Journey: Broken Approach"))).toBe(true);
-    expect(result.session.room.feed[0]?.body).toContain("Journey: Close Quarters");
+    expect(result.report.logs.some((line) => line.includes("路线：Broken Approach"))).toBe(true);
+    expect(result.session.room.feed[0]?.body).toContain("路线：Close Quarters");
   });
 
   test("route objective bonus contributes to room objective progress", () => {
@@ -404,8 +404,8 @@ describe("playtest room loop", () => {
 
     expect(full.report.reward.water).toBeGreaterThan(early.report.reward.water);
     expect(full.session.room.base.objective.repairedParts).toBeGreaterThan(early.session.room.base.objective.repairedParts);
-    expect(early.report.logs.join("\n")).toContain("Early extraction");
-    expect(early.session.room.feed[0]?.body).toContain("returned early");
+    expect(early.report.logs.join("\n")).toContain("提前撤离");
+    expect(early.session.room.feed[0]?.body).toContain("提前折返");
   });
 
   test("combat aftermath applies injuries, trophies, and report logs", () => {
@@ -435,10 +435,10 @@ describe("playtest room loop", () => {
       userId: "user-a"
     });
 
-    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("cracked ribs"))).toBe(true);
-    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("torn shoulder"))).toBe(true);
+    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("肋骨裂伤"))).toBe(true);
+    expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("肩部撕裂"))).toBe(true);
     expect(result.report.reward.materials).toBeGreaterThan(0);
-    expect(result.report.logs.join("\n")).toContain("Combat trophies recovered");
+    expect(result.report.logs.join("\n")).toContain("战斗战利");
   });
 
   test("combat scar targets are applied to named survivors first", () => {
@@ -546,7 +546,7 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.medicine).toBe(3);
     expect(next.account.survivors[0].injuries).toEqual([]);
     expect(next.account.survivors[0].fatigue).toBeLessThan(44);
-    expect(next.room.feed[0]?.title).toContain("Treatment");
+    expect(next.room.feed[0]?.title).toContain("治疗完成");
   });
 
   test("upgrades room facilities by spending materials", () => {
@@ -558,7 +558,7 @@ describe("playtest room loop", () => {
 
     expect(next.room.base.resources.materials).toBeLessThan(20);
     expect(next.room.base.facilities[0].level).toBe(facility.level + 1);
-    expect(next.room.feed[0]?.title).toContain("Facility upgraded");
+    expect(next.room.feed[0]?.title).toContain("设施升级完成");
   });
 
   test("builds facility blueprints from level zero", () => {
@@ -572,7 +572,7 @@ describe("playtest room loop", () => {
     expect(kitchen?.level).toBe(0);
     expect(builtKitchen?.level).toBe(1);
     expect(next.room.base.resources.materials).toBe(4);
-    expect(next.room.feed[0]?.title).toContain("Facility built");
+    expect(next.room.feed[0]?.title).toContain("设施建造完成");
   });
 
   test("caps facility growth at level three and previews the next benefit", () => {
@@ -587,8 +587,8 @@ describe("playtest room loop", () => {
 
     expect(isFacilityMaxed(clinic)).toBe(true);
     expect(facilityActionLabel(clinic)).toBe("Maxed");
-    expect(facilityUpgradePreview(clinic)[0]).toContain("Fully developed");
-    expect(() => upgradeFacility(session, "user-a", "clinic")).toThrow("already fully developed");
+    expect(facilityUpgradePreview(clinic)[0]).toContain("已完全发展");
+    expect(() => upgradeFacility(session, "user-a", "clinic")).toThrow("已经完全发展");
     expect(session.room.base.resources.materials).toBe(20);
 
     const kitchen = session.room.base.facilities.find((facility) => facility.id === "kitchen");
@@ -596,8 +596,8 @@ describe("playtest room loop", () => {
       throw new Error("Missing kitchen");
     }
     expect(facilityUpgradePreview(kitchen)).toEqual([
-      "Builds to Lv.1",
-      "Base: food upkeep -1/day, water upkeep -0/day. Expedition: camp meal +1, shop rations +1."
+      "建造到 Lv.1",
+      "基地：每日食物消耗 -1，每日饮水消耗 -0。出征：营地餐食 +1，商店口粮 +1。"
     ]);
   });
 
@@ -611,12 +611,12 @@ describe("playtest room loop", () => {
     radio.level = 1;
 
     expect(facilityUpgradePreview(training)).toEqual([
-      "Builds to Lv.1",
-      "Base: no daily upkeep change. Expedition: combat stamina +2, carry capacity +0."
+      "建造到 Lv.1",
+      "基地：不改变每日消耗。出征：战斗耐力 +2，背包容量 +0。"
     ]);
     expect(facilityUpgradePreview(radio)).toEqual([
-      "Upgrades to Lv.2",
-      "Base: objective +1/day and repair shifts +1. Expedition: pressure relief +2, intel +2, camp scout +2."
+      "升级到 Lv.2",
+      "基地：目标每日 +1，修理班次 +1。出征：压力缓解 +2，情报 +2，营地侦察 +2。"
     ]);
   });
 
@@ -639,8 +639,8 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.food).toBe(7);
     expect(next.room.base.resources.water).toBe(7);
     expect(next.room.base.danger).toBeLessThan(18);
-    expect(next.room.feed[0]?.body).toContain("Kitchen");
-    expect(next.room.feed[0]?.body).toContain("Barricade");
+    expect(next.room.feed[0]?.body).toContain("厨房");
+    expect(next.room.feed[0]?.body).toContain("路障线");
   });
 
   test("base day events punish uncovered perimeter breaches", () => {
@@ -655,8 +655,8 @@ describe("playtest room loop", () => {
 
     const next = advanceRoomDay(session, "user-a");
 
-    expect(next.room.feed[0]?.title).toContain("Fence breach");
-    expect(next.room.feed[0]?.body).toContain("Base event: Fence breach");
+    expect(next.room.feed[0]?.title).toContain("围栏缺口");
+    expect(next.room.feed[0]?.body).toContain("基地事件：围栏缺口");
     expect(next.room.base.danger).toBeGreaterThan(session.room.base.danger);
     expect(next.room.base.morale).toBeLessThan(session.room.base.morale + 2);
   });
@@ -674,8 +674,8 @@ describe("playtest room loop", () => {
 
     const next = advanceRoomDay(session, "user-a");
 
-    expect(next.room.feed[0]?.title).toContain("Fence breach");
-    expect(next.room.feed[0]?.body).toContain("Danger -");
+    expect(next.room.feed[0]?.title).toContain("围栏缺口");
+    expect(next.room.feed[0]?.body).toContain("危险 -");
     expect(next.room.base.danger).toBeLessThan(22);
   });
 
@@ -692,8 +692,8 @@ describe("playtest room loop", () => {
 
     const next = advanceRoomDay(session, "user-a");
 
-    expect(next.room.feed[0]?.title).toContain("Spoiled stores");
-    expect(next.room.feed[0]?.body).toContain("Food +");
+    expect(next.room.feed[0]?.title).toContain("库存变质");
+    expect(next.room.feed[0]?.body).toContain("食物 +");
     expect(next.room.base.resources.food).toBeGreaterThanOrEqual(6);
   });
 
@@ -711,8 +711,8 @@ describe("playtest room loop", () => {
 
     const next = advanceRoomDay(session, "user-a");
 
-    expect(next.room.feed[0]?.title).toContain("Signal window");
-    expect(next.room.feed[0]?.body).toContain("Base event: Signal window");
+    expect(next.room.feed[0]?.title).toContain("信号窗口");
+    expect(next.room.feed[0]?.body).toContain("基地事件：信号窗口");
     expect(next.room.base.objective.repairedParts).toBeGreaterThan(1);
   });
 
@@ -729,7 +729,7 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.food).toBeLessThan(8);
     expect(next.room.base.resources.water).toBeLessThan(8);
     expect(next.account.survivors[0].fatigue).toBeLessThan(52);
-    expect(next.room.feed[0]?.title).toContain("Day 2");
+    expect(next.room.feed[0]?.title).toContain("第 2 天");
     expect(next.uiState.resources.food).toBe(next.room.base.resources.food);
   });
 
@@ -741,6 +741,6 @@ describe("playtest room loop", () => {
     const next = advanceRoomDay(session, "user-a");
 
     expect(next.room.base.objective.status).toBe("lost");
-    expect(next.room.feed[0]?.title).toContain("Objective failed");
+    expect(next.room.feed[0]?.title).toContain("目标失败");
   });
 });
