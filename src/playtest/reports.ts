@@ -26,6 +26,15 @@ export type FeedReportSettlement = {
   summary: string;
 };
 
+export type FeedReturnLedger = {
+  account: string;
+  base: string;
+  extraction: string;
+  hasLedger: boolean;
+  injuries: string;
+  objective: string;
+};
+
 const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
@@ -89,6 +98,39 @@ export function summarizeFeedReportTimeline(item: FeedItem): FeedReportTimeline 
   };
 }
 
+export function summarizeFeedReturnLedger(item: FeedItem): FeedReturnLedger {
+  if (item.kind !== "report") {
+    return emptyReturnLedger();
+  }
+
+  const ledgerLine = reportLines(item).find((line) => line.startsWith("归队清单："));
+  if (!ledgerLine) {
+    return emptyReturnLedger();
+  }
+
+  const parts = ledgerLine
+    .replace(/^归队清单：/, "")
+    .replace(/。$/, "")
+    .split("；")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const base = stripLedgerLabel(parts.find((part) => part.startsWith("基地入库")), "基地入库");
+  const objective = parts.find((part) => part.startsWith("目标推进")) ?? "";
+  const account = stripLedgerLabel(parts.find((part) => part.startsWith("账号回收")), "账号回收");
+  const injuries = parts.find((part) => part.startsWith("伤病")) ?? "";
+  const extraction = [...parts].reverse().find((part) => /^(完整撤离|提前返程)$/.test(part)) ?? "";
+
+  return {
+    account,
+    base,
+    extraction,
+    hasLedger: Boolean(base || objective || account || injuries || extraction),
+    injuries,
+    objective
+  };
+}
+
 function emptySettlement(): FeedReportSettlement {
   return {
     growth: [],
@@ -101,12 +143,27 @@ function emptySettlement(): FeedReportSettlement {
   };
 }
 
+function emptyReturnLedger(): FeedReturnLedger {
+  return {
+    account: "",
+    base: "",
+    extraction: "",
+    hasLedger: false,
+    injuries: "",
+    objective: ""
+  };
+}
+
 function emptyTimeline(): FeedReportTimeline {
   return {
     hasProcess: false,
     steps: [],
     summary: "暂无过程回放"
   };
+}
+
+function stripLedgerLabel(value: string | undefined, label: string): string {
+  return value?.replace(new RegExp(`^${label}\\s*`), "").trim() ?? "";
 }
 
 function reportLines(item: FeedItem): string[] {

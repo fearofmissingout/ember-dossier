@@ -107,7 +107,7 @@ import {
   type ExpeditionDoctrineId
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
-import { summarizeFeedReportSettlement, summarizeFeedReportTimeline } from "./playtest/reports";
+import { summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
@@ -2687,6 +2687,7 @@ function Reports({ feed, latestReportId }: { feed: FeedItem[]; latestReportId: s
               <strong>{item.title}</strong>
               <p>{item.body}</p>
               <ReportSettlement item={item} />
+              <ReportReturnLedger item={item} />
               <ReportTimeline item={item} />
             </div>
           </article>
@@ -2725,6 +2726,38 @@ function ReportSettlement({ item }: { item: FeedItem }) {
                 <li key={entry}>{entry}</li>
               ))}
             </ul>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportReturnLedger({ item }: { item: FeedItem }) {
+  const ledger = summarizeFeedReturnLedger(item);
+  if (!ledger.hasLedger) {
+    return null;
+  }
+
+  const rows = [
+    { label: "基地入库", value: ledger.base },
+    { label: "目标推进", value: ledger.objective },
+    { label: "账号回收", value: ledger.account },
+    { label: "伤病", value: ledger.injuries },
+    { label: "撤离", value: ledger.extraction }
+  ].filter((row) => row.value);
+
+  return (
+    <div className="return-ledger" aria-label="归队清单">
+      <div className="return-ledger-heading">
+        <span>归队清单</span>
+        <strong>{ledger.extraction || "本次远征已结算"}</strong>
+      </div>
+      <div className="return-ledger-grid">
+        {rows.map((row) => (
+          <article className="return-ledger-row" key={`${item.id}-ledger-${row.label}`}>
+            <span>{row.label}</span>
+            <strong>{row.value}</strong>
           </article>
         ))}
       </div>

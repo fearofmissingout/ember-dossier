@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { FeedItem } from "../game/types";
-import { summarizeFeedReportSettlement, summarizeFeedReportTimeline } from "./reports";
+import { summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./reports";
 
 describe("playtest report timeline", () => {
   test("extracts a readable post-expedition settlement from report logs", () => {
@@ -91,6 +91,48 @@ describe("playtest report timeline", () => {
     expect(timeline.summary).toContain("交易 1");
     expect(timeline.summary).toContain("收获 1");
     expect(timeline.summary).toContain("撤离 2");
+  });
+
+  test("extracts a return ledger from expedition settlement logs", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在北区水处理厂完成路线。结果：艰难完成。主要收获：水 +4，材料 +2。",
+        "归队清单：基地入库 水 +4, 材料 +2；目标推进 +2；账号回收 个人仓库回收材料 +2，情报 +1；伤病 1 名待恢复；完整撤离。",
+        "撤离：队伍带回足够细节，下一队能做出更好的路线选择。"
+      ].join("\n"),
+      id: "feed-report-ledger",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "北区水处理厂远征完成"
+    };
+
+    const ledger = summarizeFeedReturnLedger(report);
+
+    expect(ledger.hasLedger).toBe(true);
+    expect(ledger.base).toBe("水 +4, 材料 +2");
+    expect(ledger.objective).toBe("目标推进 +2");
+    expect(ledger.account).toBe("个人仓库回收材料 +2，情报 +1");
+    expect(ledger.injuries).toBe("伤病 1 名待恢复");
+    expect(ledger.extraction).toBe("完整撤离");
+  });
+
+  test("keeps early return account notes separate from the extraction status", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在北区水处理厂提前折返。结果：勉强完成。主要收获：水 +4。",
+        "归队清单：基地入库 水 +4；目标推进 +0；账号回收 个人仓库带回情报 +1。提前返程不会获得稀有零件；伤病 0；提前返程。"
+      ].join("\n"),
+      id: "feed-report-early-ledger",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "北区水处理厂远征完成"
+    };
+
+    const ledger = summarizeFeedReturnLedger(report);
+
+    expect(ledger.account).toContain("个人仓库带回情报 +1");
+    expect(ledger.account).toContain("提前返程不会获得稀有零件");
+    expect(ledger.extraction).toBe("提前返程");
   });
 
   test("ignores non-report feed items and summary-only reports", () => {

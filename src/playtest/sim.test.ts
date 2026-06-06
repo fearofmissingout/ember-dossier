@@ -587,6 +587,50 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("账号战利");
   });
 
+  test("expedition settlement includes a return ledger for base account objective and injuries", () => {
+    let session = createStarterSession("user-a", "Alice", "return-ledger-room");
+    session.account.resources.materials = 2;
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      battleScars: 1,
+      combatScarSurvivorIds: [squad[1]],
+      extractionStatus: "complete",
+      journeyLogs: ["路边交易点：购买路线情报。目标 +1，压力 -5%。"],
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.12, 0.18, 0.22, 0.64, 0.31],
+      risk: "standard",
+      routeObjectiveBonus: 1,
+      survivorIds: squad,
+      trophies: ["装甲碎片"],
+      userId: "user-a"
+    });
+    const reportText = result.report.logs.join("\n");
+    const feedText = result.session.room.feed[0]?.body ?? "";
+
+    expect(reportText).toContain("归队清单");
+    expect(reportText).toContain("基地入库");
+    expect(reportText).toContain("目标推进");
+    expect(reportText).toContain("账号回收");
+    expect(reportText).toContain("伤病");
+    expect(reportText).toContain("完整撤离");
+    expect(feedText).toContain("归队清单");
+    expect(feedText).toContain("基地入库");
+    expect(feedText).toContain("账号回收");
+  });
+
   test("early extraction preserves a small account cache without full rare spoils", () => {
     let session = createStarterSession("user-a", "Alice", "early-account-cache-room");
     session.account.resources.materials = 2;

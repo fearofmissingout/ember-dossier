@@ -324,9 +324,10 @@ export function resolvePlaytestExpedition(
     (assignment) => !request.survivorIds.includes(assignment.survivorId)
   );
   const siteObjectiveProgress = request.extractionStatus === "early" ? 0 : objectiveProgress(result.report);
+  const totalObjectiveProgress = siteObjectiveProgress + process.objectiveBonus + (request.routeObjectiveBonus ?? 0);
   next.room.base.objective.repairedParts = Math.min(
     next.room.base.objective.requiredParts,
-    next.room.base.objective.repairedParts + siteObjectiveProgress + process.objectiveBonus + (request.routeObjectiveBonus ?? 0)
+    next.room.base.objective.repairedParts + totalObjectiveProgress
   );
   if (next.room.base.objective.repairedParts >= next.room.base.objective.requiredParts) {
     next.room.base.objective.status = "won";
@@ -338,12 +339,17 @@ export function resolvePlaytestExpedition(
     result.report.logs.splice(insertIndex === -1 ? result.report.logs.length : insertIndex, 0, ...recoveryLogs);
   }
   const accountSpoilsLogs = applyAccountExpeditionSpoils(next, request, result.report);
+  const returnLedgerLog = buildReturnLedgerLog(result.report, request, totalObjectiveProgress, accountSpoilsLogs);
+  const returnLedgerIndex = result.report.logs.findIndex((line) => !line.startsWith("成长："));
+  result.report.logs.splice(returnLedgerIndex === -1 ? result.report.logs.length : returnLedgerIndex, 0, returnLedgerLog);
 
   if (next.room.feed[0]) {
     const processLogs = selectFeedProcessLogs(process.logs);
     next.room.feed[0] = {
       ...next.room.feed[0],
-      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...processLogs, ...recoveryLogs, ...accountSpoilsLogs].join("\n")
+      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, returnLedgerLog, ...processLogs, ...recoveryLogs, ...accountSpoilsLogs].join(
+        "\n"
+      )
     };
   }
 
@@ -594,6 +600,28 @@ function formatSignedNumber(value: number): string {
 function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
   const status = request.extractionStatus === "early" ? "提前折返" : "完成路线";
   return `${report.squadNames.join("、")}在${report.locationName}${status}。结果：${expeditionOutcomeLabel(report.outcome)}。主要收获：${formatResources(report.reward)}。`;
+}
+
+function buildReturnLedgerLog(
+  report: ExpeditionReport,
+  request: PlaytestExpeditionRequest,
+  objectiveProgressDelta: number,
+  accountSpoilsLogs: string[]
+) {
+  const extractionText = request.extractionStatus === "early" ? "提前返程" : "完整撤离";
+  const accountText = accountSpoilsLogs.length ? accountSpoilsLogs.map(stripReturnLedgerPrefix).join("；") : "无账号回收";
+  const scarCount = Math.max(request.battleScars ?? 0, new Set(request.combatScarSurvivorIds ?? []).size);
+  const injuryText = scarCount > 0 ? `伤病 ${scarCount} 名待恢复` : "伤病 0";
+
+  return `归队清单：基地入库 ${formatResources(report.reward)}；目标推进 +${Math.max(0, objectiveProgressDelta)}；账号回收 ${accountText}；${injuryText}；${extractionText}。`;
+}
+
+function stripReturnLedgerPrefix(line: string) {
+  return line
+    .replace(/^账号战利：/, "")
+    .replace(/^返程回收：/, "")
+    .replace(/。$/, "")
+    .trim();
 }
 
 function selectFeedProcessLogs(logs: string[]): string[] {
