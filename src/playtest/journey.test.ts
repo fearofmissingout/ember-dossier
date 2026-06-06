@@ -41,14 +41,14 @@ describe("journey route generation", () => {
     const resourceRoute = createJourney(session, draft, "water-plant", 60);
     const weirdRoute = createJourney(session, draft, "greenhouse", 60);
 
-    expect(resourceRoute.nodes[0].title).toBe("Sluice Gate Detour");
-    expect(resourceRoute.nodes[1].enemy?.name).toBe("Valve Ghoul");
+    expect(resourceRoute.nodes[0].title).toBe("闸门绕行");
+    expect(resourceRoute.nodes[1].enemy?.name).toBe("阀门尸");
     expect(resourceRoute.nodes[2].type).toBe("camp");
-    expect(resourceRoute.nodes[3].shop?.label).toBe("Buy repair kit");
-    expect(weirdRoute.nodes[0].title).toBe("Listening Vines");
-    expect(weirdRoute.nodes[1].enemy?.name).toBe("Borrowed Shadow");
+    expect(resourceRoute.nodes[3].shop?.label).toBe("买修理包");
+    expect(weirdRoute.nodes[0].title).toBe("听声藤蔓");
+    expect(weirdRoute.nodes[1].enemy?.name).toBe("借影");
     expect(weirdRoute.nodes[2].type).toBe("camp");
-    expect(weirdRoute.nodes[3].shop?.label).toBe("Pay masked vendor");
+    expect(weirdRoute.nodes[3].shop?.label).toBe("付给面具摊主");
   });
 
   test("summarizes route pace and upcoming journey beats", () => {
@@ -71,29 +71,59 @@ describe("journey route generation", () => {
     const midPace = routePaceFor(midJourney);
 
     expect(startPace).toMatchObject({
-      currentLabel: "event",
+      currentLabel: "事件",
       currentStop: 1,
-      nextLabel: "combat",
+      nextLabel: "战斗",
       progressPercent: 0,
       remainingStops: 4,
       totalStops: 5
     });
     expect(startPace.forecast.map((stop) => `${stop.index}:${stop.label}:${stop.state}`)).toEqual([
-      "1:event:active",
-      "2:combat:ahead",
-      "3:camp:ahead",
-      "4:shop:ahead",
-      "5:extraction:ahead"
+      "1:事件:active",
+      "2:战斗:ahead",
+      "3:营地:ahead",
+      "4:商店:ahead",
+      "5:撤离:ahead"
     ]);
     expect(midPace).toMatchObject({
-      currentLabel: "camp",
+      currentLabel: "营地",
       currentStop: 3,
       distanceSegments: 2,
-      nextLabel: "shop",
+      nextLabel: "商店",
       progressPercent: 50,
       remainingStops: 2
     });
     expect(midPace.forecast[0].state).toBe("done");
+  });
+
+  test("uses Chinese labels for the visible route rhythm", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "zh-pace-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const pace = routePaceFor(journey);
+
+    expect(pace).toMatchObject({
+      clockLabel: "已行进 0 小时",
+      currentLabel: "事件",
+      etaLabel: "约 12 小时后可撤离",
+      nextLabel: "战斗"
+    });
+    expect(pace.forecast.map((stop) => stop.label)).toEqual(["事件", "战斗", "营地", "商店", "撤离"]);
+    expect(journey.nodes[3].title).toBe("路边交易点");
+    expect(journey.nodes[4].title).toBe("撤离窗口");
+    expect(journey.logs.join("\n")).toContain("路线开启");
+    expect(journey.logs.join("\n")).toContain("随身补给");
   });
 
   test("route pace surfaces pending road encounters as the current beat", () => {
@@ -116,10 +146,10 @@ describe("journey route generation", () => {
 
     expect(blocked.pendingRoadEvent?.tone).toBe("find");
     expect(pace).toMatchObject({
-      currentLabel: "road find",
-      currentTitle: "Thorn Wire Ditch",
+      currentLabel: "路上发现",
+      currentTitle: "刺线沟",
       currentStop: 1,
-      nextLabel: "combat",
+      nextLabel: "战斗",
       pendingRoad: true,
       progressPercent: 0
     });
@@ -146,10 +176,10 @@ describe("journey route generation", () => {
     const advanced = advanceJourneyTravel(rushJourney, squad, 60);
 
     expect(startPace).toMatchObject({
-      clockLabel: "0h on road",
+      clockLabel: "已行进 0 小时",
       elapsedHours: 0,
       etaHours: 12,
-      etaLabel: "~12h to extraction"
+      etaLabel: "约 12 小时后可撤离"
     });
     expect(forecast).toMatchObject({
       hours: 2,
@@ -158,7 +188,7 @@ describe("journey route generation", () => {
     expect(advanced.elapsedHours).toBe(2);
     expect(advanced.travelHistory[0]).toMatchObject({
       hours: 2,
-      timeLabel: "2h"
+      timeLabel: "2 小时"
     });
   });
 
@@ -179,12 +209,12 @@ describe("journey route generation", () => {
 
     const combat = createCombatForNode(journey.nodes[1], squad, 60);
 
-    expect(combat?.enemyName).toBe("Hallway Pack");
+    expect(combat?.enemyName).toBe("走廊群");
     expect(combat?.attack).toBeGreaterThan(6);
     expect(combat?.reward.ammo).toBe(1);
-    expect(combat?.enemyTraitLabel).toBe("Swarm");
-    expect(combat?.intentLabel).toBe("Prowl");
-    expect(combat?.intentText).toContain("interrupt");
+    expect(combat?.enemyTraitLabel).toBe("成群");
+    expect(combat?.intentLabel).toBe("游猎");
+    expect(combat?.intentText).toContain("打断");
   });
 
   test("facility support adds field supplies and combat endurance", () => {
@@ -308,7 +338,7 @@ describe("journey route generation", () => {
     expect(guarded.pressure).toBeLessThan(journey.pressure);
     expect(guarded.baseCommandUses["guard-relay"]).toBe(1);
     expect(baseCommandOptions(guarded).find((option) => option.id === "guard-relay")?.remainingUses).toBe(0);
-    expect(guarded.logs.join("\n")).toContain("Base command: Guard relay");
+    expect(guarded.logs.join("\n")).toContain("基地指令：守卫接力");
   });
 
   test("recon base command exposes combat targets", () => {
@@ -335,7 +365,7 @@ describe("journey route generation", () => {
     const pinged = resolveBaseCommand(withCombat, "recon-ping");
 
     expect(pinged.combat?.exposed).toBeGreaterThan(combat.exposed);
-    expect(pinged.logs.join("\n")).toContain("Base command: Recon ping");
+    expect(pinged.logs.join("\n")).toContain("基地指令：侦察标记");
   });
 
   test("combat actions show and apply actor strain", () => {
@@ -361,8 +391,8 @@ describe("journey route generation", () => {
     const resolvedStriker = resolved.combat?.frontline.find((line) => line.survivorId === striker.survivorId);
 
     expect(preview?.strain).toBeGreaterThan(0);
-    expect(preview?.effect).toContain("strain");
-    expect(resolved.logs.join("\n")).toContain("Action strain:");
+    expect(preview?.effect).toContain("体力");
+    expect(resolved.logs.join("\n")).toContain("行动负担：");
     expect(resolvedStriker?.stamina).toBeLessThan(striker.stamina);
   });
 
@@ -390,7 +420,7 @@ describe("journey route generation", () => {
     const resolved = resolveCombatRound({ ...journey, combat, currentNodeIndex: 1 }, "strike", squad, 60);
 
     expect(preview?.actorName).not.toBe(downedStriker.name);
-    expect(resolved.logs.join("\n")).not.toContain(`${downedStriker.name} leads a strike`);
+    expect(resolved.logs.join("\n")).not.toContain(`${downedStriker.name} 发起攻击`);
   });
 
   test("heavy loadouts create pack burden and slow route travel", () => {
@@ -426,9 +456,9 @@ describe("journey route generation", () => {
       tier: "overloaded"
     });
     expect(journey.pressure).toBeGreaterThan(18);
-    expect(journey.logs.join("\n")).toContain("Pack burden");
+    expect(journey.logs.join("\n")).toContain("背包负重");
     expect(advanced.condition.fatigue - journey.condition.fatigue).toBeGreaterThan(lightAdvanced.condition.fatigue - lightJourney.condition.fatigue);
-    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining([expect.stringContaining("Burden +")]));
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining([expect.stringContaining("负重 +")]));
   });
 
   test("carry capacity support can turn an overloaded pack into a heavy pack", () => {
@@ -482,16 +512,16 @@ describe("journey route generation", () => {
     expect(advanced.condition.fatigue).toBeGreaterThan(journey.condition.fatigue);
     expect(advanced.fieldSupplies.food).toBe(0);
     expect(advanced.fieldSupplies.water).toBe(0);
-    expect(advanced.pendingRoadEvent?.title).toBe("Thorn Wire Ditch");
-    expect(advanced.logs.join("\n")).toContain("Road: segment 1");
+    expect(advanced.pendingRoadEvent?.title).toBe("刺线沟");
+    expect(advanced.logs.join("\n")).toContain("道路：路段 1");
     expect(advanced.travelHistory[0]).toMatchObject({
-      effects: expect.arrayContaining(["Food -1", "Water -1", "Threat: Open ditch", "Threat pressure +7%", "Fatigue +11", "Pressure +6%"]),
-      planLabel: "Steady march",
+      effects: expect.arrayContaining(["食物 -1", "水 -1", "威胁：开阔沟渠", "威胁压力 +7%", "疲劳 +11", "压力 +6%"]),
+      planLabel: "稳步行军",
       segment: 1,
-      title: "Field Hush",
+      title: "田间静默",
       tone: "safe"
     });
-    expect(advanced.travelHistory[0].conditionText).toContain("Fatigue 16");
+    expect(advanced.travelHistory[0].conditionText).toContain("疲劳 16");
   });
 
   test("next segment forecast previews Home Behind style road attrition", () => {
@@ -512,13 +542,13 @@ describe("journey route generation", () => {
     const forecast = forecastNextSegment(setJourneySegmentTactic(journey, "brace"), squad, 55);
 
     expect(forecast).toMatchObject({
-      planLabel: "Steady march",
+      planLabel: "稳步行军",
       riskLevel: "stable",
       segment: 1,
-      tacticLabel: "Tight formation",
-      threatLabel: "Open ditch"
+      tacticLabel: "收紧队形",
+      threatLabel: "开阔沟渠"
     });
-    expect(forecast.supplyUse).toEqual(expect.arrayContaining(["Food -1", "No water"]));
+    expect(forecast.supplyUse).toEqual(expect.arrayContaining(["食物 -1", "没有水"]));
     expect(forecast.conditionDeltas).toMatchObject({
       fatigue: 8,
       hunger: 0,
@@ -530,7 +560,7 @@ describe("journey route generation", () => {
       hunger: 0,
       thirst: 22
     });
-    expect(forecast.notes).toEqual(expect.arrayContaining(["Countered: Open ditch", "Tactic pressure -6%"]));
+    expect(forecast.notes).toEqual(expect.arrayContaining(["已反制：开阔沟渠", "战术压力 -6%"]));
   });
 
   test("next segment forecast warns about severe road hardship", () => {
@@ -552,10 +582,10 @@ describe("journey route generation", () => {
     const forecast = forecastNextSegment(journey, squad, 55);
 
     expect(forecast.hardship).toMatchObject({
-      label: "Dehydration crash",
+      label: "脱水崩溃",
       severity: "severe"
     });
-    expect(forecast.hardship?.effects).toEqual(expect.arrayContaining(["Battle scar +1", "Pressure +8%"]));
+    expect(forecast.hardship?.effects).toEqual(expect.arrayContaining(["战斗伤痕 +1", "压力 +8%"]));
   });
 
   test("severe road hardships mark survivors and appear in the road diary", () => {
@@ -580,12 +610,12 @@ describe("journey route generation", () => {
     expect(advanced.woundedSurvivorIds.length).toBe(1);
     expect(squad.map((survivor) => survivor.id)).toContain(advanced.woundedSurvivorIds[0]);
     expect(advanced.hardships[0]).toMatchObject({
-      label: "Dehydration crash",
+      label: "脱水崩溃",
       segment: 1,
       severity: "severe"
     });
-    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining(["Hardship: Dehydration crash", "Battle scar +1"]));
-    expect(advanced.logs.join("\n")).toContain("Hardship: Dehydration crash");
+    expect(advanced.travelHistory[0].effects).toEqual(expect.arrayContaining(["路上事故：脱水崩溃", "战斗伤痕 +1"]));
+    expect(advanced.logs.join("\n")).toContain("路上事故：脱水崩溃");
   });
 
   test("segment tactics change the next road advance then reset to watch mode", () => {
@@ -602,8 +632,8 @@ describe("journey route generation", () => {
 
     expect(braced.segmentTactic).toBe("observe");
     expect(braced.pressure).toBeLessThan(baseline.pressure);
-    expect(braced.travelHistory[0].effects).toEqual(expect.arrayContaining(["Tactic: Tight formation", "Tactic pressure -6%"]));
-    expect(braced.logs.join("\n")).toContain("Segment tactic: Tight formation");
+    expect(braced.travelHistory[0].effects).toEqual(expect.arrayContaining(["战术：收紧队形", "战术压力 -6%"]));
+    expect(braced.logs.join("\n")).toContain("路段战术：收紧队形");
   });
 
   test("route segments preview deterministic threats by location family", () => {
@@ -632,12 +662,12 @@ describe("journey route generation", () => {
 
     expect(segmentThreatFor(farmJourney)).toMatchObject({
       counterTactics: ["brace"],
-      label: "Open ditch",
+      label: "开阔沟渠",
       pressure: 7
     });
     expect(segmentThreatFor(hospitalJourney)).toMatchObject({
       counterTactics: ["prospect"],
-      label: "Glass choke",
+      label: "玻璃瓶颈",
       pressure: 8
     });
   });
@@ -655,10 +685,10 @@ describe("journey route generation", () => {
     const exposed = advanceJourneyTravel(createJourney(session, draft, "farm", 55), squad, 55);
     const countered = advanceJourneyTravel(setJourneySegmentTactic(createJourney(session, draft, "farm", 55), "brace"), squad, 55);
 
-    expect(exposed.travelHistory[0].effects).toEqual(expect.arrayContaining(["Threat: Open ditch", "Threat pressure +7%"]));
-    expect(countered.travelHistory[0].effects).toEqual(expect.arrayContaining(["Countered: Open ditch"]));
+    expect(exposed.travelHistory[0].effects).toEqual(expect.arrayContaining(["威胁：开阔沟渠", "威胁压力 +7%"]));
+    expect(countered.travelHistory[0].effects).toEqual(expect.arrayContaining(["已反制：开阔沟渠"]));
     expect(countered.pressure).toBeLessThan(exposed.pressure);
-    expect(countered.logs.join("\n")).toContain("Threat counter: Open ditch");
+    expect(countered.logs.join("\n")).toContain("威胁反制：开阔沟渠");
   });
 
   test("facility route support softens matching segment threats", () => {
@@ -683,8 +713,8 @@ describe("journey route generation", () => {
     const supported = advanceJourneyTravel(createJourney(session, supportedDraft, "farm", 55), squad, 55);
 
     expect(supported.pressure).toBeLessThan(exposed.pressure);
-    expect(supported.travelHistory[0].effects).toEqual(expect.arrayContaining(["Facility mitigation -6%", "Facility fatigue -1"]));
-    expect(supported.logs.join("\n")).toContain("Facility mitigation: Open ditch");
+    expect(supported.travelHistory[0].effects).toEqual(expect.arrayContaining(["设施减压 -6%", "设施降疲劳 -1"]));
+    expect(supported.logs.join("\n")).toContain("设施缓解：开阔沟渠");
   });
 
   test("prospecting a segment spends gear and can turn the road into a find", () => {
@@ -705,8 +735,8 @@ describe("journey route generation", () => {
     expect(prospected.segmentTactic).toBe("observe");
     expect(prospected.fieldSupplies.materials).toBe(0);
     expect(prospectFinds).toBeGreaterThan(baselineFinds);
-    expect(prospected.travelHistory[0].effects).toEqual(expect.arrayContaining(["Tactic: Comb ruins", "Spent Materials"]));
-    expect(prospected.logs.join("\n")).toContain("Segment tactic: Comb ruins");
+    expect(prospected.travelHistory[0].effects).toEqual(expect.arrayContaining(["战术：搜索废墟", "消耗材料"]));
+    expect(prospected.logs.join("\n")).toContain("路段战术：搜索废墟");
   });
 
   test("travel segments pause on road encounters before the next node", () => {
@@ -730,15 +760,15 @@ describe("journey route generation", () => {
 
     expect(advanced.pendingRoadEvent).toMatchObject({
       segment: 1,
-      title: "Thorn Wire Ditch",
+      title: "刺线沟",
       tone: "find"
     });
     expect(advanced.currentNodeIndex).toBe(0);
     expect(resolved.pendingRoadEvent).toBeNull();
     expect(resolved.currentNodeIndex).toBe(1);
-    expect(resolved.roadEvents[0]).toMatchObject({ title: "Thorn Wire Ditch", tone: "find" });
+    expect(resolved.roadEvents[0]).toMatchObject({ title: "刺线沟", tone: "find" });
     expect(salvageTotal).toBeGreaterThan(0);
-    expect(resolved.logs.join("\n")).toContain("Road event: Thorn Wire Ditch");
+    expect(resolved.logs.join("\n")).toContain("路上事件：刺线沟");
   });
 
   test("road hazards spend matching field supplies to mitigate damage", () => {
@@ -760,12 +790,12 @@ describe("journey route generation", () => {
     const secured = resolveRoadEncounterChoice(advanced, "secure");
 
     expect(advanced.pendingRoadEvent).toMatchObject({
-      title: "Collapsed Stairwell",
+      title: "坍塌楼梯间",
       tone: "hazard"
     });
     expect(secured.fieldSupplies.materials).toBe(0);
-    expect(secured.roadEvents[0].outcome).toContain("Materials -1");
-    expect(secured.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
+    expect(secured.roadEvents[0].outcome).toContain("材料 -1");
+    expect(secured.logs.join("\n")).toContain("路上事件：坍塌楼梯间");
   });
 
   test("facility route support adds a road tactic that preserves field supplies", () => {
@@ -792,12 +822,12 @@ describe("journey route generation", () => {
     const supported = resolveRoadEncounterChoice(advanced, "support");
 
     expect(supportChoice).toMatchObject({
-      label: "Base route support",
+      label: "基地路线支援",
       supplyPriority: []
     });
     expect(supported.fieldSupplies.materials).toBe(1);
-    expect(supported.roadEvents[0].outcome).toContain("Base route support");
-    expect(supported.logs.join("\n")).toContain("Road event: Collapsed Stairwell");
+    expect(supported.roadEvents[0].outcome).toContain("基地路线支援");
+    expect(supported.logs.join("\n")).toContain("路上事件：坍塌楼梯间");
   });
 
   test("pushing through road hazards can trigger an ambush combat before the next stop", () => {
@@ -819,18 +849,18 @@ describe("journey route generation", () => {
     const ambushed = resolveRoadEncounterChoice(advanced, "push", squad, 55);
 
     expect(advanced.pendingRoadEvent).toMatchObject({
-      title: "Collapsed Stairwell",
+      title: "坍塌楼梯间",
       tone: "hazard"
     });
     expect(ambushed.currentNodeIndex).toBe(1);
     expect(ambushed.nodes[1]).toMatchObject({
-      title: "Road Ambush",
+      title: "路上伏击",
       type: "combat"
     });
-    expect(ambushed.nodes[2].title).toBe("Contact");
-    expect(ambushed.combat?.enemyName).toBe("Hallway Pack");
+    expect(ambushed.nodes[2].title).toBe("遭遇战");
+    expect(ambushed.combat?.enemyName).toBe("走廊群");
     expect(ambushed.pendingRoadEvent).toBeNull();
-    expect(ambushed.logs.join("\n")).toContain("Road ambush: Collapsed Stairwell");
+    expect(ambushed.logs.join("\n")).toContain("路上伏击：坍塌楼梯间");
   });
 
   test("travel plans change road risk and salvage rhythm", () => {
@@ -853,7 +883,7 @@ describe("journey route generation", () => {
 
     expect(planned.travelPlan).toBe("scavenge");
     expect(advanced.bonusReward.food).toBe(1);
-    expect(advanced.logs.join("\n")).toContain("Strip the road");
+    expect(advanced.logs.join("\n")).toContain("搜刮沿途");
   });
 
   test("sneak travel spends cover gear to lower route pressure", () => {
@@ -875,7 +905,7 @@ describe("journey route generation", () => {
 
     expect(advanced.fieldSupplies.fuel).toBe(0);
     expect(advanced.pressure).toBeLessThan(journey.pressure);
-    expect(advanced.logs.join("\n")).toContain("Fuel -1 for cover");
+    expect(advanced.logs.join("\n")).toContain("燃料 -1 用于掩护");
   });
 
   test("camp choices trade supplies for recovery and objective progress", () => {
@@ -902,7 +932,7 @@ describe("journey route generation", () => {
     expect(scouted.fieldSupplies.fuel).toBe(0);
     expect(scouted.objectiveBonus).toBe(1);
     expect(scouted.pressure).toBeLessThan(journey.pressure);
-    expect(scouted.logs.join("\n")).toContain("objective +1");
+    expect(scouted.logs.join("\n")).toContain("目标线索 +1");
   });
 
   test("base facility support strengthens camp recovery choices", () => {
@@ -937,7 +967,7 @@ describe("journey route generation", () => {
 
     expect(supported.condition.fatigue).toBeLessThan(unsupported.condition.fatigue);
     expect(supported.pressure).toBeLessThan(unsupported.pressure);
-    expect(supported.logs.join("\n")).toContain("Camp support");
+    expect(supported.logs.join("\n")).toContain("营地支援");
   });
 
   test("camp option previews include facility support notes", () => {
@@ -967,7 +997,7 @@ describe("journey route generation", () => {
 
     expect(preview.objectiveBonus).toBeGreaterThan(scout!.objectiveBonus);
     expect(preview.pressure).toBeLessThan(scout!.pressure);
-    expect(preview.supportText).toContain("Radio");
+    expect(preview.supportText).toContain("电台");
   });
 
   test("shop offers include resupply, intel, and field service choices", () => {
@@ -985,9 +1015,9 @@ describe("journey route generation", () => {
       60
     );
 
-    expect(journey.nodes[3].shop?.offers.resupply.label).toBe("Buy road rations");
-    expect(journey.nodes[3].shop?.offers.intel.label).toBe("Buy route intel");
-    expect(journey.nodes[3].shop?.offers.service.label).toBe("Buy repair kit");
+    expect(journey.nodes[3].shop?.offers.resupply.label).toBe("购买路上口粮");
+    expect(journey.nodes[3].shop?.offers.intel.label).toBe("购买路线情报");
+    expect(journey.nodes[3].shop?.offers.service.label).toBe("买修理包");
   });
 
   test("shop resupply converts trade goods into field supplies with kitchen support", () => {
@@ -1019,7 +1049,7 @@ describe("journey route generation", () => {
     expect(resolved.fieldSupplies.food).toBeGreaterThan(1);
     expect(resolved.fieldSupplies.water).toBeGreaterThan(1);
     expect(resolved.pressure).toBeLessThan(42);
-    expect(resolved.logs.join("\n")).toContain("Shop support");
+    expect(resolved.logs.join("\n")).toContain("商店支援");
   });
 
   test("shop offer previews include radio and workshop support", () => {
@@ -1053,9 +1083,9 @@ describe("journey route generation", () => {
     });
 
     expect(intel.objectiveBonus).toBeGreaterThan(shop!.offers.intel.objectiveBonus);
-    expect(intel.supportText).toContain("Radio");
+    expect(intel.supportText).toContain("电台");
     expect(service.reward.materials).toBeGreaterThan(shop!.offers.service.reward.materials);
-    expect(service.supportText).toContain("Workshop");
+    expect(service.supportText).toContain("工坊");
   });
 
   test("tactics expose armored enemies and improve later strike damage", () => {
@@ -1081,7 +1111,7 @@ describe("journey route generation", () => {
 
     expect(exposed.combat?.exposed).toBeGreaterThan(0);
     expect(afterStrike.combat?.enemyHp).toBeLessThan(exposed.combat?.enemyHp ?? 999);
-    expect(afterStrike.logs.join("\n")).toContain("leads a strike");
+    expect(afterStrike.logs.join("\n")).toContain("发起攻击");
   });
 
   test("combat tracks individual survivor stamina and marks downed fighters", () => {
@@ -1118,7 +1148,7 @@ describe("journey route generation", () => {
     expect(resolvedStriker?.status).toBe("down");
     expect(resolved.woundedSurvivorIds).toContain(striker.id);
     expect(resolved.battleScars).toBeGreaterThan(journey.battleScars);
-    expect(resolved.logs.join("\n")).toContain(`${striker.name} is knocked down`);
+    expect(resolved.logs.join("\n")).toContain("过度用力后倒下");
   });
 
   test("combat intent rewards matching counters", () => {
@@ -1148,7 +1178,7 @@ describe("journey route generation", () => {
     const struck = resolveCombatRound(journey, "strike", squad, 60);
 
     expect(guarded.combat?.squadHp).toBeGreaterThan(struck.combat?.squadHp ?? 0);
-    expect(guarded.logs.join("\n")).toContain("guard catches the wind-up");
+    expect(guarded.logs.join("\n")).toContain("防守抓住蓄力窗口");
   });
 
   test("combat counters build tempo and enemy stagger", () => {
@@ -1250,11 +1280,11 @@ describe("journey route generation", () => {
     const strike = combatActionPreview(journey, "strike", squad, 60);
     const guard = combatActionPreview(journey, "guard", squad, 60);
 
-    expect(strike?.effect).toContain("damage");
-    expect(strike?.cost).toContain("Ammo -1");
+    expect(strike?.effect).toContain("伤害");
+    expect(strike?.cost).toContain("弹药 -1");
     expect(guard?.counterTag).toBe("Counter");
-    expect(guard?.effect).toContain("block");
-    expect(guard?.risk).toContain("Wind-up");
+    expect(guard?.effect).toContain("格挡");
+    expect(guard?.risk).toContain("蓄力");
   });
 
   test("combat action previews call out brace, prowl, and patch risk", () => {
@@ -1289,11 +1319,11 @@ describe("journey route generation", () => {
     const patch = combatActionPreview(journey, "patch", squad, 60);
 
     expect(tactic?.counterTag).toBe("Counter");
-    expect(tactic?.effect).toContain("Expose");
+    expect(tactic?.effect).toContain("暴露");
     expect(strike?.counterTag).toBe("Counter");
-    expect(strike?.risk).toContain("interrupt");
+    expect(strike?.risk).toContain("打断");
     expect(patch?.counterTag).toBe("Risk");
-    expect(patch?.risk).toContain("open");
+    expect(patch?.risk).toContain("撕开");
   });
 
   test("combat action previews surface enemy special pulse counters", () => {
@@ -1322,11 +1352,11 @@ describe("journey route generation", () => {
     const tactic = combatActionPreview(journey, "tactic", squad, 60);
     const guard = combatActionPreview(journey, "guard", squad, 60);
 
-    expect(journey.combat?.traitPulse.label).toBe("Pack pressure");
+    expect(journey.combat?.traitPulse.label).toBe("群体压迫");
     expect(tactic?.counterTag).toBe("Counter");
-    expect(tactic?.risk).toContain("Counters Pack pressure");
+    expect(tactic?.risk).toContain("反制 群体压迫");
     expect(guard?.counterTag).toBe("Risk");
-    expect(guard?.risk).toContain("Pack pressure");
+    expect(guard?.risk).toContain("群体压迫");
   });
 
   test("tactic breaks brace intent", () => {
@@ -1354,7 +1384,7 @@ describe("journey route generation", () => {
     const resolved = resolveCombatRound(journey, "tactic", squad, 60);
 
     expect(resolved.combat?.exposed).toBeGreaterThan(1);
-    expect(resolved.logs.join("\n")).toContain("tactic breaks the brace");
+    expect(resolved.logs.join("\n")).toContain("战术打破架势");
   });
 
   test("bleeder enemies add persistent bleed until patched", () => {
@@ -1409,9 +1439,9 @@ describe("journey route generation", () => {
     const countered = resolveCombatRound(journey, "tactic", squad, 60);
 
     expect(hardened.combat?.armor).toBe(3);
-    expect(hardened.logs.join("\n")).toContain("Trait pulse: Plating lock");
+    expect(hardened.logs.join("\n")).toContain("特性脉冲：甲壳闭锁");
     expect(countered.combat?.armor).toBe(2);
-    expect(countered.logs.join("\n")).toContain("Trait counter: Plating lock");
+    expect(countered.logs.join("\n")).toContain("特性反制：甲壳闭锁");
   });
 
   test("retreat exits combat with pressure and route progress", () => {
@@ -1435,7 +1465,7 @@ describe("journey route generation", () => {
 
     expect(retreated.currentNodeIndex).toBe(2);
     expect(retreated.pressure).toBeGreaterThan(journey.pressure);
-    expect(retreated.logs.join("\n")).toContain("retreats under pressure");
+    expect(retreated.logs.join("\n")).toContain("队伍顶着压力撤退");
   });
 
   test("combat victory records trophies and battle scars based on remaining stamina", () => {
@@ -1461,11 +1491,11 @@ describe("journey route generation", () => {
 
     const won = resolveCombatRound(journey, "strike", squad, 75);
 
-    expect(won.trophies).toContain("armor plates");
+    expect(won.trophies).toContain("装甲碎片");
     expect(won.battleScars).toBeGreaterThan(0);
-    expect(won.pendingCombatLoot?.trophy).toBe("armor plates");
+    expect(won.pendingCombatLoot?.trophy).toBe("装甲碎片");
     expect(won.currentNodeIndex).toBe(1);
-    expect(won.logs.join("\n")).toContain("Battle scars");
+    expect(won.logs.join("\n")).toContain("战斗伤痕");
   });
 
   test("combat loot choices trade victory time for resources or objective clues", () => {
@@ -1494,7 +1524,7 @@ describe("journey route generation", () => {
 
     expect(intel.pendingCombatLoot).toBeNull();
     expect(intel.objectiveBonus).toBe(won.objectiveBonus + 1);
-    expect(intel.logs.join("\n")).toContain("Search for clues");
+    expect(intel.logs.join("\n")).toContain("搜寻线索");
     expect(salvage.bonusReward.materials).toBeGreaterThan(won.bonusReward.materials);
   });
 
@@ -1529,9 +1559,9 @@ describe("journey route generation", () => {
 
     expect(salvage.bonusReward.materials - won.bonusReward.materials).toBe(4);
     expect(salvage.bonusReward.fuel - won.bonusReward.fuel).toBe(2);
-    expect(salvage.logs.join("\n")).toContain("Workshop +2 salvage");
+    expect(salvage.logs.join("\n")).toContain("工坊 +2 战利品");
     expect(intel.objectiveBonus - won.objectiveBonus).toBe(2);
-    expect(intel.logs.join("\n")).toContain("Radio +1 objective");
+    expect(intel.logs.join("\n")).toContain("电台 +1 目标线索");
   });
 
   test("field dress loot choice reduces battle scars", () => {
@@ -1560,6 +1590,6 @@ describe("journey route generation", () => {
 
     expect(dressed.battleScars).toBeLessThan(won.battleScars);
     expect(dressed.bonusReward.medicine).toBeGreaterThan(won.bonusReward.medicine);
-    expect(dressed.logs.join("\n")).toContain("battle scars -1");
+    expect(dressed.logs.join("\n")).toContain("战伤 -1");
   });
 });

@@ -429,22 +429,22 @@ export function routePaceFor(journey: JourneyState): JourneyRoutePace {
   const nextNode = journey.nodes[safeIndex + 1] ?? null;
   const pendingRoad = journey.pendingRoadEvent;
   const currentLabel = pendingRoad ? roadEventLabel(pendingRoad.tone) : nodeTypeLabel(activeNode?.type);
-  const currentTitle = pendingRoad?.title ?? activeNode?.title ?? "Unknown route";
-  const nextLabel = nextNode ? nodeTypeLabel(nextNode.type) : "return";
-  const nextTitle = nextNode?.title ?? "Back to base";
+  const currentTitle = pendingRoad?.title ?? activeNode?.title ?? "未知路线";
+  const nextLabel = nextNode ? nodeTypeLabel(nextNode.type) : "返程";
+  const nextTitle = nextNode?.title ?? "返回基地";
   const progressPercent = totalStops <= 1 ? 100 : Math.round((safeIndex / (totalStops - 1)) * 100);
   const elapsedHours = journeyElapsedHours(journey);
   const etaHours = Math.max(0, totalStops - safeIndex - 1) * (travelPlanOptions[journey.travelPlan]?.hours ?? 3) + (pendingRoad ? 1 : 0);
 
   return {
-    clockLabel: `${elapsedHours}h on road`,
+    clockLabel: `已行进 ${elapsedHours} 小时`,
     currentLabel,
     currentStop: safeIndex + 1,
     currentTitle,
     distanceSegments: journey.condition.distance,
     elapsedHours,
     etaHours,
-    etaLabel: etaHours > 0 ? `~${etaHours}h to extraction` : "Extraction ready",
+    etaLabel: etaHours > 0 ? `约 ${etaHours} 小时后可撤离` : "可以撤离",
     forecast: journey.nodes.map((node, index) => ({
       index: index + 1,
       label: nodeTypeLabel(node.type),
@@ -462,18 +462,29 @@ export function routePaceFor(journey: JourneyState): JourneyRoutePace {
 
 function nodeTypeLabel(type?: JourneyNode["type"]): string {
   if (!type) {
-    return "route";
+    return "路线";
   }
 
-  return type;
+  const labels: Record<JourneyNode["type"], string> = {
+    camp: "营地",
+    combat: "战斗",
+    event: "事件",
+    extraction: "撤离",
+    shop: "商店"
+  };
+  return labels[type];
 }
 
 function roadEventLabel(tone: JourneyRoadEventTone): string {
   if (tone === "road") {
-    return "road fork";
+    return "路口";
   }
 
-  return `road ${tone}`;
+  const labels: Record<Exclude<JourneyRoadEventTone, "road">, string> = {
+    find: "路上发现",
+    hazard: "路上险情"
+  };
+  return labels[tone];
 }
 
 export type JourneyCombatActionPreview = {
@@ -528,184 +539,184 @@ type RoadHardship = JourneyHardship & {
 const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
   resources: [
     {
-      title: "Sluice Gate Detour",
-      body: "A service gate is half-open, with enough room to crawl through if the squad is willing to slow down.",
+      title: "闸门绕行",
+      body: "一扇检修闸半开着，只要队伍愿意放慢速度，就能从缝里钻过去。",
       careful: {
-        fallbackLog: "The team maps the gate by touch, but thirst makes every pause louder.",
-        label: "Map the gate",
+        fallbackLog: "队伍摸索着记录闸门结构，但口渴让每一次停顿都显得更响。",
+        label: "测绘闸门",
         pressure: -11,
         rewardKeys: ["water", "materials"],
         rollShift: -0.11,
-        successLog: "The team spends a drink break mapping the gate and marks a safer return lane.",
+        successLog: "队伍花掉一次补水停顿测绘闸门，并标出更安全的回撤线。",
         supplyPriority: ["water", "food"]
       },
       force: {
-        fallbackLog: "The squad forces the rusted gate dry and the shriek carries too far.",
-        label: "Crank it open",
+        fallbackLog: "队伍硬拧生锈闸门，金属尖叫声传得太远。",
+        label: "强行开闸",
         pressure: 9,
         rewardKeys: ["materials"],
         rollShift: 0.09,
-        successLog: "A burst of ammo breaks the lock before the sound can build.",
+        successLog: "一轮弹药打断锁舌，在噪音扩散前解决了阻碍。",
         supplyPriority: ["ammo", "fuel"]
       }
     },
     {
-      title: "Pump Room Cache",
-      body: "Something useful is sealed inside a maintenance locker, but the room keeps filling with bad air.",
+      title: "泵房储物柜",
+      body: "检修柜里封着有用的东西，但房间正在一点点灌满坏空气。",
       careful: {
-        fallbackLog: "They open the locker slowly, finding supplies while coughing through the delay.",
-        label: "Vent first",
+        fallbackLog: "他们慢慢撬开储物柜，咳着嗽把补给翻出来。",
+        label: "先通风",
         pressure: -8,
         rewardKeys: ["materials", "medicine"],
         rollShift: -0.08,
-        successLog: "Fuel runs the vent fan long enough to search cleanly.",
+        successLog: "燃料让排风扇多撑了一会儿，搜索过程干净许多。",
         supplyPriority: ["fuel", "water"]
       },
       force: {
-        fallbackLog: "The locker gives way, but the echo wakes the lower level.",
-        label: "Break locker",
+        fallbackLog: "柜门被砸开了，但回声吵醒了下层的东西。",
+        label: "砸开柜门",
         pressure: 11,
         rewardKeys: ["materials", "water"],
         rollShift: 0.1,
-        successLog: "A quick pry job spends tools and keeps the noise contained.",
+        successLog: "工具消耗换来一次快速撬锁，噪音被压在房间里。",
         supplyPriority: ["materials", "ammo"]
       }
     }
   ],
   urban: [
     {
-      title: "Apartment Stairwell",
-      body: "A stairwell is packed with old furniture, sealed doors, and names scratched into the paint.",
+      title: "公寓楼梯间",
+      body: "楼梯间塞满旧家具、封死的门，以及刮进墙漆里的名字。",
       careful: {
-        fallbackLog: "The squad clears each landing by hand, gaining loot but burning daylight.",
-        label: "Clear landings",
+        fallbackLog: "队伍一层层清开平台，收获物资，也烧掉了宝贵时间。",
+        label: "清理平台",
         pressure: -9,
         rewardKeys: ["food", "materials"],
         rollShift: -0.09,
-        successLog: "Food keeps the sweep methodical and the stairwell stays quiet.",
+        successLog: "食物让清扫节奏保持稳定，楼梯间没有被惊动。",
         supplyPriority: ["food", "water"]
       },
       force: {
-        fallbackLog: "They shove through the barricade and something below starts answering.",
-        label: "Kick through",
+        fallbackLog: "他们撞开路障，下面有什么东西开始回应。",
+        label: "踹开通路",
         pressure: 12,
         rewardKeys: ["materials", "ammo"],
         rollShift: 0.12,
-        successLog: "Ammo clears the worst door hinge before the whole block hears it.",
+        successLog: "弹药打断最糟糕的门铰，整栋楼还没来得及听见。",
         supplyPriority: ["ammo", "fuel"]
       }
     },
     {
-      title: "Clinic Back Desk",
-      body: "The back desk still has labeled drawers, but the reception bell rings whenever the floor flexes.",
+      title: "诊所后台",
+      body: "后台抽屉标签还在，但地板一弯，接待铃就会自己响。",
       careful: {
-        fallbackLog: "The drawers open one by one, useful but painfully slow.",
-        label: "Catalog drawers",
+        fallbackLog: "抽屉一个个打开，确实有用，但慢得让人牙酸。",
+        label: "逐格登记",
         pressure: -10,
         rewardKeys: ["medicine", "materials"],
         rollShift: -0.1,
-        successLog: "Medicine is spent stabilizing a leaking cabinet before the search.",
+        successLog: "药品被用来稳住漏液柜体，搜索才没有变成事故。",
         supplyPriority: ["medicine", "water"]
       },
       force: {
-        fallbackLog: "A fast grab pulls supplies and three unwanted echoes.",
-        label: "Fast grab",
+        fallbackLog: "快速抓取拿到了补给，也拉出了三声不该有的回响。",
+        label: "快速搜走",
         pressure: 10,
         rewardKeys: ["medicine", "food"],
         rollShift: 0.09,
-        successLog: "A flare of fuel distracts the corridor long enough to move.",
+        successLog: "燃料点出的火光短暂吸引了走廊注意，队伍趁机移动。",
         supplyPriority: ["fuel", "ammo"]
       }
     }
   ],
   weird: [
     {
-      title: "Listening Vines",
-      body: "The plants bend toward voices. Even whispers seem to feed them.",
+      title: "听声藤蔓",
+      body: "植物会朝声音弯过去，连耳语都像是在喂它们。",
       careful: {
-        fallbackLog: "The squad mouths instructions and gathers samples while nerves fray.",
-        label: "Move silent",
+        fallbackLog: "队伍用口型传话采集样本，神经被一点点磨薄。",
+        label: "无声穿行",
         pressure: -7,
         rewardKeys: ["medicine", "food"],
         rollShift: -0.1,
-        successLog: "Water poured into the roots keeps the vines distracted.",
+        successLog: "倒进根部的水让藤蔓分了心。",
         supplyPriority: ["water", "medicine"]
       },
       force: {
-        fallbackLog: "The squad cuts through and the greenhouse remembers their names.",
-        label: "Cut through",
+        fallbackLog: "队伍砍出一条路，温室记住了他们的名字。",
+        label: "砍开通路",
         pressure: 15,
         rewardKeys: ["food", "medicine"],
         rollShift: 0.14,
-        successLog: "Fuel fire buys a short, ugly path through the vines.",
+        successLog: "燃料火焰烧出一条短而难看的通道。",
         supplyPriority: ["fuel", "ammo"]
       }
     },
     {
-      title: "Mirror Aisle",
-      body: "The corridor reflects the squad with a delay, as if the building needs time to invent them.",
+      title: "镜面走廊",
+      body: "走廊里的倒影总慢半拍，像建筑需要时间把队伍重新编出来。",
       careful: {
-        fallbackLog: "They mark the real path with chalk dust and recover a little salvage.",
-        label: "Mark reality",
+        fallbackLog: "他们用粉尘标出真实路线，顺手回收了一点材料。",
+        label: "标记真实",
         pressure: -8,
         rewardKeys: ["materials", "medicine"],
         rollShift: -0.11,
-        successLog: "Medicine keeps the shaking hands steady enough to mark the safe panes.",
+        successLog: "药品让发抖的手稳住，足够标出安全镜面。",
         supplyPriority: ["medicine", "food"]
       },
       force: {
-        fallbackLog: "They smash the false panes. The real ones scream later.",
-        label: "Smash panes",
+        fallbackLog: "他们砸碎假镜面，真正的镜面稍后才开始尖叫。",
+        label: "砸碎镜面",
         pressure: 14,
         rewardKeys: ["materials", "ammo"],
         rollShift: 0.13,
-        successLog: "Ammo shatters the wrong reflection before it can step out.",
+        successLog: "弹药在错误倒影走出来前击碎了它。",
         supplyPriority: ["ammo", "fuel"]
       }
     }
   ],
   wilds: [
     {
-      title: "Irrigation Ditch",
-      body: "The ditch can hide the team from sight, but every step is mud and old wire.",
+      title: "灌溉沟",
+      body: "沟渠能遮住队伍视线，但每一步都是泥和旧铁丝。",
       careful: {
-        fallbackLog: "They probe the mud slowly, finding food but losing momentum.",
-        label: "Probe mud",
+        fallbackLog: "他们慢慢探泥，找到了食物，也丢掉了推进速度。",
+        label: "探查泥沟",
         pressure: -10,
         rewardKeys: ["food", "water"],
         rollShift: -0.1,
-        successLog: "Water keeps the team steady while they probe for wire.",
+        successLog: "水让队伍保持冷静，能一边探路一边避开铁丝。",
         supplyPriority: ["water", "food"]
       },
       force: {
-        fallbackLog: "They sprint the ditch and leave a trail that can be followed.",
-        label: "Sprint ditch",
+        fallbackLog: "他们冲过沟渠，留下一条可以被追踪的痕迹。",
+        label: "冲过沟渠",
         pressure: 9,
         rewardKeys: ["food", "materials"],
         rollShift: 0.08,
-        successLog: "A burst of fuel smoke hides the sprint.",
+        successLog: "一阵燃料烟雾遮住了冲刺路线。",
         supplyPriority: ["fuel", "ammo"]
       }
     },
     {
-      title: "Field Shrine",
-      body: "A roadside shrine has fresh ash, canned fruit, and footprints that stop too suddenly.",
+      title: "田边小龛",
+      body: "路边小龛里有新灰、罐头水果，以及突然停止的脚印。",
       careful: {
-        fallbackLog: "They leave a token and take only what will not be missed.",
-        label: "Leave token",
+        fallbackLog: "他们留下供品，只拿不会被惦记的东西。",
+        label: "留下供品",
         pressure: -9,
         rewardKeys: ["food", "medicine"],
         rollShift: -0.09,
-        successLog: "Food left behind makes the exchange feel almost fair.",
+        successLog: "留下的食物让这次交换几乎显得公平。",
         supplyPriority: ["food", "water"]
       },
       force: {
-        fallbackLog: "They take the stash and the field goes quiet in the wrong way.",
-        label: "Loot shrine",
+        fallbackLog: "他们搜走储藏，田野安静得像在记账。",
+        label: "搜刮小龛",
         pressure: 13,
         rewardKeys: ["food", "ammo"],
         rollShift: 0.12,
-        successLog: "Ammo scares off whatever was watching the shrine.",
+        successLog: "弹药吓退了盯着小龛的东西。",
         supplyPriority: ["ammo", "fuel"]
       }
     }
@@ -718,23 +729,23 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       armor: 2,
       attackBonus: 0,
       hpBonus: 2,
-      intro: "A maintenance thing drags a wrench behind it.",
-      name: "Valve Ghoul",
+      intro: "检修服里的东西拖着扳手，一步一声铁响。",
+      name: "阀门尸",
       rewardKeys: ["materials"],
       trait: "armored",
-      traitLabel: "Armored",
-      traitText: "Reduces strike damage unless ammo or tactics expose it."
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
     },
     {
       armor: 1,
       attackBonus: 1,
       hpBonus: 5,
-      intro: "A nest of wet cables snaps awake.",
-      name: "Cable Nest",
+      intro: "一团潮湿电缆突然抽动，像被人从梦里拽醒。",
+      name: "缆线巢",
       rewardKeys: ["water", "materials"],
       trait: "bleeder",
-      traitLabel: "Serrated",
-      traitText: "Hits leave a lingering bleed until patched."
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
     }
   ],
   urban: [
@@ -742,23 +753,23 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       armor: 0,
       attackBonus: 2,
       hpBonus: 3,
-      intro: "A hallway pack hears the squad before the squad sees it.",
-      name: "Hallway Pack",
+      intro: "走廊里的成群影子先听见了队伍。",
+      name: "走廊群",
       rewardKeys: ["ammo"],
       trait: "swarm",
-      traitLabel: "Swarm",
-      traitText: "Pressure makes its counterattack sharper."
+      traitLabel: "成群",
+      traitText: "压力越高，反击越凶。"
     },
     {
       armor: 1,
       attackBonus: 1,
       hpBonus: 7,
-      intro: "The locked ward is not empty enough.",
-      name: "Ward Keeper",
+      intro: "上锁病区里并没有空到让人放心。",
+      name: "病区看守",
       rewardKeys: ["medicine"],
       trait: "armored",
-      traitLabel: "Armored",
-      traitText: "Reduces strike damage unless ammo or tactics expose it."
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
     }
   ],
   weird: [
@@ -766,23 +777,23 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       armor: 0,
       attackBonus: 3,
       hpBonus: 4,
-      intro: "The shadow arrives half a step before its owner.",
-      name: "Borrowed Shadow",
+      intro: "影子比主人早半步抵达。",
+      name: "借影",
       rewardKeys: ["medicine", "materials"],
       trait: "dread",
-      traitLabel: "Dread",
-      traitText: "Each hit adds pressure unless guarded."
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     },
     {
       armor: 2,
       attackBonus: 2,
       hpBonus: 8,
-      intro: "The room folds into a thing with too many corners.",
-      name: "Glass Saint",
+      intro: "房间折成了一个棱角过多的东西。",
+      name: "玻璃圣徒",
       rewardKeys: ["food", "medicine"],
       trait: "dread",
-      traitLabel: "Dread",
-      traitText: "Each hit adds pressure unless guarded."
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     }
   ],
   wilds: [
@@ -790,23 +801,23 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       armor: 0,
       attackBonus: 0,
       hpBonus: 4,
-      intro: "A scarecrow drops from its pole and runs badly but fast.",
-      name: "Running Scarecrow",
+      intro: "稻草人从杆上落下，跑得别扭，但很快。",
+      name: "奔跑稻草人",
       rewardKeys: ["food"],
       trait: "swarm",
-      traitLabel: "Swarm",
-      traitText: "Pressure makes its counterattack sharper."
+      traitLabel: "成群",
+      traitText: "压力越高，反击越凶。"
     },
     {
       armor: 2,
       attackBonus: 1,
       hpBonus: 6,
-      intro: "Something under the field moves like a plow.",
-      name: "Burrower",
+      intro: "田地下的东西像犁一样拱过来。",
+      name: "潜土者",
       rewardKeys: ["food", "materials"],
       trait: "bleeder",
-      traitLabel: "Serrated",
-      traitText: "Hits leave a lingering bleed until patched."
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
     }
   ]
 };
@@ -815,131 +826,131 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
   resources: [
     {
       costPriority: ["materials", "fuel"],
-      failLog: "No useful trade goods remain; the mechanic closes the kit.",
-      label: "Buy repair kit",
+      failLog: "没有能交易的东西了，修路人合上工具包。",
+      label: "买修理包",
       pressureFail: 3,
       pressureSuccess: -6,
       rewardKeys: ["medicine", "ammo"],
       rollShiftFail: 0.03,
       rollShiftSuccess: -0.06,
-      successLog: "The road mechanic swaps a field kit and bullets for salvage."
+      successLog: "修路人用一套野外工具和几枚子弹换走了材料。"
     }
   ],
   urban: [
     {
       costPriority: ["medicine", "food", "materials"],
-      failLog: "The courier refuses promises and disappears upstairs.",
-      label: "Trade with courier",
+      failLog: "跑腿人不收承诺，转身消失在楼上。",
+      label: "和跑腿人交易",
       pressureFail: 4,
       pressureSuccess: -7,
       rewardKeys: ["ammo", "fuel"],
       rollShiftFail: 0.04,
       rollShiftSuccess: -0.07,
-      successLog: "A courier sells a shortcut code and a small ammo roll."
+      successLog: "跑腿人卖出一段捷径口令和一卷弹药。"
     }
   ],
   weird: [
     {
       costPriority: ["water", "medicine", "fuel"],
-      failLog: "The masked vendor tilts its head and charges the squad in bad luck instead.",
-      label: "Pay masked vendor",
+      failLog: "戴面具的摊主歪了歪头，改向队伍收取坏运气。",
+      label: "付给面具摊主",
       pressureFail: 6,
       pressureSuccess: -8,
       rewardKeys: ["medicine", "materials"],
       rollShiftFail: 0.06,
       rollShiftSuccess: -0.08,
-      successLog: "The masked vendor accepts the offering and points at the real exit."
+      successLog: "面具摊主收下供品，指向真正的出口。"
     }
   ],
   wilds: [
     {
       costPriority: ["food", "water", "materials"],
-      failLog: "The field trader shrugs. No barter, no map.",
-      label: "Barter at field cart",
+      failLog: "田边商贩耸耸肩：没有交换，就没有地图。",
+      label: "在田边车摊换货",
       pressureFail: 2,
       pressureSuccess: -5,
       rewardKeys: ["medicine", "fuel"],
       rollShiftFail: 0.02,
       rollShiftSuccess: -0.05,
-      successLog: "A field trader marks a dry path and hands over a wrapped bottle."
+      successLog: "田边商贩标出一条干路，递来一只包好的瓶子。"
     }
   ]
 };
 
 const familyCamps: Record<LocationFamily, { body: string; title: string }> = {
   resources: {
-    body: "A dry maintenance alcove gives the squad ten quiet minutes before the pipes start knocking again.",
-    title: "Pump Service Camp"
+    body: "干燥的检修凹室给了队伍十分钟安静，直到管道重新开始敲响。",
+    title: "泵站休整点"
   },
   urban: {
-    body: "A locked classroom still has desks, curtains, and one door that can be wedged shut.",
-    title: "Classroom Camp"
+    body: "锁上的教室里还有桌椅、窗帘，以及一扇能顶住的门。",
+    title: "教室营地"
   },
   weird: {
-    body: "A circle of cold tile refuses to echo. It might be safe, or it might be listening politely.",
-    title: "Quiet Tile Camp"
+    body: "一圈冷瓷砖拒绝产生回声。它可能安全，也可能只是礼貌地听着。",
+    title: "静瓷营地"
   },
   wilds: {
-    body: "A windbreak of old tarps hides the squad from the road, but smoke would be easy to spot.",
-    title: "Field Windbreak"
+    body: "旧篷布搭出的防风处能把队伍藏离道路，但烟很容易被看见。",
+    title: "田野挡风处"
   }
 };
 
 const familyTravelMoods: Record<LocationFamily, Array<{ body: string; title: string }>> = {
   resources: [
     {
-      body: "Water ticks behind the walls and every drip makes the squad count its bottles again.",
-      title: "Concrete Drip"
+      body: "墙后水声滴答，每一滴都让队伍重新掂量水壶。",
+      title: "混凝土滴水"
     },
     {
-      body: "A service map is still bolted to the wall, warped but useful enough for one careful turn.",
-      title: "Service Map"
+      body: "服务地图还钉在墙上，虽然变形，但足够指引一次谨慎绕行。",
+      title: "检修地图"
     },
     {
-      body: "Old machinery breathes heat into the corridor and turns backpacks into anchors.",
-      title: "Boiler Heat"
+      body: "旧机器把热气吐进走廊，背包重得像锚。",
+      title: "锅炉余热"
     }
   ],
   urban: [
     {
-      body: "Window glass clicks in an empty office block, one pane at a time, like someone taking attendance.",
-      title: "Window Static"
+      body: "空办公楼里窗玻璃一片片轻响，像有人在点名。",
+      title: "窗格静电"
     },
     {
-      body: "The squad cuts through an apartment landing where every closed door has a different smell.",
-      title: "Tenant Row"
+      body: "队伍穿过公寓平台，每扇关着的门后都有不同气味。",
+      title: "住户长廊"
     },
     {
-      body: "A stairwell sign points both up and down. The fastest path is still a guess.",
-      title: "Wrong Floor"
+      body: "楼梯间标牌同时指向上下，最快路线依旧只能靠猜。",
+      title: "错误楼层"
     }
   ],
   weird: [
     {
-      body: "The route echoes half a second late, forcing the squad to move by sight instead of sound.",
-      title: "Wrong Echo"
+      body: "路线的回声总慢半拍，队伍只能靠眼睛移动。",
+      title: "错位回声"
     },
     {
-      body: "A corridor repeats the same painted number until the map stops being funny.",
-      title: "Loop Mark"
+      body: "走廊反复出现同一个喷漆编号，地图不再好笑。",
+      title: "循环标记"
     },
     {
-      body: "Something polite watches from the walls and never quite interrupts.",
-      title: "Quiet Witness"
+      body: "墙里有个礼貌的东西在看，从不真正打断你。",
+      title: "安静见证"
     }
   ],
   wilds: [
     {
-      body: "The fields go quiet enough that boots in the grass sound like a bad decision.",
-      title: "Field Hush"
+      body: "田野安静到草里的靴声都像一个坏决定。",
+      title: "田间静默"
     },
     {
-      body: "Dust hangs low across the lane, hiding fences, ditches, and the first useful scrap.",
-      title: "Dry Lane"
+      body: "尘土低低压在小路上，遮住栅栏、沟渠和第一块可用废料。",
+      title: "干尘小路"
     },
     {
-      body: "A line of old scare tape snaps in the wind and measures the squad's patience.",
-      title: "Tape Wind"
+      body: "一排旧警示带在风里抽响，慢慢耗掉队伍耐心。",
+      title: "胶带风"
     }
   ]
 };
@@ -948,177 +959,177 @@ const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
   resources: [
     {
       fatigue: 5,
-      hazardLog: "A flooded service tunnel forces everyone to haul packs over shoulder height.",
+      hazardLog: "淹水检修隧道迫使所有人把背包举过肩头。",
       hunger: 2,
-      mitigationLog: "A clean bypass keeps the squad out of the black water.",
-      neutralLog: "The squad follows chalk marks through dripping concrete.",
-      opportunityLog: "A pump cabinet still has a dry inner tray.",
+      mitigationLog: "一条干净绕路让队伍避开黑水。",
+      neutralLog: "队伍沿着粉笔记号穿过滴水混凝土。",
+      opportunityLog: "泵柜里还有一层干燥内屉。",
       pressure: 10,
       rewardKeys: ["water", "materials"],
       rollShift: 0.08,
       supplyPriority: ["fuel", "materials", "water"],
       thirst: 9,
-      title: "Flooded Underpass"
+      title: "淹水下穿道"
     },
     {
       fatigue: 4,
-      hazardLog: "A pressure valve snaps and throws hot mist across the route.",
+      hazardLog: "压力阀崩开，滚烫雾气横扫路线。",
       hunger: 1,
-      mitigationLog: "A quick brace turns the valve failure into a noisy inconvenience.",
-      neutralLog: "The old valves tick like a clock as the squad passes.",
-      opportunityLog: "The broken manifold coughs out usable fittings.",
+      mitigationLog: "及时支撑让阀门故障只变成一阵吵闹。",
+      neutralLog: "旧阀门像时钟一样滴答，队伍贴墙通过。",
+      opportunityLog: "破裂管汇咳出几件可用接头。",
       pressure: 8,
       rewardKeys: ["materials", "fuel"],
       rollShift: 0.06,
       supplyPriority: ["materials", "ammo"],
       thirst: 5,
-      title: "Valve Burst"
+      title: "阀门爆裂"
     },
     {
       fatigue: 3,
-      hazardLog: "A dry basin reflects too much sound and draws attention from the far catwalk.",
+      hazardLog: "干涸水池反射了太多声音，引来远处栈桥的注意。",
       hunger: 3,
-      mitigationLog: "The squad cuts across with muffled steps and leaves no echo trail.",
-      neutralLog: "The basin is empty, but every boot scrape feels borrowed.",
-      opportunityLog: "A maintenance basket hangs under the basin ladder.",
+      mitigationLog: "队伍压低脚步横穿过去，没有留下回声轨迹。",
+      neutralLog: "水池已经空了，但每次鞋底摩擦都像借来的声音。",
+      opportunityLog: "水池梯下挂着一个检修篮。",
       pressure: 9,
       rewardKeys: ["ammo", "medicine"],
       rollShift: 0.07,
       supplyPriority: ["ammo", "fuel"],
       thirst: 4,
-      title: "Echo Basin"
+      title: "回声水池"
     }
   ],
   urban: [
     {
       fatigue: 6,
-      hazardLog: "A stairwell has collapsed into rebar teeth, turning one block into three.",
+      hazardLog: "楼梯间塌成钢筋利齿，一段路被迫绕成三段。",
       hunger: 4,
-      mitigationLog: "A marked side door cuts around the wreckage before anything hears them.",
-      neutralLog: "The route bends through dead offices and broken stair signs.",
-      opportunityLog: "A janitor closet still has sealed utility bins.",
+      mitigationLog: "标记过的侧门绕开残骸，也避开了会听见他们的东西。",
+      neutralLog: "路线穿过废弃办公室和折断的楼梯标牌。",
+      opportunityLog: "清洁间里还有密封的工具箱。",
       pressure: 11,
       rewardKeys: ["materials", "medicine"],
       rollShift: 0.08,
       supplyPriority: ["materials", "fuel"],
       thirst: 4,
-      title: "Collapsed Stairwell"
+      title: "坍塌楼梯间"
     },
     {
       fatigue: 4,
-      hazardLog: "A vending bank topples in the corridor and turns the hall into a dinner bell.",
+      hazardLog: "一排售货机在走廊里倾倒，把整条走廊敲成饭铃。",
       hunger: 7,
-      mitigationLog: "The squad wedges the machines down slowly and keeps the noise contained.",
-      neutralLog: "Old snack wrappers scrape underfoot in the dark hall.",
-      opportunityLog: "One vending column still has a few useful packets inside.",
+      mitigationLog: "队伍慢慢顶住机器，把噪音压在原地。",
+      neutralLog: "旧零食包装在黑暗走廊里被踩得沙沙作响。",
+      opportunityLog: "一列售货机里还卡着几包能用的东西。",
       pressure: 9,
       rewardKeys: ["food", "water"],
       rollShift: 0.06,
       supplyPriority: ["materials", "ammo"],
       thirst: 3,
-      title: "Vending Bank"
+      title: "售货机排"
     },
     {
       fatigue: 5,
-      hazardLog: "A sealed apartment breathes mold and panic when the door opens.",
+      hazardLog: "密封公寓开门时吐出霉味和恐慌。",
       hunger: 2,
-      mitigationLog: "A mask filter and a slow sweep keep the room from turning ugly.",
-      neutralLog: "The squad passes door after door with names scratched off.",
-      opportunityLog: "Someone hid a compact first-aid roll behind a family photo.",
+      mitigationLog: "滤芯和慢速搜索让房间没有恶化成事故。",
+      neutralLog: "队伍经过一扇又一扇被刮掉姓名的门。",
+      opportunityLog: "有人把小急救卷藏在全家福后面。",
       pressure: 10,
       rewardKeys: ["medicine", "ammo"],
       rollShift: 0.08,
       supplyPriority: ["medicine", "fuel"],
       thirst: 5,
-      title: "Sealed Apartment"
+      title: "密封公寓"
     }
   ],
   weird: [
     {
       fatigue: 5,
-      hazardLog: "A corridor repeats itself until the squad starts losing count of their own footsteps.",
+      hazardLog: "走廊不断重复，队伍开始数不清自己的脚步。",
       hunger: 3,
-      mitigationLog: "A burned marker breaks the loop before it becomes a second memory.",
-      neutralLog: "The walls lean in, then pretend they did not.",
-      opportunityLog: "The wrong turn reveals a cache wrapped in clean plastic.",
+      mitigationLog: "烧焦标记在循环变成第二段记忆前把它切断。",
+      neutralLog: "墙壁向内倾斜，又假装无事发生。",
+      opportunityLog: "错误转角露出一包干净塑料包好的缓存。",
       pressure: 12,
       rewardKeys: ["medicine", "materials"],
       rollShift: 0.1,
       supplyPriority: ["fuel", "materials"],
       thirst: 5,
-      title: "Repeating Hall"
+      title: "重复走廊"
     },
     {
       fatigue: 4,
-      hazardLog: "A chorus under the floor learns the squad's names a little too quickly.",
+      hazardLog: "地板下的合唱太快学会了队员的名字。",
       hunger: 2,
-      mitigationLog: "A burst of noise scrambles the chorus long enough to move.",
-      neutralLog: "The floor hums under each step, almost in time with breathing.",
-      opportunityLog: "The humming floor hides a hatch with untouched tools.",
+      mitigationLog: "一阵噪音扰乱合唱，足够队伍趁机移动。",
+      neutralLog: "地板在每一步下低鸣，几乎和呼吸同拍。",
+      opportunityLog: "低鸣地板下藏着一个工具舱口。",
       pressure: 13,
       rewardKeys: ["ammo", "fuel"],
       rollShift: 0.11,
       supplyPriority: ["ammo", "fuel"],
       thirst: 4,
-      title: "Name Chorus"
+      title: "姓名合唱"
     },
     {
       fatigue: 3,
-      hazardLog: "A patch of glassy spores bursts and sticks silver dust to exposed skin.",
+      hazardLog: "一片玻璃孢子爆开，把银色粉尘黏上裸露皮肤。",
       hunger: 4,
-      mitigationLog: "A quick wash and sealed sleeves keep the spores from spreading.",
-      neutralLog: "Silver dust drifts where sunlight should have been.",
-      opportunityLog: "The spore bed has grown around a sealed medical pouch.",
+      mitigationLog: "快速冲洗和扎紧袖口阻止孢子扩散。",
+      neutralLog: "本该有阳光的地方漂着银尘。",
+      opportunityLog: "孢床包住了一只密封医疗袋。",
       pressure: 10,
       rewardKeys: ["medicine", "water"],
       rollShift: 0.09,
       supplyPriority: ["water", "medicine"],
       thirst: 8,
-      title: "Glassy Spores"
+      title: "玻璃孢子"
     }
   ],
   wilds: [
     {
       fatigue: 6,
-      hazardLog: "A ditch full of thorn wire snags packs and makes every crossing loud.",
+      hazardLog: "满是刺线的沟渠挂住背包，每次穿越都吵得要命。",
       hunger: 3,
-      mitigationLog: "A cut path through the wire saves time and skin.",
-      neutralLog: "The road fades into weeds and half-buried road reflectors.",
-      opportunityLog: "A weather box under the brush still has dry stores.",
+      mitigationLog: "提前剪出的通道节省了时间和皮肉。",
+      neutralLog: "道路消失在杂草和半埋反光桩之间。",
+      opportunityLog: "灌木下的气象箱里还有干燥补给。",
       pressure: 10,
       rewardKeys: ["food", "materials"],
       rollShift: 0.07,
       supplyPriority: ["materials", "fuel"],
       thirst: 5,
-      title: "Thorn Wire Ditch"
+      title: "刺线沟"
     },
     {
       fatigue: 4,
-      hazardLog: "A flock erupts from the field and points every distant head toward the squad.",
+      hazardLog: "一群鸟从田里炸起，把远处所有脑袋都指向队伍。",
       hunger: 2,
-      mitigationLog: "The squad waits under cover until the field settles again.",
-      neutralLog: "Grass hides the old lane better than the map does.",
-      opportunityLog: "A forgotten hunting blind still holds useful supplies.",
+      mitigationLog: "队伍在掩护下等待，直到田野重新平静。",
+      neutralLog: "草比地图更会隐藏旧小路。",
+      opportunityLog: "被遗忘的狩猎棚里还留着可用补给。",
       pressure: 11,
       rewardKeys: ["ammo", "food"],
       rollShift: 0.08,
       supplyPriority: ["fuel", "ammo"],
       thirst: 4,
-      title: "Bird Rise"
+      title: "惊鸟田"
     },
     {
       fatigue: 5,
-      hazardLog: "A creek crossing breaks under the lead foot and soaks the drinking kit.",
+      hazardLog: "溪流过点在领队脚下断裂，饮水包被浸湿。",
       hunger: 3,
-      mitigationLog: "A rope line keeps the crossing clean and fast.",
-      neutralLog: "The creek is shallow, cold, and too clear.",
-      opportunityLog: "A bank cache has been washed open by the current.",
+      mitigationLog: "绳线让渡溪干净又迅速。",
+      neutralLog: "溪水很浅、很冷，也清得不正常。",
+      opportunityLog: "岸边缓存被水流冲开了。",
       pressure: 9,
       rewardKeys: ["water", "medicine"],
       rollShift: 0.06,
       supplyPriority: ["materials", "water"],
       thirst: 9,
-      title: "Cold Creek"
+      title: "冷溪"
     }
   ]
 };
@@ -1133,7 +1144,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
 
   const nodes: JourneyNode[] = [
     {
-      body: `${event.body} Destination: ${location?.name ?? "unknown site"}.`,
+      body: `${event.body} 目标地点：${location?.name ?? "未知地点"}。`,
       careful: event.careful,
       force: event.force,
       id: "route-event",
@@ -1144,7 +1155,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       body: enemy.intro,
       enemy,
       id: "route-combat",
-      title: "Contact",
+      title: "遭遇战",
       type: "combat"
     },
     {
@@ -1155,16 +1166,16 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
       type: "camp"
     },
     {
-      body: "A temporary barter point appears before extraction. The price depends on what survived the road.",
+      body: "撤离前出现了一个临时交易点。价格取决于队伍一路上还剩下什么。",
       id: "route-shop",
       shop,
-      title: "Roadside Exchange",
+      title: "路边交易点",
       type: "shop"
     },
     {
-      body: "The exit is visible. One last signal check before the base opens the gate.",
+      body: "出口已经能看见了。基地需要最后一次信号确认，才会打开接应通道。",
       id: "route-extraction",
-      title: "Extraction Window",
+      title: "撤离窗口",
       type: "extraction"
     }
   ];
@@ -1191,11 +1202,11 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     locationFamily: family,
     locationId,
     logs: [
-      `Route opened for ${location?.name ?? "unknown site"} with ${draft.squadIds.length} survivor(s).`,
-      `Packed supplies are now field supplies. Spend them to lower pressure or save them for settlement.`,
-      `Pack burden: ${burden.load}/${burden.capacity}, ${carryBurdenLabel(burden.tier)}${
-        burden.fatiguePenalty > 0 ? `, travel fatigue +${burden.fatiguePenalty}` : ""
-      }${burden.pressurePenalty !== 0 ? `, starting pressure ${formatSignedPercent(burden.pressurePenalty)}` : ""}.`
+      `路线开启：${location?.name ?? "未知地点"}，${draft.squadIds.length} 名幸存者出发。`,
+      "携带物资已转为随身补给。可以在路上消耗它们降低压力，也可以留到撤离后结算。",
+      `背包负重：${burden.load}/${burden.capacity}，${carryBurdenLabel(burden.tier)}${
+        burden.fatiguePenalty > 0 ? `，行进疲劳 +${burden.fatiguePenalty}` : ""
+      }${burden.pressurePenalty !== 0 ? `，初始压力 ${formatSignedPercent(burden.pressurePenalty)}` : ""}。`
     ],
     nodes,
     hardships: [],
@@ -1300,15 +1311,15 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       action,
       journey.pressure,
       combat.intent === "prowl" ? "Counter" : "Standard",
-      combat.intent === "prowl" ? "Can interrupt Prowl and reduce the hit back." : `Expected hit back ${incoming}.`
+      combat.intent === "prowl" ? "可打断游猎，并降低反击。" : `预计反击 ${incoming}。`
     );
     return {
       action,
       actorName: striker.name,
-      cost: hasAmmo ? "Ammo -1" : "No ammo",
+      cost: hasAmmo ? "弹药 -1" : "没有弹药",
       counterTag: pulsePreview.counterTag,
-      effect: withCombatTempoPreview(combat, action, withActionStrain(`${damage} damage${armorPenalty > 0 ? `, armor absorbs ${armorPenalty}` : ""}`, strain)),
-      label: "Strike",
+      effect: withCombatTempoPreview(combat, action, withActionStrain(`伤害 ${damage}${armorPenalty > 0 ? `，护甲吸收 ${armorPenalty}` : ""}`, strain)),
+      label: "攻击",
       risk: pulsePreview.risk,
       strain
     };
@@ -1323,15 +1334,15 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       action,
       journey.pressure,
       combat.intent === "windup" ? "Counter" : "Standard",
-      combat.intent === "windup" ? "Wind-up punish window. Strongest defensive answer." : `Expected hit back ${Math.max(1, incoming - blocked)}.`
+      combat.intent === "windup" ? "蓄力反击窗口。最强防守应对。" : `预计反击 ${Math.max(1, incoming - blocked)}。`
     );
     return {
       action,
       actorName: lead.name,
-      cost: "No supply",
+      cost: "无补给消耗",
       counterTag: pulsePreview.counterTag,
-      effect: withCombatTempoPreview(combat, action, withActionStrain(`block ${blocked}, expose +${combat.intent === "windup" ? 2 : 1}`, strain)),
-      label: "Guard",
+      effect: withCombatTempoPreview(combat, action, withActionStrain(`格挡 ${blocked}，暴露 +${combat.intent === "windup" ? 2 : 1}`, strain)),
+      label: "防守",
       risk: pulsePreview.risk,
       strain
     };
@@ -1347,15 +1358,15 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
       action,
       journey.pressure,
       combat.intent === "prowl" ? "Risk" : "Standard",
-      combat.intent === "prowl" ? "Prowl leaves the line open while patching." : `Expected hit back ${incoming}.`
+      combat.intent === "prowl" ? "游猎会在包扎时撕开队形。" : `预计反击 ${incoming}。`
     );
     return {
       action,
       actorName: medic.name,
-      cost: hasMedicine ? "Medicine -1" : "No medicine",
+      cost: hasMedicine ? "药品 -1" : "没有药品",
       counterTag: pulsePreview.counterTag,
-      effect: withCombatTempoPreview(combat, action, withActionStrain(`Heal ${heal}${bleedRelief > 0 ? `, bleed -${bleedRelief}` : ""}`, strain)),
-      label: "Patch",
+      effect: withCombatTempoPreview(combat, action, withActionStrain(`治疗 ${heal}${bleedRelief > 0 ? `，流血 -${bleedRelief}` : ""}`, strain)),
+      label: "包扎",
       risk: pulsePreview.risk,
       strain
     };
@@ -1368,10 +1379,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     const pressureDrop = Math.floor(tactician.attributes.luck / 25) + journey.support.pressureRelief + tempoBonus;
     const tacticRisk =
       combat.intent === "brace"
-        ? "Breaks Brace before armor rises."
+        ? "在护甲上升前打破架势。"
         : combat.intent === "prowl"
-          ? "Reads Prowl and softens the hit."
-          : `Expected hit back ${incoming}.`;
+          ? "读出游猎并削弱反击。"
+          : `预计反击 ${incoming}。`;
     const pulsePreview = previewWithEnemyPulse(
       combat,
       action,
@@ -1382,10 +1393,10 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     return {
       action,
       actorName: tactician.name,
-      cost: "No supply",
+      cost: "无补给消耗",
       counterTag: pulsePreview.counterTag,
-      effect: withCombatTempoPreview(combat, action, withActionStrain(`Expose +${expose}, pressure -${pressureDrop}%`, strain)),
-      label: "Tactic",
+      effect: withCombatTempoPreview(combat, action, withActionStrain(`暴露 +${expose}，压力 -${pressureDrop}%`, strain)),
+      label: "战术",
       risk: pulsePreview.risk,
       strain
     };
@@ -1396,16 +1407,16 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
     action,
     journey.pressure,
     "Risk",
-    `Pressure +${Math.max(8, 18 - journey.support.pressureRelief)}%, route continues.`
+    `压力 +${Math.max(8, 18 - journey.support.pressureRelief)}%，路线继续。`
   );
 
   return {
     action,
     actorName: lead.name,
-    cost: "No supply",
+    cost: "无补给消耗",
     counterTag: retreatPreview.counterTag,
-    effect: `Exit combat, take ${Math.max(3, Math.ceil(combat.attack / 2))} damage`,
-    label: "Retreat",
+    effect: `脱离战斗，承受 ${Math.max(3, Math.ceil(combat.attack / 2))} 伤害`,
+    label: "撤退",
     risk: retreatPreview.risk,
     strain
   };
@@ -1430,7 +1441,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     const retreatPressure = Math.max(8, 18 - next.support.pressureRelief);
     next.pressure = clampPercent(next.pressure + retreatPressure);
     next.rollShift += retreatPressure / 100;
-    next.logs.push(`${node.title}: the squad retreats under pressure. Squad stamina takes a hit, pressure +${retreatPressure}%.`);
+    next.logs.push(`${node.title}：队伍顶着压力撤退，全队体力受损，压力 +${retreatPressure}%。`);
     next.currentNodeIndex += 1;
     next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
     return next;
@@ -1446,7 +1457,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
   if (action === "strike") {
     actionActorId = striker.id;
-    markCombatantAction(combat, striker.id, "Strike");
+    markCombatantAction(combat, striker.id, "攻击");
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
     const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (ammoSpent ? 2 : 0));
     const fieldRunnerBonus = hasPerk(striker, "field_runner") ? 2 : 0;
@@ -1463,17 +1474,17 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     );
     if (combat.intent === "prowl") {
       incoming = Math.max(1, incoming - 3);
-      counterLog.push("strike interrupts the prowl");
+      counterLog.push("攻击打断游猎");
     }
     combat.enemyHp = Math.max(0, combat.enemyHp - damage);
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${striker.name} leads a strike for ${damage} damage${ammoSpent ? " and spends 1 ammo" : ""}${
-        armorPenalty > 0 ? ` (${combat.enemyTraitLabel} absorbs ${armorPenalty})` : ""
-      }${counterLog.length ? `, ${counterLog.join(", ")}` : ""}.`
+      `${node.title}：第 ${combat.round} 回合，${striker.name} 发起攻击，造成 ${damage} 伤害${ammoSpent ? "，弹药 -1" : ""}${
+        armorPenalty > 0 ? `（${combat.enemyTraitLabel} 吸收 ${armorPenalty}）` : ""
+      }${counterLog.length ? `，${counterLog.join("，")}` : ""}。`
     );
   } else if (action === "guard") {
     actionActorId = lead.id;
-    markCombatantAction(combat, lead.id, "Guard");
+    markCombatantAction(combat, lead.id, "防守");
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock + tempoBonus;
     const windupBlock = combat.intent === "windup" ? 6 : 0;
     incoming = Math.max(1, Math.floor(incoming / 2) - guardValue - windupBlock);
@@ -1482,18 +1493,18 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     combat.exposed = Math.min(3, combat.exposed + 1);
     if (combat.intent === "windup") {
       combat.exposed = Math.min(4, combat.exposed + 1);
-      counterLog.push("guard catches the wind-up");
+      counterLog.push("防守抓住蓄力窗口");
     }
     next.pressure = clampPercent(next.pressure - 3);
     next.rollShift -= 0.02;
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${lead.name} holds guard. Incoming damage drops, enemy exposed +${combat.intent === "windup" ? 2 : 1}, pressure -3%${
-        counterLog.length ? `, ${counterLog.join(", ")}` : ""
-      }.`
+      `${node.title}：第 ${combat.round} 回合，${lead.name} 稳住防线。来袭伤害降低，敌人暴露 +${combat.intent === "windup" ? 2 : 1}，压力 -3%${
+        counterLog.length ? `，${counterLog.join("，")}` : ""
+      }。`
     );
   } else if (action === "patch") {
     actionActorId = medic.id;
-    markCombatantAction(combat, medic.id, "Patch");
+    markCombatantAction(combat, medic.id, "包扎");
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
     const steadyHandsBonus = hasPerk(medic, "steady_hands") ? 3 : 0;
@@ -1505,37 +1516,37 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     if (combat.intent === "prowl") {
       incoming += 4;
       next.pressure = clampPercent(next.pressure + 3);
-      counterLog.push("patching under a prowl leaves the line open");
+      counterLog.push("游猎中包扎会撕开队形");
     }
     next.rollShift -= medicineSpent ? 0.02 : 0.01;
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${medic.name} patches ${patient?.name ?? "the line"} for ${heal} stamina${
-        medicineSpent ? " and spends 1 medicine" : ""
+      `${node.title}：第 ${combat.round} 回合，${medic.name} 为 ${patient?.name ?? "队形"} 包扎，恢复 ${heal} 体力${
+        medicineSpent ? "，药品 -1" : ""
       }${
-        counterLog.length ? `, ${counterLog.join(", ")}` : ""
-      }.`
+        counterLog.length ? `，${counterLog.join("，")}` : ""
+      }。`
     );
   } else if (action === "tactic") {
     actionActorId = tactician.id;
-    markCombatantAction(combat, tactician.id, "Tactic");
+    markCombatantAction(combat, tactician.id, "战术");
     const braceBreak = combat.intent === "brace" ? 2 : 0;
     const prowlRead = combat.intent === "prowl" ? 1 : 0;
     const expose = 1 + braceBreak + prowlRead + Math.floor(tempoBonus / 2) + Math.floor(tactician.attributes.technical / 35) + (hasPerk(tactician, "steady_hands") ? 1 : 0);
     combat.exposed = Math.min(4, combat.exposed + expose);
     if (combat.intent === "brace") {
       incoming = Math.max(1, incoming - 2);
-      counterLog.push("tactic breaks the brace");
+      counterLog.push("战术打破架势");
     }
     if (combat.intent === "prowl") {
       incoming = Math.max(1, incoming - 4);
-      counterLog.push("tactic reads the prowl");
+      counterLog.push("战术读出游猎");
     }
     next.pressure = clampPercent(next.pressure - Math.floor(tactician.attributes.luck / 25) - next.support.pressureRelief - tempoBonus);
     next.rollShift -= 0.04;
     next.logs.push(
-      `${node.title}: round ${combat.round}, ${tactician.name} calls the pattern. Enemy exposed +${expose}, pressure softens${
-        counterLog.length ? `, ${counterLog.join(", ")}` : ""
-      }.`
+      `${node.title}：第 ${combat.round} 回合，${tactician.name} 读出节奏。敌人暴露 +${expose}，压力缓和${
+        counterLog.length ? `，${counterLog.join("，")}` : ""
+      }。`
     );
   }
 
@@ -1553,10 +1564,10 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
     if (combat.enemyTrait === "armored") {
       if (traitPulseCountered) {
-        traitPulseLog.push("Trait counter: Plating lock stays open.");
+        traitPulseLog.push("特性反制：甲壳闭锁维持打开。");
       } else if (combat.exposed <= 0) {
         combat.armor = Math.min(6, combat.armor + 1);
-        traitPulseLog.push("Trait pulse: Plating lock hardens armor +1.");
+        traitPulseLog.push("特性脉冲：甲壳闭锁使护甲 +1。");
       }
     }
 
@@ -1566,11 +1577,11 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
         incoming = Math.max(1, incoming - Math.min(4, pressureDamage));
         next.pressure = clampPercent(next.pressure - 2);
         next.rollShift -= 0.02;
-        traitPulseLog.push("Trait counter: Pack pressure is split before it lands.");
+        traitPulseLog.push("特性反制：群体压迫在扑上来前被分割。");
       } else if (pressureDamage > 0) {
         next.pressure = clampPercent(next.pressure + 3);
         next.rollShift += 0.02;
-        traitPulseLog.push(`Trait pulse: Pack pressure converts route heat into +${pressureDamage} hit back and pressure +3%.`);
+        traitPulseLog.push(`特性脉冲：群体压迫把路线热度转成反击 +${pressureDamage}，压力 +3%。`);
       }
     }
 
@@ -1578,44 +1589,44 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       if (traitPulseCountered) {
         next.pressure = clampPercent(next.pressure - 2);
         next.rollShift -= 0.02;
-        traitPulseLog.push("Trait counter: Black signal is grounded.");
+        traitPulseLog.push("特性反制：黑色信号被接地。");
       } else {
         next.pressure = clampPercent(next.pressure + 5);
         next.rollShift += 0.04;
-        pressureLog.push("pressure +5%");
-        traitPulseLog.push("Trait pulse: Black signal drives pressure +5%.");
+        pressureLog.push("压力 +5%");
+        traitPulseLog.push("特性脉冲：黑色信号推动压力 +5%。");
       }
     }
 
     if (combat.bleed > 0) {
       applyCombatDamage(next, combat, combat.bleed, incomingFocusId);
-      pressureLog.push(`bleed deals ${combat.bleed}`);
+      pressureLog.push(`流血造成 ${combat.bleed}`);
     }
 
     applyCombatDamage(next, combat, incoming, incomingFocusId);
     if (combat.enemyTrait === "bleeder") {
       if (traitPulseCountered || patchedThisRound) {
-        traitPulseLog.push("Trait counter: Open wounds are contained.");
+        traitPulseLog.push("特性反制：裂伤被控制。");
       } else {
         combat.bleed = Math.min(6, combat.bleed + 2);
-        pressureLog.push("bleed +2");
-        traitPulseLog.push("Trait pulse: Open wounds add bleed +2 until patched.");
+        pressureLog.push("流血 +2");
+        traitPulseLog.push("特性脉冲：裂伤在包扎前增加流血 +2。");
       }
     }
     if (combat.intent === "windup" && action !== "guard") {
       next.pressure = clampPercent(next.pressure + 4);
       next.rollShift += 0.03;
-      pressureLog.push("wind-up pressure +4%");
+      pressureLog.push("蓄力压力 +4%");
     }
 
     if (traitPulseLog.length > 0) {
-      next.logs.push(`${node.title}: ${traitPulseLog.join(" ")}`);
+      next.logs.push(`${node.title}：${traitPulseLog.join(" ")}`);
     }
-    next.logs.push(`${combat.enemyName} hits back for ${incoming}${pressureLog.length ? ` (${pressureLog.join(", ")})` : ""}.`);
+    next.logs.push(`${combat.enemyName} 反击，造成 ${incoming} 伤害${pressureLog.length ? `（${pressureLog.join("，")}）` : ""}。`);
     if (combat.squadHp <= 0) {
       next.pressure = clampPercent(next.pressure + 24);
       next.rollShift += 0.24;
-      next.logs.push(`${node.title}: the squad breaks contact in bad shape. Outcome pressure +24%.`);
+      next.logs.push(`${node.title}：队伍勉强脱离接触，状态很差。结算压力 +24%。`);
       next.currentNodeIndex += 1;
       next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
     } else {
@@ -1637,19 +1648,19 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       next.condition.fatigue = clampPercent(next.condition.fatigue + 14);
       next.pressure = clampPercent(next.pressure + 8);
       next.rollShift += 0.08;
-      next.logs.push(`${node.title}: the victory is ugly. Battle scars +2, fatigue +14, pressure +8%.`);
+      next.logs.push(`${node.title}：胜得很难看。战斗伤痕 +2，疲劳 +14，压力 +8%。`);
     } else if (hpRatio < 0.65) {
       next.battleScars += 1;
       markCombatScarTargetsFromFrontline(next, combat, 1);
       next.condition.fatigue = clampPercent(next.condition.fatigue + 7);
-      next.logs.push(`${node.title}: the squad wins but has to drag each other clear. Battle scars +1, fatigue +7.`);
+      next.logs.push(`${node.title}：队伍赢了，但几乎是互相拖着离开。战斗伤痕 +1，疲劳 +7。`);
     } else {
       next.bonusReward.materials += 1;
-      next.logs.push(`${node.title}: clean control of the fight leaves time to strip extra salvage. Materials +1.`);
+      next.logs.push(`${node.title}：战斗控制干净，队伍有时间额外拆解。材料 +1。`);
     }
     next.pressure = clampPercent(next.pressure - 12);
     next.rollShift -= 0.12;
-    next.logs.push(`${node.title}: ${combat.enemyName} is driven off. ${formatBundle(combat.reward)}, trophy: ${trophy}, pressure -12%.`);
+    next.logs.push(`${node.title}：${combat.enemyName} 被击退。${formatBundle(combat.reward)}，战利标记：${trophy}，压力 -12%。`);
     next.pendingCombatLoot = {
       enemyName: combat.enemyName,
       trait: combat.enemyTrait,
@@ -1693,28 +1704,28 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   const hardshipEffects = applyRoadHardship(next, squad);
   const pressureDelta = next.pressure - beforePressure;
   const rationLog = [
-    foodSpent ? "food -1" : "no food: hunger rises",
-    waterSpent ? "water -1" : "no water: thirst rises"
+    foodSpent ? "食物 -1" : "没有食物：饥饿上升",
+    waterSpent ? "水 -1" : "没有水：口渴上升"
   ].join(", ");
   next.logs.push(
-    `Road: segment ${next.condition.distance}, ${plan.label}, ${formatHours(segmentHours)}. ${rationLog}${
+    `道路：路段 ${next.condition.distance}，${plan.label}，${formatHours(segmentHours)}。${rationLog}${
       planSupplyResult.log ? `, ${planSupplyResult.log}` : ""
-    }. Fatigue +${fatigueGain}, pressure ${formatSignedPercent(
+    }。疲劳 +${fatigueGain}，压力 ${formatSignedPercent(
       rationPressure + planPressure + Math.floor(next.condition.fatigue / 35) - next.support.pressureRelief
-    )}.`
+    )}。`
   );
   next.travelHistory.push(
     createTravelRecord(next, plan, {
       effects: [
-        foodSpent ? "Food -1" : "No food",
-        waterSpent ? "Water -1" : "No water",
+        foodSpent ? "食物 -1" : "没有食物",
+        waterSpent ? "水 -1" : "没有水",
         ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : []),
         ...tacticOutcome.effects,
         ...threatOutcome.effects,
         ...hardshipEffects,
-        ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
-        `Fatigue +${fatigueGain}`,
-        `Pressure ${formatSignedPercent(pressureDelta)}`
+        ...(burdenFatigue > 0 ? [`负重 +${burdenFatigue}`] : []),
+        `疲劳 +${fatigueGain}`,
+        `压力 ${formatSignedPercent(pressureDelta)}`
       ],
       hours: segmentHours,
       pressureDelta
@@ -1728,11 +1739,11 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
   if (scavengeRoll > 0.72) {
     const key = travelScavengeKeys[next.condition.distance % travelScavengeKeys.length];
     next.bonusReward[key] += 1;
-    next.logs.push(`Road find: the squad spots a usable cache between stops. ${resourceLabels[key]} +1.`);
+    next.logs.push(`路上发现：队伍在两站之间找到一个还能用的储藏点。${resourceLabels[key]} +1。`);
   } else if (scavengeRoll < 0.12) {
     next.pressure = clampPercent(next.pressure + 6);
     next.rollShift += 0.04;
-    next.logs.push("Road snag: a bad detour costs time and makes the next contact feel closer. Pressure +6%.");
+    next.logs.push("道路受阻：错误绕路拖慢了队伍，也让下一次接触更近。压力 +6%。");
   }
 
   next.segmentTactic = "observe";
@@ -1778,8 +1789,8 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
   const notes = [
     ...tacticOutcome.effects,
     ...threatOutcome.effects,
-    ...(hardship ? [`Hardship risk: ${hardship.label}`] : []),
-    ...(burdenFatigue > 0 ? [`Burden +${burdenFatigue}`] : []),
+    ...(hardship ? [`路况风险：${hardship.label}`] : []),
+    ...(burdenFatigue > 0 ? [`负重 +${burdenFatigue}`] : []),
     ...(planSupplyResult.log ? [sentenceCase(planSupplyResult.log)] : [])
   ];
 
@@ -1799,7 +1810,7 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
     resultingPressure: next.pressure,
     riskLevel: segmentForecastRisk(next),
     segment: next.condition.distance,
-    supplyUse: [foodSpent ? "Food -1" : "No food", waterSpent ? "Water -1" : "No water"],
+    supplyUse: [foodSpent ? "食物 -1" : "没有食物", waterSpent ? "水 -1" : "没有水"],
     tacticLabel: tactic.label,
     threatLabel: threat.label
   };
@@ -1840,18 +1851,18 @@ export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCom
     } else {
       const pressureDrop = Math.max(4, guardValue * 2);
       next.pressure = clampPercent(next.pressure - pressureDrop);
-      next.logs.push(`Base command: Guard relay. The gate crew covers the route. Pressure -${pressureDrop}%.`);
+      next.logs.push(`基地指令：守卫接力。门口小队为出征队伍压住路线，压力 -${pressureDrop}%。`);
     }
   } else if (action === "recon-ping") {
     const reconValue = 1 + Math.floor((next.support.roadSearch + next.support.campScout + next.support.shopIntel) / 2);
     if (next.combat) {
       next.combat.exposed += reconValue;
-      next.logs.push(`Base command: Recon ping. The base marks weak points. Exposed +${reconValue}.`);
+      next.logs.push(`基地指令：侦察标记。基地标出弱点，暴露 +${reconValue}。`);
     } else {
       const pressureDrop = 4 + Math.min(4, next.support.pressureRelief + next.support.roadSearch);
       next.pressure = clampPercent(next.pressure - pressureDrop);
       next.objectiveBonus += 1;
-      next.logs.push(`Base command: Recon ping. Route notes clear the next decision. Pressure -${pressureDrop}%, objective +1.`);
+      next.logs.push(`基地指令：侦察标记。路线笔记让下一次抉择更清晰，压力 -${pressureDrop}%，目标 +1。`);
     }
   } else if (action === "supply-cache") {
     const food = 1 + Math.floor(next.support.shopRations / 2);
@@ -1860,7 +1871,7 @@ export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCom
     next.fieldSupplies.water += water;
     next.condition.hunger = clampPercent(next.condition.hunger - 12);
     next.condition.thirst = clampPercent(next.condition.thirst - 12);
-    next.logs.push(`Base command: Supply cache. Field supplies recover food +${food}, water +${water}, hunger -12, thirst -12.`);
+    next.logs.push(`基地指令：补给缓存。随身补给恢复食物 +${food}、水 +${water}，饥饿 -12，口渴 -12。`);
   }
 
   return next;
@@ -1874,7 +1885,7 @@ export function setJourneySegmentTactic(journey: JourneyState, tactic: JourneySe
 
   return {
     ...journey,
-    logs: [...journey.logs, `Segment tactic: ${option.label}. ${option.text}`],
+    logs: [...journey.logs, `路段战术：${option.label}。${option.text}`],
     segmentTactic: tactic
   };
 }
@@ -1887,7 +1898,7 @@ export function setJourneyTravelPlan(journey: JourneyState, plan: JourneyTravelP
 
   return {
     ...journey,
-    logs: [...journey.logs, `Road plan: ${option.label}. ${option.text}`],
+    logs: [...journey.logs, `行军计划：${option.label}。${option.text}`],
     travelPlan: plan
   };
 }
@@ -1910,11 +1921,11 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
     next.rollShift += option.rollShift;
     next.objectiveBonus += option.objectiveBonus;
     next.logs.push(
-      `${node.title}: ${option.successLog} ${resourceLabels[spentKey]} -1, fatigue ${formatSignedNumber(option.fatigue)}, hunger ${formatSignedNumber(
+      `${node.title}：${option.successLog} ${resourceLabels[spentKey]} -1，疲劳 ${formatSignedNumber(option.fatigue)}，饥饿 ${formatSignedNumber(
         option.hunger
-      )}, thirst ${formatSignedNumber(option.thirst)}, pressure ${formatSignedPercent(option.pressure)}${
-        option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""
-      }${option.supportText ? `. ${option.supportText}` : ""}.`
+      )}，口渴 ${formatSignedNumber(option.thirst)}，压力 ${formatSignedPercent(option.pressure)}${
+        option.objectiveBonus > 0 ? `，目标线索 +${option.objectiveBonus}` : ""
+      }${option.supportText ? `。${option.supportText}` : ""}。`
     );
     return next;
   }
@@ -1925,7 +1936,7 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
   next.condition.thirst = clampPercent(next.condition.thirst + Math.max(5, option.thirst + 16));
   next.pressure = clampPercent(next.pressure + fallbackPressure);
   next.rollShift += Math.max(0.03, option.rollShift / 2);
-  next.logs.push(`${node.title}: ${option.fallbackLog} Pressure ${formatSignedPercent(fallbackPressure)}${option.supportText ? `. ${option.supportText}` : ""}.`);
+  next.logs.push(`${node.title}：${option.fallbackLog} 压力 ${formatSignedPercent(fallbackPressure)}${option.supportText ? `。${option.supportText}` : ""}。`);
   return next;
 }
 
@@ -1941,7 +1952,7 @@ export function resolveShopAction(journey: JourneyState, action: JourneyShopActi
   if (!spentKey) {
     next.pressure = clampPercent(next.pressure + offer.pressureFail);
     next.rollShift += offer.rollShiftFail;
-    next.logs.push(`${node.title}: ${offer.failLog} Pressure ${formatSignedPercent(offer.pressureFail)}${offer.supportText ? `. ${offer.supportText}` : ""}.`);
+    next.logs.push(`${node.title}：${offer.failLog} 压力 ${formatSignedPercent(offer.pressureFail)}${offer.supportText ? `。${offer.supportText}` : ""}。`);
     return next;
   }
 
@@ -1954,13 +1965,13 @@ export function resolveShopAction(journey: JourneyState, action: JourneyShopActi
   next.pressure = clampPercent(next.pressure + offer.pressure);
   next.rollShift += offer.rollShift;
   next.logs.push(
-    `${node.title}: ${offer.successLog} ${resourceLabels[spentKey]} -1, field ${formatBundle(offer.fieldSupplyReward)}, stash ${formatBundle(
+    `${node.title}：${offer.successLog} ${resourceLabels[spentKey]} -1，随身 ${formatBundle(offer.fieldSupplyReward)}，入库 ${formatBundle(
       offer.reward
-    )}, fatigue ${formatSignedNumber(offer.fatigue)}, hunger ${formatSignedNumber(offer.hunger)}, thirst ${formatSignedNumber(
+    )}，疲劳 ${formatSignedNumber(offer.fatigue)}，饥饿 ${formatSignedNumber(offer.hunger)}，口渴 ${formatSignedNumber(
       offer.thirst
-    )}, pressure ${formatSignedPercent(offer.pressure)}${offer.objectiveBonus > 0 ? `, objective +${offer.objectiveBonus}` : ""}${
-      offer.supportText ? `. ${offer.supportText}` : ""
-    }.`
+    )}，压力 ${formatSignedPercent(offer.pressure)}${offer.objectiveBonus > 0 ? `，目标线索 +${offer.objectiveBonus}` : ""}${
+      offer.supportText ? `。${offer.supportText}` : ""
+    }。`
   );
   return next;
 }
@@ -1987,11 +1998,11 @@ export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCo
   const scarsDelta = scarsBefore - next.battleScars;
 
   next.logs.push(
-    `${pending.enemyName}: ${option.label}. ${option.text} ${formatBundle(option.reward)}, fatigue ${formatSignedNumber(
+    `${pending.enemyName}：${option.label}。${option.text} ${formatBundle(option.reward)}，疲劳 ${formatSignedNumber(
       option.fatigue
-    )}, pressure ${formatSignedPercent(option.pressure)}${option.objectiveBonus > 0 ? `, objective +${option.objectiveBonus}` : ""}${
-      scarsDelta > 0 ? `, battle scars -${scarsDelta}` : ""
-    }${option.supportText ? `, ${option.supportText}` : ""}. Trophy secured: ${pending.trophy}.`
+    )}，压力 ${formatSignedPercent(option.pressure)}${option.objectiveBonus > 0 ? `，目标线索 +${option.objectiveBonus}` : ""}${
+      scarsDelta > 0 ? `，战伤 -${scarsDelta}` : ""
+    }${option.supportText ? `，${option.supportText}` : ""}。战利品已记录：${pending.trophy}。`
   );
   next.pendingCombatLoot = null;
   return next;
@@ -2099,53 +2110,53 @@ function materializeShop(template: ShopTemplate, family: LocationFamily): Journe
   const serviceReward = bundleFromKeys(template.rewardKeys);
   const resupplyText =
     family === "wilds"
-      ? "Buy wrapped food, clean water, and field directions from the cart."
+      ? "从车摊买包好的食物、净水和田间路线。"
       : family === "urban"
-        ? "Trade for sealed snack packs and a clean bottle before the last blocks."
+        ? "在最后几栋楼前换来密封零食和一瓶干净水。"
         : family === "weird"
-          ? "Pay for sealed water and things that still remember being food."
-          : "Buy dry rations and drinkable water from the road mechanic.";
+          ? "买下密封水，以及仍然记得自己是食物的东西。"
+          : "从修路人那里买干粮和能喝的水。";
   const intelText =
     family === "weird"
-      ? "Pay for a route omen and a mark that makes the exit less wrong."
-      : "Buy the kind of route note that saves one bad turn near extraction.";
+      ? "买下一则路兆，以及能让出口少错一点的标记。"
+      : "买下能在撤离前少走一次错路的路线笔记。";
 
   return {
     label: template.label,
     offers: {
       intel: {
         costPriority: [...template.costPriority],
-        failLog: "No one sells directions for promises. The delay makes the route feel watched.",
+        failLog: "没人会为了口头承诺卖方向。拖延让路线像是被盯上了。",
         fatigue: 1,
         fieldSupplyReward: createEmptyResourceBundle(),
         hunger: 0,
         id: "intel",
-        label: "Buy route intel",
+        label: "购买路线情报",
         objectiveBonus: 1,
         pressure: Math.min(-4, template.pressureSuccess - 2),
         pressureFail: template.pressureFail + 3,
         reward: createEmptyResourceBundle(),
         rollShift: Math.min(-0.06, template.rollShiftSuccess - 0.03),
         rollShiftFail: template.rollShiftFail + 0.02,
-        successLog: "The trader marks a cleaner extraction lane and a useful tower clue.",
+        successLog: "商贩标出更干净的撤离线，也给了一条有用的塔台线索。",
         text: intelText,
         thirst: 0
       },
       resupply: {
         costPriority: uniqueResourceKeys(["materials", "fuel", "ammo", ...template.costPriority]),
-        failLog: "The squad tries to barter for food, but the exchange has already packed the good crates.",
+        failLog: "队伍想换食物，但交易点已经收起了好箱子。",
         fatigue: -2,
         fieldSupplyReward: lootReward({ food: 1, water: 1 }),
         hunger: -8,
         id: "resupply",
-        label: "Buy road rations",
+        label: "购买路上口粮",
         objectiveBonus: 0,
         pressure: -4,
         pressureFail: template.pressureFail + 2,
         reward: createEmptyResourceBundle(),
         rollShift: -0.03,
         rollShiftFail: template.rollShiftFail + 0.02,
-        successLog: "The squad trades for sealed rations and refills the field kit.",
+        successLog: "队伍换到密封口粮，并补满了野外包。",
         text: resupplyText,
         thirst: -8
       },
@@ -2164,7 +2175,7 @@ function materializeShop(template: ShopTemplate, family: LocationFamily): Journe
         rollShift: template.rollShiftSuccess,
         rollShiftFail: template.rollShiftFail,
         successLog: template.successLog,
-        text: "Buy a field service package: parts for the base, plus a small immediate kit if the vendor has it.",
+        text: "购买野外服务包：给基地的零件，以及摊主手头能给的小型即时补给。",
         thirst: 0
       }
     }
@@ -2176,38 +2187,38 @@ function createCampOptions(family: LocationFamily): Record<JourneyCampAction, Jo
   const cookPressure = family === "wilds" ? -8 : -6;
   return {
     cook: {
-      fallbackLog: "They try to make a meal out of scraps, but the pause only makes empty stomachs louder.",
+      fallbackLog: "他们试着用边角料做饭，但停顿只让空腹更吵。",
       fatigue: -6,
       hunger: -28,
-      label: "Cook rations",
+      label: "烹煮口粮",
       objectiveBonus: 0,
       pressure: cookPressure,
       rollShift: -0.06,
-      successLog: "A hot ration reset steadies the squad before the next leg.",
+      successLog: "一份热口粮让队伍在下一段路前重新稳住。",
       supplyPriority: ["food", "water"],
       thirst: -20
     },
     rest: {
-      fallbackLog: "The squad rests without enough supplies. It helps, but everyone wakes up sharper and hungrier.",
+      fallbackLog: "补给不足的休息仍有帮助，但每个人醒来都更警觉，也更饿。",
       fatigue: -24,
       hunger: 6,
-      label: "Rest wounds",
+      label: "处理伤口",
       objectiveBonus: 0,
       pressure: -8,
       rollShift: -0.08,
-      successLog: "A guarded rest gets breathing room back into the team.",
+      successLog: "有人值守的休息让队伍重新喘上气。",
       supplyPriority: ["medicine", "food", "water"],
       thirst: 6
     },
     scout: {
-      fallbackLog: "They scout by instinct and lose time arguing over the route.",
+      fallbackLog: "他们凭直觉侦察，又为路线争执丢掉时间。",
       fatigue: 5,
       hunger: 4,
-      label: "Scout ahead",
+      label: "前出侦察",
       objectiveBonus: 1,
       pressure: scoutPressure,
       rollShift: -0.12,
-      successLog: "The squad spends gear to mark a safer lane and useful tower notes.",
+      successLog: "队伍消耗装备，标出更安全的通道和有用的塔台笔记。",
       supplyPriority: ["fuel", "ammo", "materials"],
       thirst: 4
     }
@@ -2236,29 +2247,29 @@ function uniqueResourceKeys(keys: ResourceKey[]): ResourceKey[] {
 }
 
 const resourceLabels: Record<ResourceKey, string> = {
-  ammo: "Ammo",
-  food: "Food",
-  fuel: "Fuel",
-  materials: "Materials",
-  medicine: "Medicine",
-  water: "Water"
+  ammo: "弹药",
+  food: "食物",
+  fuel: "燃料",
+  materials: "材料",
+  medicine: "药品",
+  water: "水"
 };
 
 const baseCommandDefinitions: Array<Pick<JourneyBaseCommandOption, "id" | "label" | "text">> = [
   {
     id: "guard-relay",
-    label: "Guard relay",
-    text: "Ask the base guard line to cover the squad or cool route pressure."
+    label: "守卫接力",
+    text: "让基地守卫线掩护队伍，或压低路线压力。"
   },
   {
     id: "recon-ping",
-    label: "Recon ping",
-    text: "Call for route notes, weak-point marks, and objective guidance."
+    label: "侦察标记",
+    text: "呼叫路线笔记、弱点标记和目标指引。"
   },
   {
     id: "supply-cache",
-    label: "Supply cache",
-    text: "Use base prep to recover emergency food and water in the field."
+    label: "补给缓存",
+    text: "用基地预备补给，在野外恢复紧急食物和饮水。"
   }
 ];
 
@@ -2284,18 +2295,18 @@ function baseCommandCharges(support: ExpeditionSupport, action: JourneyBaseComma
 function baseCommandEffectText(journey: Pick<JourneyState, "combat" | "support">, action: JourneyBaseCommandAction): string {
   if (action === "guard-relay") {
     const guardValue = 3 + journey.support.guardBlock + journey.support.roadSecure;
-    return journey.combat ? `Frontline guard +${guardValue}` : `Pressure -${Math.max(4, guardValue * 2)}%`;
+    return journey.combat ? `前线防护 +${guardValue}` : `压力 -${Math.max(4, guardValue * 2)}%`;
   }
 
   if (action === "recon-ping") {
     const reconValue = 1 + Math.floor((journey.support.roadSearch + journey.support.campScout + journey.support.shopIntel) / 2);
     const pressureDrop = 4 + Math.min(4, journey.support.pressureRelief + journey.support.roadSearch);
-    return journey.combat ? `Expose +${reconValue}` : `Pressure -${pressureDrop}% / Objective +1`;
+    return journey.combat ? `暴露 +${reconValue}` : `压力 -${pressureDrop}% / 目标 +1`;
   }
 
   const food = 1 + Math.floor(journey.support.shopRations / 2);
   const water = 1 + Math.floor(journey.support.campCook / 2);
-  return `Food +${food} / Water +${water}`;
+  return `食物 +${food} / 水 +${water}`;
 }
 
 function spreadCombatGuard(combat: JourneyCombat, guardValue: number) {
@@ -2317,9 +2328,9 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
     hunger: 0,
     hours: 3,
     id: "steady",
-    label: "Steady march",
+    label: "稳步行军",
     pressure: -1,
-    text: "Balanced travel with a small pressure drop.",
+    text: "平衡推进，小幅降低路线压力。",
     thirst: 0
   },
   {
@@ -2327,9 +2338,9 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
     hunger: 3,
     hours: 5,
     id: "scavenge",
-    label: "Strip the road",
+    label: "搜刮沿途",
     pressure: 5,
-    text: "More finds, more time exposed.",
+    text: "发现更多物资，但暴露时间更长。",
     thirst: 3
   },
   {
@@ -2337,9 +2348,9 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
     hunger: 5,
     hours: 2,
     id: "rush",
-    label: "Forced march",
+    label: "强行军",
     pressure: -6,
-    text: "Lower contact pressure at a heavy stamina cost.",
+    text: "以大量体力换取更低接触压力。",
     thirst: 6
   },
   {
@@ -2347,9 +2358,9 @@ export const travelPlanList: JourneyTravelPlanOption[] = [
     hunger: 1,
     hours: 4,
     id: "sneak",
-    label: "Go quiet",
+    label: "静默前进",
     pressure: -5,
-    text: "Spend cover gear to mute the route.",
+    text: "消耗掩护物资，压低路线动静。",
     thirst: 1
   }
 ];
@@ -2364,17 +2375,17 @@ export const segmentTacticList: JourneySegmentTacticOption[] = [
     failHunger: 0,
     failPressure: 0,
     failThirst: 0,
-    fallbackLog: "The squad keeps eyes open and does not spend extra supplies.",
+    fallbackLog: "队伍保持观察，没有额外消耗补给。",
     fatigue: 0,
     hunger: 0,
     id: "observe",
-    label: "Watch the road",
+    label: "观察路线",
     pressure: 0,
     routeSkill: 0,
     scavengeBonus: 0,
-    successLog: "The squad keeps the next stretch ordinary on purpose.",
+    successLog: "队伍刻意把下一段路线走得平稳。",
     supplyPriority: [],
-    text: "Default movement with no extra cost or modifier.",
+    text: "默认推进，不产生额外消耗或修正。",
     thirst: 0
   },
   {
@@ -2382,17 +2393,17 @@ export const segmentTacticList: JourneySegmentTacticOption[] = [
     failHunger: 0,
     failPressure: -6,
     failThirst: 0,
-    fallbackLog: "The squad tightens formation and trades speed for control.",
+    fallbackLog: "队伍收紧队形，用速度换控制。",
     fatigue: 2,
     hunger: 0,
     id: "brace",
-    label: "Tight formation",
+    label: "收紧队形",
     pressure: -6,
     routeSkill: 1,
     scavengeBonus: 0,
-    successLog: "A tight formation keeps bad angles covered before the next stop.",
+    successLog: "收紧队形让下一站前的危险角度都有人照看。",
     supplyPriority: [],
-    text: "Lower pressure and improve route control, but add a little fatigue.",
+    text: "降低压力并改善路线控制，但增加少量疲劳。",
     thirst: 0
   },
   {
@@ -2400,17 +2411,17 @@ export const segmentTacticList: JourneySegmentTacticOption[] = [
     failHunger: 6,
     failPressure: 4,
     failThirst: 6,
-    fallbackLog: "They call a ration break, but there is not enough to share cleanly.",
+    fallbackLog: "他们尝试分配口粮，但剩余补给不够干净地分给所有人。",
     fatigue: -2,
     hunger: -10,
     id: "ration",
-    label: "Share rations",
+    label: "分配口粮",
     pressure: -4,
     routeSkill: 0,
     scavengeBonus: 0,
-    successLog: "A controlled ration break steadies hands before the next stretch.",
+    successLog: "一次受控的口粮休息让队伍在下一段前稳住手脚。",
     supplyPriority: ["food", "water"],
-    text: "Spend one food or water to soften hunger, thirst, fatigue, and pressure.",
+    text: "消耗 1 份食物或水，缓解饥饿、口渴、疲劳和压力。",
     thirst: -10
   },
   {
@@ -2418,17 +2429,17 @@ export const segmentTacticList: JourneySegmentTacticOption[] = [
     failHunger: 3,
     failPressure: 8,
     failThirst: 3,
-    fallbackLog: "They search loose ruins without the right gear and lose time.",
+    fallbackLog: "他们缺少合适工具还硬搜废墟，浪费了时间。",
     fatigue: 3,
     hunger: 2,
     id: "prospect",
-    label: "Comb ruins",
+    label: "搜索废墟",
     pressure: 5,
     routeSkill: 0,
     scavengeBonus: 0.32,
-    successLog: "The squad burns a little gear to pry open better roadside finds.",
+    successLog: "队伍消耗一点工具，撬开了更好的路边发现。",
     supplyPriority: ["materials", "fuel"],
-    text: "Spend materials or fuel to greatly improve find odds, at higher pressure.",
+    text: "消耗材料或燃料，大幅提高发现概率，但压力更高。",
     thirst: 2
   }
 ];
@@ -2446,16 +2457,16 @@ export function segmentThreatFor(journey: Pick<JourneyState, "condition" | "loca
 export function segmentThreatMitigationFor(threat: JourneySegmentThreat, support: ExpeditionSupport): JourneySegmentThreatMitigation {
   const sourceScores: { label: string; value: number }[] = [];
   if (threat.counterTactics.includes("brace")) {
-    sourceScores.push({ label: "route cover", value: support.roadSecure + support.guardBlock });
+    sourceScores.push({ label: "路线掩护", value: support.roadSecure + support.guardBlock });
   }
   if (threat.counterTactics.includes("prospect")) {
-    sourceScores.push({ label: "salvage tools", value: support.roadSearch + support.lootSalvage + support.shopService });
+    sourceScores.push({ label: "搜刮工具", value: support.roadSearch + support.lootSalvage + support.shopService });
   }
   if (threat.counterTactics.includes("ration")) {
-    sourceScores.push({ label: "road stores", value: support.shopRations + support.campCook });
+    sourceScores.push({ label: "路上补给", value: support.shopRations + support.campCook });
   }
   if (threat.counterTactics.includes("observe")) {
-    sourceScores.push({ label: "route intel", value: support.pressureRelief + support.lootIntel + support.campScout });
+    sourceScores.push({ label: "路线情报", value: support.pressureRelief + support.lootIntel + support.campScout });
   }
 
   const activeSources = sourceScores.filter((source) => source.value > 0);
@@ -2465,7 +2476,7 @@ export function segmentThreatMitigationFor(threat: JourneySegmentThreat, support
     fatigue: Math.min(threat.fatigue, Math.floor(value / 3)),
     pressure: Math.min(threat.pressure, value * 2),
     scavengePenalty: Math.min(threat.scavengePenalty, value * 0.02),
-    source: activeSources.map((source) => source.label).join(" + ") || "none",
+    source: activeSources.map((source) => source.label).join(" + ") || "无",
     value
   };
 }
@@ -2477,10 +2488,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 3,
       id: "chlorine-fog",
-      label: "Chlorine fog",
+      label: "氯雾",
       pressure: 6,
       scavengePenalty: 0.06,
-      text: "Chemical fog turns every breath into a small negotiation.",
+      text: "化学雾让每一次呼吸都变成一次小谈判。",
       thirst: 5
     },
     {
@@ -2488,10 +2499,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 4,
       hunger: 0,
       id: "service-ladder",
-      label: "Service ladder",
+      label: "检修梯",
       pressure: 7,
       scavengePenalty: 0.04,
-      text: "A vertical maintenance climb splits the squad's pace.",
+      text: "垂直检修攀爬会撕开队伍节奏。",
       thirst: 1
     },
     {
@@ -2499,10 +2510,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 1,
       hunger: 0,
       id: "locked-meter",
-      label: "Locked meter",
+      label: "锁住的仪表箱",
       pressure: 5,
       scavengePenalty: 0.12,
-      text: "Useful parts sit behind old utility locks.",
+      text: "可用零件藏在老旧工具锁后面。",
       thirst: 0
     }
   ],
@@ -2512,10 +2523,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 3,
       hunger: 0,
       id: "glass-choke",
-      label: "Glass choke",
+      label: "玻璃瓶颈",
       pressure: 8,
       scavengePenalty: 0.08,
-      text: "Broken storefronts make every shortcut loud unless someone works the debris.",
+      text: "破碎店面让每条捷径都很响，除非有人处理碎片。",
       thirst: 1
     },
     {
@@ -2523,10 +2534,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 4,
       hunger: 0,
       id: "blind-corner",
-      label: "Blind corner",
+      label: "盲角",
       pressure: 7,
       scavengePenalty: 0.04,
-      text: "Tight alleys hide too much movement.",
+      text: "狭窄巷道藏着太多动静。",
       thirst: 0
     },
     {
@@ -2534,10 +2545,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 5,
       id: "long-stairwell",
-      label: "Long stairwell",
+      label: "长楼梯",
       pressure: 5,
       scavengePenalty: 0.04,
-      text: "A long stairwell burns legs and tempers.",
+      text: "长楼梯同时消耗腿力和耐心。",
       thirst: 4
     }
   ],
@@ -2547,10 +2558,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 0,
       id: "wrong-echo",
-      label: "Wrong echo",
+      label: "错误回声",
       pressure: 9,
       scavengePenalty: 0.1,
-      text: "The route repeats sounds half a second before they happen.",
+      text: "路线会提前半秒重复尚未发生的声音。",
       thirst: 0
     },
     {
@@ -2558,10 +2569,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 5,
       hunger: 0,
       id: "soft-floor",
-      label: "Soft floor",
+      label: "软地板",
       pressure: 6,
       scavengePenalty: 0.06,
-      text: "The floor flexes like something breathing under tile.",
+      text: "地板弯曲得像瓷砖下面有什么东西在呼吸。",
       thirst: 2
     },
     {
@@ -2569,10 +2580,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 3,
       id: "mirror-growth",
-      label: "Mirror growth",
+      label: "镜面增生",
       pressure: 8,
       scavengePenalty: 0.14,
-      text: "Reflective vines hide supplies and exits in the same shimmer.",
+      text: "反光藤蔓把补给和出口藏进同一层闪光里。",
       thirst: 3
     }
   ],
@@ -2582,10 +2593,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 4,
       hunger: 0,
       id: "open-ditch",
-      label: "Open ditch",
+      label: "开阔沟渠",
       pressure: 7,
       scavengePenalty: 0.04,
-      text: "A washed-out ditch breaks the road into exposed crossings.",
+      text: "被冲开的沟渠把道路切成几段暴露的穿越点。",
       thirst: 1
     },
     {
@@ -2593,10 +2604,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 0,
       id: "overgrown-cache",
-      label: "Overgrown cache",
+      label: "蔓草储藏点",
       pressure: 6,
       scavengePenalty: 0.16,
-      text: "Useful shapes sit under brush, but every minute searching widens the trail.",
+      text: "灌木下有可用轮廓，但每多搜一分钟，痕迹就更宽。",
       thirst: 2
     },
     {
@@ -2604,10 +2615,10 @@ const segmentThreats: Record<LocationFamily, JourneySegmentThreat[]> = {
       fatigue: 2,
       hunger: 5,
       id: "dry-field",
-      label: "Dry field",
+      label: "干燥田地",
       pressure: 5,
       scavengePenalty: 0.04,
-      text: "Dry stalks cut shade out of the route.",
+      text: "干枯秸秆把路线里的阴影切掉了。",
       thirst: 6
     }
   ]
@@ -2618,45 +2629,45 @@ export const combatLootList: JourneyCombatLootOption[] = [
     battleScarRelief: 0,
     fatigue: 4,
     id: "salvage",
-    label: "Strip the carcass",
+    label: "拆解残骸",
     objectiveBonus: 0,
     pressure: 5,
     reward: lootReward({ fuel: 1, materials: 2 }),
     rollShift: 0.04,
-    text: "Slow work, better parts."
+    text: "慢工细活，能带回更好的零件。"
   },
   {
     battleScarRelief: 1,
     fatigue: -8,
     id: "medicine",
-    label: "Field dress wounds",
+    label: "野外包扎",
     objectiveBonus: 0,
     pressure: 2,
     reward: lootReward({ medicine: 1 }),
     rollShift: -0.02,
-    text: "Patch the worst damage before moving."
+    text: "在继续移动前先处理最糟糕的伤口。"
   },
   {
     battleScarRelief: 0,
     fatigue: 2,
     id: "intel",
-    label: "Search for clues",
+    label: "搜寻线索",
     objectiveBonus: 1,
     pressure: 6,
     reward: lootReward({}),
     rollShift: -0.1,
-    text: "Spend time reading the scene."
+    text: "花时间读懂现场留下的痕迹。"
   },
   {
     battleScarRelief: 0,
     fatigue: -3,
     id: "evade",
-    label: "Leave fast",
+    label: "快速离开",
     objectiveBonus: 0,
     pressure: -9,
     reward: lootReward({}),
     rollShift: -0.06,
-    text: "No extra loot, cleaner exit."
+    text: "不拿额外战利品，换一个干净撤出。"
   }
 ];
 
@@ -2678,7 +2689,7 @@ export function combatLootOutcome(option: JourneyCombatLootOption, support: Expe
     if (support.lootSalvage >= 2) {
       reward.fuel += Math.floor(support.lootSalvage / 2);
     }
-    notes.push(`Workshop +${support.lootSalvage} salvage`);
+    notes.push(`工坊 +${support.lootSalvage} 战利品`);
   }
 
   if (option.id === "medicine" && support.lootMedicine > 0) {
@@ -2687,21 +2698,21 @@ export function combatLootOutcome(option: JourneyCombatLootOption, support: Expe
     if (support.lootMedicine >= 2) {
       reward.medicine += 1;
     }
-    notes.push(`Clinic +${support.lootMedicine} scar relief`);
+    notes.push(`医务室 +${support.lootMedicine} 伤痕缓解`);
   }
 
   if (option.id === "intel" && support.lootIntel > 0) {
     objectiveBonus += support.lootIntel;
     pressure -= support.lootIntel * 2;
     rollShift -= support.lootIntel * 0.03;
-    notes.push(`Radio +${support.lootIntel} objective`);
+    notes.push(`电台 +${support.lootIntel} 目标线索`);
   }
 
   if (option.id === "evade" && support.lootEvade > 0) {
     fatigue -= support.lootEvade;
     pressure -= support.lootEvade * 3;
     rollShift -= support.lootEvade * 0.02;
-    notes.push(`Lookout +${support.lootEvade} extraction`);
+    notes.push(`瞭望 +${support.lootEvade} 撤离`);
   }
 
   return {
@@ -2735,14 +2746,14 @@ export function campOptionOutcome(
     pressure -= support.campCook;
     rollShift -= support.campCook * 0.01;
     thirst -= support.campCook * 3;
-    notes.push(`Kitchen +${support.campCook} ration quality`);
+    notes.push(`厨房 +${support.campCook} 口粮质量`);
   }
 
   if (action === "rest" && support.campRest > 0) {
     fatigue -= support.campRest * 6;
     pressure -= support.campRest * 2;
     rollShift -= support.campRest * 0.02;
-    notes.push(`Clinic/Dorm +${support.campRest} recovery`);
+    notes.push(`医务室/宿舍 +${support.campRest} 恢复`);
   }
 
   if (action === "scout" && support.campScout > 0) {
@@ -2750,7 +2761,7 @@ export function campOptionOutcome(
     objectiveBonus += support.campScout;
     pressure -= support.campScout * 3;
     rollShift -= support.campScout * 0.02;
-    notes.push(`Radio/Lookout +${support.campScout} route read`);
+    notes.push(`电台/瞭望 +${support.campScout} 路线判断`);
   }
 
   return {
@@ -2760,7 +2771,7 @@ export function campOptionOutcome(
     objectiveBonus,
     pressure,
     rollShift,
-    supportText: notes.length > 0 ? `Camp support: ${notes.join(", ")}` : "",
+    supportText: notes.length > 0 ? `营地支援：${notes.join("，")}` : "",
     thirst
   };
 }
@@ -2786,14 +2797,14 @@ export function shopOfferOutcome(
     hunger -= support.shopRations * 2;
     pressure -= support.shopRations;
     thirst -= support.shopRations * 2;
-    notes.push(`Kitchen +${support.shopRations} barter rations`);
+    notes.push(`厨房 +${support.shopRations} 交易口粮`);
   }
 
   if (action === "intel" && support.shopIntel > 0) {
     objectiveBonus += support.shopIntel;
     pressure -= support.shopIntel * 2;
     rollShift -= support.shopIntel * 0.03;
-    notes.push(`Radio +${support.shopIntel} signal leverage`);
+    notes.push(`电台 +${support.shopIntel} 信号筹码`);
   }
 
   if (action === "service" && support.shopService > 0) {
@@ -2803,7 +2814,7 @@ export function shopOfferOutcome(
     }
     fatigue -= support.shopService;
     pressure -= support.shopService;
-    notes.push(`Workshop +${support.shopService} service value`);
+    notes.push(`工坊 +${support.shopService} 服务价值`);
   }
 
   return {
@@ -2815,7 +2826,7 @@ export function shopOfferOutcome(
     pressure,
     reward,
     rollShift,
-    supportText: notes.length > 0 ? `Shop support: ${notes.join(", ")}` : "",
+    supportText: notes.length > 0 ? `商店支援：${notes.join("，")}` : "",
     thirst
   };
 }
@@ -2825,29 +2836,29 @@ const combatIntentDetails: Record<JourneyCombatIntent, { armor: number; id: Jour
     armor: 2,
     id: "brace",
     incoming: -1,
-    label: "Brace",
-    text: "Armor rises this round. Tactic breaks the posture."
+    label: "架势",
+    text: "本回合护甲上升。战术可以打破架势。"
   },
   maul: {
     armor: 0,
     id: "maul",
     incoming: 0,
-    label: "Maul",
-    text: "A direct hit is coming. Guard softens it."
+    label: "猛击",
+    text: "一次直接重击即将到来。防守可以削弱它。"
   },
   prowl: {
     armor: 0,
     id: "prowl",
     incoming: 2,
-    label: "Prowl",
-    text: "It hunts for a weak line. Strike or Tactic can interrupt."
+    label: "游猎",
+    text: "它在寻找薄弱队形。攻击或战术可以打断。"
   },
   windup: {
     armor: 0,
     id: "windup",
     incoming: 5,
-    label: "Wind-up",
-    text: "A heavy hit is building. Guard can punish it."
+    label: "蓄力",
+    text: "重击正在积蓄。防守可以反制。"
   }
 };
 
@@ -2863,38 +2874,38 @@ const combatTempoMax = 3;
 const combatStaggerBreak = 3;
 
 const combatActionNames: Record<CombatAction, string> = {
-  guard: "guard",
-  patch: "patch",
-  retreat: "retreat",
-  strike: "strike",
-  tactic: "tactic"
+  guard: "防守",
+  patch: "包扎",
+  retreat: "撤退",
+  strike: "攻击",
+  tactic: "战术"
 };
 
 export function enemyTraitPulse(trait: JourneyEnemy["trait"]): JourneyEnemyPulse {
   const pulses: Record<JourneyEnemy["trait"], JourneyEnemyPulse> = {
     armored: {
       counterActions: ["tactic"],
-      label: "Plating lock",
-      text: "The shell tightens when it is not kept exposed.",
-      warning: "armor can harden if tactics do not keep a weak point open."
+      label: "甲壳闭锁",
+      text: "如果没有持续暴露弱点，外壳会重新收紧。",
+      warning: "如果战术没有维持弱点，护甲会硬化。"
     },
     bleeder: {
       counterActions: ["guard", "patch"],
-      label: "Open wounds",
-      text: "Uncontrolled hits leave lingering bleed on the squad.",
-      warning: "new bleed can stack until someone patches or covers the line."
+      label: "裂伤",
+      text: "失控攻击会让队伍留下持续流血。",
+      warning: "新的流血会叠加，直到有人包扎或掩护队形。"
     },
     dread: {
       counterActions: ["guard", "tactic"],
-      label: "Black signal",
-      text: "Every unsteady exchange pushes the route toward panic.",
-      warning: "pressure spikes unless the squad holds or reads the pattern."
+      label: "黑色信号",
+      text: "每一次不稳的交锋都会把路线推向恐慌。",
+      warning: "除非队伍稳住或读懂节奏，否则压力会飙升。"
     },
     swarm: {
       counterActions: ["strike", "tactic"],
-      label: "Pack pressure",
-      text: "Route pressure turns into extra bodies in the hit back.",
-      warning: "current pressure adds extra damage and can climb higher."
+      label: "群体压迫",
+      text: "路线压力会变成反击时额外扑上来的身影。",
+      warning: "当前压力会增加伤害，并可能继续攀升。"
     }
   };
 
@@ -2999,7 +3010,7 @@ function previewWithEnemyPulse(
   const risksPulse = enemyPulseRisksAction(combat, action, pressure);
   const nextCounterTag: JourneyCombatActionPreview["counterTag"] =
     countersPulse || counterTag === "Counter" ? "Counter" : counterTag === "Risk" || risksPulse ? "Risk" : "Standard";
-  const nextRisk = countersPulse ? `${risk} Counters ${pulse.label}.` : risksPulse ? `${risk} ${pulse.label}: ${pulse.warning}` : risk;
+  const nextRisk = countersPulse ? `${risk} 反制 ${pulse.label}。` : risksPulse ? `${risk} ${pulse.label}：${pulse.warning}` : risk;
 
   return {
     counterTag: nextCounterTag,
@@ -3044,14 +3055,14 @@ function applyTravelPlanSupply(journey: JourneyState, plan: JourneyTravelPlan) {
     const spentKey = spendFieldSupplyFromPriority(journey, ["fuel", "materials", "ammo"], 1);
     if (spentKey) {
       return {
-        log: `${resourceLabels[spentKey]} -1 for cover`,
+        log: `${resourceLabels[spentKey]} -1 用于掩护`,
         pressure: -5
       };
     }
 
     journey.condition.fatigue = clampPercent(journey.condition.fatigue + 3);
     return {
-      log: "no cover gear: the quiet route takes longer",
+      log: "缺少掩护物资：静默路线耗时更久",
       pressure: 6
     };
   }
@@ -3083,14 +3094,14 @@ function applySegmentTactic(journey: JourneyState, tactic: JourneySegmentTacticO
   const effects: string[] = [];
 
   if (tactic.id !== "observe") {
-    effects.push(`Tactic: ${tactic.label}`);
+    effects.push(`战术：${tactic.label}`);
     if (spentKey) {
-      effects.push(`Spent ${resourceLabels[spentKey]}`);
+      effects.push(`消耗${resourceLabels[spentKey]}`);
     }
     if (pressure !== 0) {
-      effects.push(`Tactic pressure ${formatSignedPercent(pressure)}`);
+      effects.push(`战术压力 ${formatSignedPercent(pressure)}`);
     }
-    journey.logs.push(`Segment tactic: ${tactic.label}. ${effective ? tactic.successLog : tactic.fallbackLog}`);
+    journey.logs.push(`路段战术：${tactic.label}。${effective ? tactic.successLog : tactic.fallbackLog}`);
   }
 
   return {
@@ -3107,9 +3118,9 @@ function applySegmentTactic(journey: JourneyState, tactic: JourneySegmentTacticO
 function applySegmentThreat(journey: JourneyState, threat: JourneySegmentThreat, tactic: JourneySegmentTactic) {
   const countered = threat.counterTactics.includes(tactic);
   if (countered) {
-    journey.logs.push(`Threat counter: ${threat.label}. ${threat.text}`);
+    journey.logs.push(`威胁反制：${threat.label}。${threat.text}`);
     return {
-      effects: [`Countered: ${threat.label}`],
+      effects: [`已反制：${threat.label}`],
       fatigue: 0,
       hunger: 0,
       pressure: -Math.max(1, Math.floor(threat.pressure / 2)),
@@ -3123,17 +3134,17 @@ function applySegmentThreat(journey: JourneyState, threat: JourneySegmentThreat,
   const pressure = Math.max(0, threat.pressure - mitigation.pressure);
   const scavengePenalty = Math.max(0, threat.scavengePenalty - mitigation.scavengePenalty);
   const mitigationEffects = [
-    ...(mitigation.pressure > 0 ? [`Facility mitigation -${mitigation.pressure}%`] : []),
-    ...(mitigation.fatigue > 0 ? [`Facility fatigue -${mitigation.fatigue}`] : [])
+    ...(mitigation.pressure > 0 ? [`设施减压 -${mitigation.pressure}%`] : []),
+    ...(mitigation.fatigue > 0 ? [`设施降疲劳 -${mitigation.fatigue}`] : [])
   ];
 
-  journey.logs.push(`Segment threat: ${threat.label}. ${threat.text}`);
+  journey.logs.push(`路段威胁：${threat.label}。${threat.text}`);
   if (mitigation.value > 0) {
-    journey.logs.push(`Facility mitigation: ${threat.label}. ${mitigation.source} softens the route.`);
+    journey.logs.push(`设施缓解：${threat.label}。${mitigation.source} 减轻了路线压力。`);
   }
 
   return {
-    effects: [`Threat: ${threat.label}`, ...(pressure > 0 ? [`Threat pressure ${formatSignedPercent(pressure)}`] : []), ...mitigationEffects],
+    effects: [`威胁：${threat.label}`, ...(pressure > 0 ? [`威胁压力 ${formatSignedPercent(pressure)}`] : []), ...mitigationEffects],
     fatigue,
     hunger: threat.hunger,
     pressure,
@@ -3153,7 +3164,7 @@ function createTravelRecord(
 ): JourneyTravelRecord {
   const moodTable = familyTravelMoods[journey.locationFamily] ?? familyTravelMoods.urban;
   const mood = moodTable[Math.max(0, journey.condition.distance - 1) % moodTable.length];
-  const conditionText = `Fatigue ${journey.condition.fatigue} / Hunger ${journey.condition.hunger} / Thirst ${journey.condition.thirst}`;
+  const conditionText = `疲劳 ${journey.condition.fatigue} / 饥饿 ${journey.condition.hunger} / 口渴 ${journey.condition.thirst}`;
 
   return {
     body: `${mood.body} ${plan.text}`,
@@ -3184,7 +3195,7 @@ function segmentHoursFor(plan: JourneyTravelPlanOption, tactic: JourneySegmentTa
 }
 
 function formatHours(hours: number): string {
-  return `${hours}h`;
+  return `${hours} 小时`;
 }
 
 function travelToneFor(journey: JourneyState): JourneyTravelTone {
@@ -3226,13 +3237,13 @@ function applyRoadHardship(journey: JourneyState, squad: Survivor[]): string[] {
   };
   journey.hardships.push(record);
   journey.logs.push(
-    `Hardship: ${hardship.label}. ${hardship.text} ${[
+    `路上事故：${hardship.label}。${hardship.text} ${[
       ...hardship.effects,
-      ...(targetName ? [`${targetName} marked for treatment`] : [])
-    ].join(", ")}.`
+      ...(targetName ? [`${targetName} 需要回基地治疗`] : [])
+    ].join("，")}。`
   );
 
-  return [`Hardship: ${hardship.label}`, ...hardship.effects];
+  return [`路上事故：${hardship.label}`, ...hardship.effects];
 }
 
 function roadHardshipFor(journey: Pick<JourneyState, "condition" | "pressure">): RoadHardship | null {
@@ -3241,48 +3252,48 @@ function roadHardshipFor(journey: Pick<JourneyState, "condition" | "pressure">):
       battleScar: true,
       fatigueDelta: 3,
       id: "dehydration-crash",
-      label: "Dehydration crash",
+      label: "脱水崩溃",
       minorAt: 58,
       pressureDelta: 8,
       rollShiftDelta: 0.08,
       severeAt: 82,
-      text: "The squad runs too dry to keep a clean marching order.",
+      text: "队伍缺水到无法维持干净的行军队形。",
       value: journey.condition.thirst
     }),
     createHardshipCandidate({
       battleScar: true,
       fatigueDelta: 6,
       id: "hunger-shakes",
-      label: "Hunger shakes",
+      label: "饥饿发抖",
       minorAt: 62,
       pressureDelta: 6,
       rollShiftDelta: 0.06,
       severeAt: 84,
-      text: "Empty stomachs turn small mistakes into real injuries.",
+      text: "空腹让小失误变成了真正的伤口。",
       value: journey.condition.hunger
     }),
     createHardshipCandidate({
       battleScar: true,
       fatigueDelta: 0,
       id: "fatigue-collapse",
-      label: "Fatigue collapse",
+      label: "疲劳倒下",
       minorAt: 64,
       pressureDelta: 7,
       rollShiftDelta: 0.07,
       severeAt: 86,
-      text: "Someone's legs give out just when the route needs speed.",
+      text: "路线最需要速度的时候，有人的腿先垮了。",
       value: journey.condition.fatigue
     }),
     createHardshipCandidate({
       battleScar: false,
       fatigueDelta: 4,
       id: "panic-spiral",
-      label: "Panic spiral",
+      label: "恐慌螺旋",
       minorAt: 64,
       pressureDelta: 4,
       rollShiftDelta: 0.09,
       severeAt: 86,
-      text: "Bad radio discipline makes the road feel crowded.",
+      text: "混乱的无线电纪律让道路听起来到处都是东西。",
       value: journey.pressure
     })
   ].filter((candidate): candidate is RoadHardship => Boolean(candidate));
@@ -3310,9 +3321,9 @@ function createHardshipCandidate(input: {
   const pressureDelta = severe ? input.pressureDelta : Math.max(2, Math.floor(input.pressureDelta / 2));
   const fatigueDelta = severe ? input.fatigueDelta : Math.max(0, Math.floor(input.fatigueDelta / 2));
   const effects = [
-    ...(severe && input.battleScar ? ["Battle scar +1"] : []),
-    ...(fatigueDelta > 0 ? [`Fatigue +${fatigueDelta}`] : []),
-    `Pressure +${pressureDelta}%`
+    ...(severe && input.battleScar ? ["战斗伤痕 +1"] : []),
+    ...(fatigueDelta > 0 ? [`疲劳 +${fatigueDelta}`] : []),
+    `压力 +${pressureDelta}%`
   ];
 
   return {
@@ -3368,9 +3379,9 @@ function sentenceCase(text: string) {
 
 function carryBurdenLabel(tier: JourneyCarryBurdenTier) {
   const labels: Record<JourneyCarryBurdenTier, string> = {
-    heavy: "heavy pack",
-    light: "light pack",
-    overloaded: "overloaded"
+    heavy: "负重偏高",
+    light: "轻装",
+    overloaded: "超载"
   };
   return labels[tier];
 }
@@ -3407,7 +3418,7 @@ function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: Jour
     title: beat.title,
     tone
   };
-  journey.logs.push(`Road fork: ${beat.title}. ${body}`);
+  journey.logs.push(`路口：${beat.title}。${body}`);
 }
 
 function createRoadEncounterChoices(
@@ -3423,43 +3434,43 @@ function createRoadEncounterChoices(
 
   const choices: JourneyRoadEncounterChoice[] = [
     {
-      fallbackLog: `${beat.hazardLog} No matching gear is ready, so the squad has to improvise.`,
+      fallbackLog: `${beat.hazardLog} 没有对应装备可用，队伍只能临场硬撑。`,
       fatigue: Math.max(1, Math.ceil(beat.fatigue / 2)),
       hunger: 0,
       id: "secure",
-      label: "Secure route",
+      label: "稳固路线",
       pressure: securePressure,
       reward: createEmptyResourceBundle(),
       rollShift: Math.max(0.02, beat.rollShift / 2),
       successLog: beat.mitigationLog,
       supplyPriority: beat.supplyPriority,
-      text: "Spend matching field gear to control the problem before it spreads.",
+      text: "消耗匹配的随身装备，在问题扩散前把它压住。",
       thirst: 0
     },
     {
       fatigue: tone === "find" ? 2 : beat.fatigue,
       hunger: tone === "hazard" ? beat.hunger : 1,
       id: "search",
-      label: "Search margins",
+      label: "搜索边缘",
       pressure: searchPressure,
       reward: bundleFromKeys(searchRewardKeys),
       rollShift: tone === "find" ? -0.06 : beat.rollShift,
       successLog: beat.opportunityLog,
       supplyPriority: [],
-      text: "Slow down and squeeze value out of the route.",
+      text: "放慢速度，把这段路线的价值榨出来。",
       thirst: tone === "hazard" ? beat.thirst : 1
     },
     {
       fatigue: Math.max(1, Math.ceil(beat.fatigue / 2) + (plan === "rush" ? 2 : 0)),
       hunger: tone === "hazard" ? Math.ceil(beat.hunger / 2) : 0,
       id: "push",
-      label: "Push onward",
+      label: "继续推进",
       pressure: pushPressure,
       reward: createEmptyResourceBundle(),
       rollShift: tone === "hazard" ? beat.rollShift : 0.02,
-      successLog: tone === "find" ? "The squad notes the opportunity and keeps the route clock clean." : "The squad keeps moving before the road can demand more.",
+      successLog: tone === "find" ? "队伍记下机会点，保持路线节奏。" : "队伍在道路继续索价前离开。",
       supplyPriority: [],
-      text: "Take no detour and preserve tempo.",
+      text: "不绕路，保住行进节奏。",
       thirst: tone === "hazard" ? Math.ceil(beat.thirst / 2) : 0
     }
   ];
@@ -3490,22 +3501,22 @@ function createRoadSupportChoice(
   const fatigue = Math.max(0, Math.ceil(beat.fatigue / 3) - Math.max(0, supportLevel - 1));
   const text =
     tone === "hazard"
-      ? "Use facility prep to clear the danger without spending packed field gear."
+      ? "调用基地预案清除危险，不消耗随身装备。"
       : tone === "find"
-        ? "Call in mapped route notes and turn the opening into cleaner salvage."
-        : "Follow the prepared detour and keep the squad moving under base guidance.";
+        ? "调用已标记路线，把机会点转成更干净的搜刮。"
+        : "按预设绕路前进，让队伍继续受基地引导。";
 
   return {
     fatigue,
     hunger: 0,
     id: "support",
-    label: "Base route support",
+    label: "基地路线支援",
     pressure,
     reward: bundleFromKeys(rewardKeys),
     rollShift: tone === "find" ? -0.08 : tone === "hazard" ? -0.04 : -0.03,
-    successLog: `Base route support resolves ${beat.title.toLowerCase()} before the squad has to burn field gear`,
+    successLog: `基地路线支援提前处理了${beat.title}，队伍没有消耗随身装备`,
     supplyPriority: [],
-    supportText: `Facility road tactic +${supportLevel}`,
+    supportText: `设施路线战术 +${supportLevel}`,
     text,
     thirst: 0
   };
@@ -3527,7 +3538,7 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     next.condition.fatigue = clampPercent(next.condition.fatigue + fallbackFatigue);
     next.pressure = clampPercent(next.pressure + fallbackPressure);
     next.rollShift += Math.max(0.04, choice.rollShift);
-    outcome = `${withoutTerminalPunctuation(choice.fallbackLog ?? choice.successLog)}. Fatigue +${fallbackFatigue}, pressure ${formatSignedPercent(fallbackPressure)}.`;
+    outcome = `${withoutTerminalPunctuation(choice.fallbackLog ?? choice.successLog)}。疲劳 +${fallbackFatigue}，压力 ${formatSignedPercent(fallbackPressure)}。`;
     queueRoadAmbush(next, pending, squad, readiness);
   } else {
     addResources(next.bonusReward, choice.reward);
@@ -3537,11 +3548,11 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     next.pressure = clampPercent(next.pressure + choice.pressure);
     next.rollShift += choice.rollShift;
     const rewardText = formatBundle(choice.reward);
-    outcome = `${withoutTerminalPunctuation(choice.successLog)}${spentKey ? `, ${resourceLabels[spentKey]} -1` : ""}${
-      rewardText !== "no salvage" ? `, ${rewardText}` : ""
-    }, fatigue ${formatSignedNumber(choice.fatigue)}, hunger ${formatSignedNumber(choice.hunger)}, thirst ${formatSignedNumber(
+    outcome = `${withoutTerminalPunctuation(choice.successLog)}${spentKey ? `，${resourceLabels[spentKey]} -1` : ""}${
+      rewardText !== "无战利品" ? `，${rewardText}` : ""
+    }，疲劳 ${formatSignedNumber(choice.fatigue)}，饥饿 ${formatSignedNumber(choice.hunger)}，口渴 ${formatSignedNumber(
       choice.thirst
-    )}, pressure ${formatSignedPercent(choice.pressure)}.`;
+    )}，压力 ${formatSignedPercent(choice.pressure)}。`;
     if (pending.tone === "hazard" && choice.id === "push") {
       queueRoadAmbush(next, pending, squad, readiness);
     }
@@ -3562,16 +3573,16 @@ function queueRoadAmbush(next: JourneyState, pending: JourneyPendingRoadEncounte
 
   const enemy = materializeRoadAmbushEnemy(next.locationFamily, pending.segment);
   const ambushNode: JourneyNode = {
-    body: `${pending.title} turns loud enough to pull something off the route before the next stop.`,
+    body: `${pending.title}变得太吵，在下一站前把路外的东西引了过来。`,
     enemy,
     id: `${pending.id}-ambush`,
-    title: "Road Ambush",
+    title: "路上伏击",
     type: "combat"
   };
   next.nodes.splice(pending.nextNodeIndex, 0, ambushNode);
   next.currentNodeIndex = pending.nextNodeIndex;
   next.combat = createCombatForNode(ambushNode, squad, readiness, next.support);
-  next.logs.push(`Road ambush: ${pending.title}. The bad route decision turns into contact before the next stop.`);
+  next.logs.push(`路上伏击：${pending.title}。错误的路线决策在下一站前变成了一次接触战。`);
 }
 
 function materializeRoadAmbushEnemy(family: LocationFamily, segment: number): JourneyEnemy {
@@ -3587,7 +3598,7 @@ function pushRoadEvent(journey: JourneyState, title: string, tone: JourneyRoadEv
     tone
   };
   journey.roadEvents.push(record);
-  journey.logs.push(`Road event: ${title}. ${outcome}`);
+  journey.logs.push(`路上事件：${title}。${outcome}`);
 }
 
 function roadBeatPlanBonus(plan: JourneyTravelPlan) {
@@ -3677,10 +3688,10 @@ function applyCombatActionStrain(journey: JourneyState, combat: JourneyCombat, s
     combatant.status = "down";
     journey.battleScars += 1;
     markCombatScarTarget(journey, combatant.survivorId);
-    journey.logs.push(`Action strain: ${combatant.name} is knocked down by overexertion after spending ${spent} stamina on ${combatActionNames[action]}.`);
+    journey.logs.push(`行动负担：${combatant.name} 在${combatActionNames[action]}中消耗 ${spent} 体力，过度用力后倒下。`);
   } else {
     refreshCombatantStatus(combatant);
-    journey.logs.push(`Action strain: ${combatant.name} spends ${spent} stamina on ${combatActionNames[action]}.`);
+    journey.logs.push(`行动负担：${combatant.name} 在${combatActionNames[action]}中消耗 ${spent} 体力。`);
   }
 }
 
@@ -3744,7 +3755,7 @@ function applyCombatDamage(journey: JourneyState, combat: JourneyCombat, amount:
       target.status = "down";
       journey.battleScars += 1;
       markCombatScarTarget(journey, target.survivorId);
-      journey.logs.push(`${target.name} is knocked down and marked for treatment.`);
+      journey.logs.push(`${target.name} 倒下，已标记为回营治疗。`);
     } else {
       refreshCombatantStatus(target);
     }
@@ -3852,7 +3863,7 @@ function clampPercent(value: number) {
 function formatBundle(resources: ResourceBundle) {
   const entries = resourceKeys.filter((key) => resources[key] > 0);
   if (entries.length === 0) {
-    return "no salvage";
+    return "无战利品";
   }
 
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
@@ -3867,7 +3878,7 @@ function formatSignedNumber(value: number) {
 }
 
 function withActionStrain(effect: string, strain: number) {
-  return strain > 0 ? `${effect}, strain -${strain}` : effect;
+  return strain > 0 ? `${effect}，体力 -${strain}` : effect;
 }
 
 function withoutTerminalPunctuation(value: string) {
@@ -3876,10 +3887,10 @@ function withoutTerminalPunctuation(value: string) {
 
 function combatTrophyFor(trait: JourneyEnemy["trait"]) {
   const trophies: Record<JourneyEnemy["trait"], string> = {
-    armored: "armor plates",
-    bleeder: "serrated sample",
-    dread: "black signal shard",
-    swarm: "pack lure"
+    armored: "装甲碎片",
+    bleeder: "锯齿样本",
+    dread: "黑色信号碎片",
+    swarm: "群体诱饵"
   };
   return trophies[trait];
 }

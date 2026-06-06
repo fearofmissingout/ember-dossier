@@ -34,7 +34,7 @@ export function starterObjective(): RoomObjective {
     repairedParts: 0,
     requiredParts: 8,
     status: "active",
-    title: "Repair the communications tower"
+    title: "修复通讯塔"
   };
 }
 

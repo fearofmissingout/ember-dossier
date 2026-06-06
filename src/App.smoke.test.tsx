@@ -18,9 +18,9 @@ describe("App smoke render", () => {
 
     expect(html).toContain("Ember Dossier");
     expect(html).toContain("ember-demo");
-    expect(html).toContain("Base resources");
-    expect(html).toContain("Account Base");
-    expect(html).toContain("Room Objective");
+    expect(html).toContain("基地资源");
+    expect(html).toContain("个人基地");
+    expect(html).toContain("房间目标");
     expect(html).toContain("ED-12");
   });
 
@@ -33,11 +33,11 @@ describe("App smoke render", () => {
     const html = renderToString(<App />);
 
     expect(html).toContain("Ember Dossier");
-    expect(html).toContain("Playtest Login");
-    expect(html).toContain("Username");
-    expect(html).toContain("Password");
-    expect(html).toContain("Sign in");
-    expect(html).toContain("Create playtest account");
-    expect(html).toContain("Continue as guest");
+    expect(html).toContain("试玩登录");
+    expect(html).toContain("账号");
+    expect(html).toContain("密码");
+    expect(html).toContain("登录");
+    expect(html).toContain("创建试玩账号");
+    expect(html).toContain("游客继续");
   });
 });

@@ -54,19 +54,19 @@ export type ExpeditionDoctrineOption = {
 
 export const survivorPerks: Record<SurvivorPerkId, SurvivorPerk> = {
   base_instinct: {
-    description: "Base shifts produce +1 when this survivor works forage, repair, guard, or care.",
+    description: "该幸存者执行搜寻、修理、守卫或护理时，基地班次产出 +1。",
     id: "base_instinct",
-    label: "Base Instinct"
+    label: "基地直觉"
   },
   field_runner: {
-    description: "Strike and retreat actions are sharper; this survivor helps the squad move through bad contact.",
+    description: "攻击和撤退更利落；该幸存者能帮助队伍穿过糟糕接触。",
     id: "field_runner",
-    label: "Field Runner"
+    label: "野外跑手"
   },
   steady_hands: {
-    description: "Patch and tactic actions are stronger; this survivor keeps panic from becoming injury.",
+    description: "包扎和战术行动更强；该幸存者能阻止恐慌演变成伤病。",
     id: "steady_hands",
-    label: "Steady Hands"
+    label: "稳定双手"
   }
 };
 
@@ -95,67 +95,67 @@ export function xpForNextLevel(survivor: AccountSurvivor) {
 
 const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [
   {
-    effect: "Max HP +6 / Guard +1 / Opening guard +2",
+    effect: "生命上限 +6 / 防守 +1 / 开局防护 +2",
     facilityId: "dorm",
     id: "hold-formation",
-    label: "Hold Formation",
-    text: "Dorm shifts send the squad out rested and drilled around a tighter marching line."
+    label: "收紧队形",
+    text: "宿舍轮班让队伍带着休整和行军纪律出门。"
   },
   {
-    effect: "Medicine +1 / Patch +3",
+    effect: "药品 +1 / 包扎 +3",
     facilityId: "clinic",
     id: "field-triage",
-    label: "Field Triage",
-    text: "The clinic pre-packs a treatment roll and assigns a clear casualty protocol."
+    label: "前线分诊",
+    text: "医务室提前打包治疗卷，并给队伍安排清晰的伤员流程。"
   },
   {
-    effect: "Ammo +1 / Ammo damage +2 / Opening expose +2",
+    effect: "弹药 +1 / 弹药伤害 +2 / 开局暴露 +2",
     facilityId: "generator",
     id: "hot-magazines",
-    label: "Hot Magazines",
-    text: "Generator time charges tools and keeps the first magazines dry and ready."
+    label: "预热弹匣",
+    text: "发电机给工具充能，也让第一轮弹匣保持干燥可用。"
   },
   {
-    effect: "Pressure -4 / Road search +2",
+    effect: "压力 -4 / 路段搜索 +2",
     facilityId: "watchtower",
     id: "overwatch-route",
-    label: "Overwatch Route",
-    text: "Lookouts mark the first blind turns before the squad leaves the gate."
+    label: "望塔标路",
+    text: "哨塔在队伍出门前标出第一批盲角和可疑路口。"
   },
   {
-    effect: "Food +1 / Water +1",
+    effect: "食物 +1 / 水 +1",
     facilityId: "kitchen",
     id: "road-rations",
-    label: "Road Rations",
-    text: "The kitchen turns base stores into compact travel meals and clean canteens."
+    label: "路上口粮",
+    text: "厨房把基地库存压缩成便携餐和干净水壶。"
   },
   {
-    effect: "Guard +2 / Road secure +2 / Opening guard +3",
+    effect: "防守 +2 / 路段稳固 +2 / 开局防护 +3",
     facilityId: "barricade",
     id: "shield-line",
-    label: "Shield Line",
-    text: "The barricade crew sends planks, shields, and gate drills with the squad."
+    label: "盾线出门",
+    text: "路障班把木板、盾具和出门演练一起交给队伍。"
   },
   {
-    effect: "Max HP +4 / Guard +1 / Opening guard +1 / Opening expose +1",
+    effect: "生命上限 +4 / 防守 +1 / 开局防护 +1 / 开局暴露 +1",
     facilityId: "training",
     id: "breach-drill",
-    label: "Breach Drill",
-    text: "The training room rehearses contact roles before the route starts."
+    label: "破门演练",
+    text: "训练室在出发前演练接触战分工。"
   },
   {
-    effect: "Salvage +2 / Road secure +1 / Opening expose +1",
+    effect: "战利品 +2 / 路段稳固 +1 / 开局暴露 +1",
     facilityId: "workshop",
     id: "salvage-rig",
-    label: "Salvage Rig",
-    text: "The workshop bolts together pry kits and impact tools for the return haul."
+    label: "搜刮套件",
+    text: "工坊把撬具和冲击工具拼成一套，方便返程带回更多东西。"
   },
   {
-    effect: "Pressure -3 / Road search +1",
+    effect: "压力 -3 / 路段搜索 +1",
     facilityId: "radio",
     id: "signal-map",
-    label: "Signal Map",
-    text: "The radio bench turns static into a marked route and better clue recovery."
+    label: "信号地图",
+    text: "电台把杂音整理成路线标记，也提升线索回收。"
   }
 ];
 

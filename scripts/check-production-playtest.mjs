@@ -85,12 +85,12 @@ async function checkProductionBundle() {
 
   const asset = await assetResponse.text();
   const requiredStrings = [
-    "Continue as guest",
-    "Create playtest account",
+    "游客继续",
+    "创建试玩账号",
     "/api/auth/register",
     "/rest/v1/demo_snapshots",
-    "Room Objective",
-    "Contribute"
+    "房间目标",
+    "捐入"
   ];
   const missingStrings = requiredStrings.filter((text) => !asset.includes(text));
 

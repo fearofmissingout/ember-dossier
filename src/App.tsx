@@ -175,7 +175,7 @@ const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "Rest" },
   { key: "forage", label: "Forage" },
   { key: "repair", label: "Repair" },
-  { key: "guard", label: "Guard" },
+  { key: "guard", label: "守卫" },
   { key: "care", label: "Care" }
 ];
 
@@ -233,7 +233,7 @@ export default function App() {
     }
 
     if (authPassword.length < 6) {
-      setAuthNotice("Password needs at least 6 characters.");
+      setAuthNotice("密码至少需要 6 个字符。");
       return;
     }
 
@@ -811,8 +811,8 @@ export default function App() {
         logs: [
           ...journey.logs,
           completedRoute
-            ? "The squad marks the extraction route and calls the base for pickup."
-            : "The squad turns back early, banking field salvage before the route gets worse."
+            ? "队伍标记撤离路线，呼叫基地接应。"
+            : "队伍提前折返，在路线恶化前把随身战利带回。"
         ]
       });
       return;
@@ -934,38 +934,38 @@ export default function App() {
               <strong>Ember Dossier</strong>
             </div>
           </div>
-          <p className="eyebrow">Playtest Login</p>
-          <h1>Join room {roomSlug}</h1>
+          <p className="eyebrow">试玩登录</p>
+          <h1>加入房间 {roomSlug}</h1>
           <label className="auth-field">
-            <span>Username</span>
+            <span>账号</span>
             <input value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="alice_01" />
           </label>
           <label className="auth-field">
-            <span>Password</span>
+            <span>密码</span>
             <input
               value={authPassword}
               minLength={6}
               onChange={(event) => setAuthPassword(event.target.value)}
-              placeholder="At least 6 characters"
+              placeholder="至少 6 个字符"
               type="password"
             />
           </label>
           <div className="auth-actions">
             <button className="primary-button full-width" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signin")}>
               <Send size={18} aria-hidden="true" />
-              Sign in
+              登录
             </button>
             <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={() => submitPasswordAuth("signup")}>
               <Shield size={18} aria-hidden="true" />
-              Create playtest account
+              创建试玩账号
             </button>
             <button className="ghost-button auth-secondary" disabled={authSubmitting} type="button" onClick={continueAsGuest}>
               <Users size={18} aria-hidden="true" />
-              Continue as guest
+              游客继续
             </button>
           </div>
           <p className="muted-copy">
-            Use 3-20 letters, numbers, or underscores. No email confirmation is needed for playtest accounts.
+            账号支持 3-20 位字母、数字或下划线。试玩账号不需要邮箱确认。
           </p>
           {authNotice && <p className="muted-copy">{authNotice}</p>}
         </section>
@@ -1023,7 +1023,7 @@ export default function App() {
         {hasSupabaseConfig && guestMode && !authSession && (
           <button className="ghost-button" type="button" onClick={switchToAccountLogin}>
             <Shield size={17} aria-hidden="true" />
-            Account login
+            账号登录
           </button>
         )}
       </aside>
@@ -1148,50 +1148,50 @@ function Overview({
   return (
     <div className="view-grid">
       <section className="panel account-band">
-        <p className="eyebrow">Account Base</p>
+        <p className="eyebrow">个人基地</p>
         <h2>{session.account.profile.displayName}</h2>
         <div className="metric-pair">
-          <span>Training</span>
+          <span>训练室</span>
           <strong>{session.account.base.trainingRoomLevel}</strong>
         </div>
         <div className="metric-pair">
-          <span>Medical</span>
+          <span>医务室</span>
           <strong>{session.account.base.medicalRoomLevel}</strong>
         </div>
         <div className="metric-pair">
-          <span>Warehouse</span>
+          <span>仓库</span>
           <strong>{session.account.base.warehouseLevel}</strong>
         </div>
       </section>
 
       <section className="panel objective-band">
-        <p className="eyebrow">Room Objective</p>
+        <p className="eyebrow">房间目标</p>
         <h2>{objective.title}</h2>
         <div className={`objective-status ${objective.status}`}>
-          <span>Day {session.room.base.day}</span>
-          <strong>{objective.status.toUpperCase()}</strong>
+          <span>第 {session.room.base.day} 天</span>
+          <strong>{objective.status === "active" ? "进行中" : objective.status === "won" ? "已完成" : "失败"}</strong>
         </div>
         <div className="readiness-meter">
-          <span>Repair Progress</span>
+          <span>修复进度</span>
           <div>
             <i style={{ width: `${Math.max(6, objectiveProgress)}%` }} />
           </div>
           <strong>{objective.repairedParts}/{objective.requiredParts}</strong>
         </div>
         <div className="metric-pair">
-          <span>Deadline</span>
-          <strong>{daysRemaining} day(s)</strong>
+          <span>剩余期限</span>
+          <strong>{daysRemaining} 天</strong>
         </div>
         <button className="primary-button full-width" type="button" disabled={objective.status !== "active"} onClick={onEndDay}>
           <CalendarDays size={18} aria-hidden="true" />
-          End day
+          结束当天
         </button>
       </section>
 
       <section className="panel wide">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Base resources</p>
+            <p className="eyebrow">基地资源</p>
             <h2>避难所库存</h2>
           </div>
           <button className="primary-button" type="button" onClick={goExpedition}>
@@ -1212,25 +1212,25 @@ function Overview({
       <section className="panel wide">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Contribute</p>
-            <h2>Account supplies to room base</h2>
+            <p className="eyebrow">捐入资源</p>
+            <h2>个人库存转入房间基地</h2>
           </div>
           <button className="primary-button" type="button" onClick={onContribute}>
             <Archive size={18} aria-hidden="true" />
-            Contribute
+            捐入
           </button>
         </div>
         <div className="contribution-grid">
           {resourceKeys.map((key) => (
             <div className="loadout-row contribution-row" key={key}>
               <span>{resourceLabels[key]}</span>
-              <small>Account {session.account.resources[key]}</small>
+              <small>个人 {session.account.resources[key]}</small>
               <div>
-                <button className="icon-button" type="button" onClick={() => onContributionChange(key, -1)} aria-label={`Decrease ${resourceLabels[key]}`}>
+                <button className="icon-button" type="button" onClick={() => onContributionChange(key, -1)} aria-label={`减少${resourceLabels[key]}`}>
                   <Minus size={16} />
                 </button>
                 <strong>{contributionDraft[key]}</strong>
-                <button className="icon-button" type="button" onClick={() => onContributionChange(key, 1)} aria-label={`Increase ${resourceLabels[key]}`}>
+                <button className="icon-button" type="button" onClick={() => onContributionChange(key, 1)} aria-label={`增加${resourceLabels[key]}`}>
                   <Plus size={16} />
                 </button>
               </div>
@@ -1240,7 +1240,7 @@ function Overview({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Alerts</p>
+        <p className="eyebrow">设施状态</p>
         <h2>设施警报</h2>
         <div className="stack">
           {state.facilities.map((facility) => (
@@ -1253,7 +1253,7 @@ function Overview({
       </section>
 
       <section className="panel wide">
-        <p className="eyebrow">Recent feed</p>
+        <p className="eyebrow">近期动态</p>
         <h2>最新动态</h2>
         <div className="feed-list">
           {state.feed.slice(0, 4).map((item) => (
@@ -1269,7 +1269,7 @@ function Overview({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Squad health</p>
+        <p className="eyebrow">队伍健康</p>
         <h2>可派遣人员</h2>
         <div className="metric-pair">
           <span>可用幸存者</span>
@@ -1327,17 +1327,17 @@ function Survivors({
             Care shifts <b>{recoveryPlan.careShifts}</b>
           </span>
           <span>
-            Injury clears <b>{recoveryPlan.likelyInjuryClears}/{recoveryPlan.injuredCount}</b>
+            伤病恢复 <b>{recoveryPlan.likelyInjuryClears}/{recoveryPlan.injuredCount}</b>
           </span>
           <span>
-            Daily rest <b>-{recoveryPlan.dailyRecovery}</b>
+            每日休息 <b>-{recoveryPlan.dailyRecovery}</b>
           </span>
         </div>
         {recoveryPlan.priorityPatients.length > 0 && (
           <div className="recovery-patient-row">
             {recoveryPlan.priorityPatients.map((patient) => (
               <span key={patient.name}>
-                {patient.name}: F{patient.fatigue} / I{patient.injuries}
+                {patient.name}: 疲{patient.fatigue} / 伤{patient.injuries}
               </span>
             ))}
           </div>
@@ -1490,49 +1490,49 @@ function ExpeditionPrep({
   }
   const carryBurden = calculateCarryBurden(selectedSquad, previewFieldSupplies, support);
   const supportItems = [
-    { label: "Max HP", sign: "+", value: support.maxHp },
-    { label: "Patch", sign: "+", value: support.patchHeal },
-    { label: "Guard", sign: "+", value: support.guardBlock },
-    { label: "Ammo", sign: "+", value: support.ammoDamage },
-    { label: "Opening guard", sign: "+", value: support.openingGuard },
-    { label: "Opening expose", sign: "+", value: support.openingExpose },
-    { label: "Pack", sign: "+", value: support.carryCapacity ?? 0 },
-    { label: "Pressure", sign: "-", value: support.pressureRelief },
-    { label: "Road secure", sign: "+", value: support.roadSecure },
-    { label: "Road search", sign: "+", value: support.roadSearch },
-    { label: "Road push", sign: "+", value: support.roadPush },
-    { label: "Loot", sign: "+", value: support.lootSalvage },
-    { label: "Clinic loot", sign: "+", value: support.lootMedicine },
-    { label: "Intel", sign: "+", value: support.lootIntel },
-    { label: "Evade", sign: "+", value: support.lootEvade },
-    { label: "Camp meal", sign: "+", value: support.campCook },
-    { label: "Camp rest", sign: "+", value: support.campRest },
-    { label: "Camp scout", sign: "+", value: support.campScout },
-    { label: "Shop rations", sign: "+", value: support.shopRations },
-    { label: "Shop intel", sign: "+", value: support.shopIntel },
-    { label: "Shop service", sign: "+", value: support.shopService }
+    { label: "生命上限", sign: "+", value: support.maxHp },
+    { label: "包扎", sign: "+", value: support.patchHeal },
+    { label: "防守", sign: "+", value: support.guardBlock },
+    { label: "弹药伤害", sign: "+", value: support.ammoDamage },
+    { label: "开局防护", sign: "+", value: support.openingGuard },
+    { label: "开局暴露", sign: "+", value: support.openingExpose },
+    { label: "背包容量", sign: "+", value: support.carryCapacity ?? 0 },
+    { label: "压力缓解", sign: "-", value: support.pressureRelief },
+    { label: "路段稳固", sign: "+", value: support.roadSecure },
+    { label: "路段搜索", sign: "+", value: support.roadSearch },
+    { label: "强行推进", sign: "+", value: support.roadPush },
+    { label: "战利品", sign: "+", value: support.lootSalvage },
+    { label: "医疗战利品", sign: "+", value: support.lootMedicine },
+    { label: "情报", sign: "+", value: support.lootIntel },
+    { label: "规避", sign: "+", value: support.lootEvade },
+    { label: "营地热食", sign: "+", value: support.campCook },
+    { label: "营地休整", sign: "+", value: support.campRest },
+    { label: "营地侦察", sign: "+", value: support.campScout },
+    { label: "商店口粮", sign: "+", value: support.shopRations },
+    { label: "商店情报", sign: "+", value: support.shopIntel },
+    { label: "商店服务", sign: "+", value: support.shopService }
   ].filter((item) => item.value > 0);
   const startingSupplyItems = [
-    { label: "Start Food", value: support.startingSupplies.food ?? 0 },
-    { label: "Start Water", value: support.startingSupplies.water ?? 0 },
-    { label: "Start Ammo", value: support.startingSupplies.ammo ?? 0 },
-    { label: "Start Medicine", value: support.startingSupplies.medicine ?? 0 }
+    { label: "出发食物", value: support.startingSupplies.food ?? 0 },
+    { label: "出发饮水", value: support.startingSupplies.water ?? 0 },
+    { label: "出发弹药", value: support.startingSupplies.ammo ?? 0 },
+    { label: "出发药品", value: support.startingSupplies.medicine ?? 0 }
   ].filter((item) => item.value > 0);
   const hasBaseSupport = supportItems.length > 0 || startingSupplyItems.length > 0;
   const basePrepItems = [
-    { label: "Prep food", sign: "+", value: basePrepSupport.startingSupplies.food ?? 0 },
-    { label: "Prep water", sign: "+", value: basePrepSupport.startingSupplies.water ?? 0 },
-    { label: "Prep medicine", sign: "+", value: basePrepSupport.startingSupplies.medicine ?? 0 },
-    { label: "Prep pack", sign: "+", value: basePrepSupport.carryCapacity ?? 0 },
-    { label: "Prep guard", sign: "+", value: basePrepSupport.guardBlock },
-    { label: "Prep road", sign: "+", value: basePrepSupport.roadSecure },
-    { label: "Prep shop", sign: "+", value: basePrepSupport.shopRations + basePrepSupport.shopService },
-    { label: "Prep pressure", sign: "-", value: basePrepSupport.pressureRelief }
+    { label: "准备食物", sign: "+", value: basePrepSupport.startingSupplies.food ?? 0 },
+    { label: "准备饮水", sign: "+", value: basePrepSupport.startingSupplies.water ?? 0 },
+    { label: "准备药品", sign: "+", value: basePrepSupport.startingSupplies.medicine ?? 0 },
+    { label: "准备背包", sign: "+", value: basePrepSupport.carryCapacity ?? 0 },
+    { label: "准备防守", sign: "+", value: basePrepSupport.guardBlock },
+    { label: "准备路段", sign: "+", value: basePrepSupport.roadSecure },
+    { label: "准备交易", sign: "+", value: basePrepSupport.shopRations + basePrepSupport.shopService },
+    { label: "准备降压", sign: "-", value: basePrepSupport.pressureRelief }
   ].filter((item) => item.value > 0);
   return (
     <div className="expedition-layout">
       <section className="panel">
-        <p className="eyebrow">Step 1</p>
+        <p className="eyebrow">步骤 1</p>
         <h2>选择编队</h2>
         <div className="compact-list">
           {state.survivors.map((survivor) => (
@@ -1550,7 +1550,7 @@ function ExpeditionPrep({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Step 2</p>
+        <p className="eyebrow">步骤 2</p>
         <h2>选择地点</h2>
         <div className="compact-list">
           {state.locations.map((location) => (
@@ -1568,7 +1568,7 @@ function ExpeditionPrep({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Step 3</p>
+        <p className="eyebrow">步骤 3</p>
         <h2>携带物资</h2>
         <div className="loadout-list">
           {resourceKeys.map((key) => (
@@ -1591,7 +1591,7 @@ function ExpeditionPrep({
             <div className="resource-preview-row" key={key}>
               <span>{resourceLabels[key]}</span>
               <strong>{state.resources[key]}</strong>
-              <small>Carry {draft.loadout[key]} / Left {state.resources[key] - draft.loadout[key]}</small>
+              <small>携带 {draft.loadout[key]} / 剩余 {state.resources[key] - draft.loadout[key]}</small>
             </div>
           ))}
         </div>
@@ -1599,7 +1599,7 @@ function ExpeditionPrep({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Step 4</p>
+        <p className="eyebrow">步骤 4</p>
         <h2>风险策略</h2>
         <div className="risk-options">
           {(Object.keys(riskLabels) as RiskStrategy[]).map((risk) => (
@@ -1612,8 +1612,8 @@ function ExpeditionPrep({
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Step 5</p>
-        <h2>Expedition doctrine</h2>
+        <p className="eyebrow">步骤 5</p>
+        <h2>出征纪律</h2>
         <div className="doctrine-grid">
           {doctrineOptions.map((doctrine) => (
             <button
@@ -1633,7 +1633,7 @@ function ExpeditionPrep({
       <section className="panel summary-panel">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Dispatch preview</p>
+            <p className="eyebrow">出征预览</p>
             <h2>{selectedLocation.name}</h2>
           </div>
           <Activity size={24} aria-hidden="true" />
@@ -1652,7 +1652,7 @@ function ExpeditionPrep({
           ))}
         </div>
         <div className="support-grid">
-          <span>Base support</span>
+          <span>基地支援</span>
           {supportItems.map((item) => (
             <strong key={item.label}>
               {item.label} {item.sign}
@@ -1664,8 +1664,8 @@ function ExpeditionPrep({
               {item.label} +{item.value}
             </strong>
           ))}
-          {!hasBaseSupport && <strong>No facility support yet</strong>}
-          <span>Base prep</span>
+          {!hasBaseSupport && <strong>暂无设施支援</strong>}
+          <span>基地准备</span>
           {basePrepItems.length ? (
             basePrepItems.map((item) => (
               <strong key={item.label}>
@@ -1674,7 +1674,7 @@ function ExpeditionPrep({
               </strong>
             ))
           ) : (
-            <strong>No idle base crew prep</strong>
+            <strong>暂无空闲人员准备</strong>
           )}
         </div>
         {journey && activeNode && (
@@ -1693,7 +1693,7 @@ function ExpeditionPrep({
         </button>
         {!squadReady && <p className="warning-copy">需要选择 3-5 名幸存者。</p>}
         {objectiveActive && !canAffordLoadout && <p className="warning-copy">携带物资超过基地库存。</p>}
-        {!objectiveActive && <p className="warning-copy">This room objective is already resolved. Create a new room to start over.</p>}
+        {!objectiveActive && <p className="warning-copy">当前房间目标已经结算。创建新房间即可重新开始。</p>}
       </section>
     </div>
   );
@@ -1717,7 +1717,7 @@ function JourneyPanel({
   const outlook = getJourneyOutlook(journey);
   const pendingRoad = journey.pendingRoadEvent;
   const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction";
-  const nodeTypeLabel = pendingRoad ? (pendingRoad.tone === "road" ? "road fork" : `road ${pendingRoad.tone}`) : activeNode.type;
+  const nodeTypeLabel = pendingRoad ? roadToneLabel(pendingRoad.tone) : journeyNodeTypeLabel(activeNode.type);
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
@@ -1732,38 +1732,38 @@ function JourneyPanel({
     .join(" / ");
   const mitigationLabel =
     segmentMitigation.value > 0
-      ? `Facility: P-${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / F-${segmentMitigation.fatigue}` : ""}`
-      : "No facility cover";
+      ? `设施减压 ${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / 疲劳 -${segmentMitigation.fatigue}` : ""}`
+      : "暂无设施掩护";
 
   return (
     <div className="journey-panel">
-      <div className="route-pacing" aria-label="Route pace">
+      <div className="route-pacing" aria-label="路线节奏">
         <div>
-          <span>Route progress</span>
+          <span>路线进度</span>
           <strong>
             {routePace.currentStop}/{routePace.totalStops}
           </strong>
           <small>
-            {routePace.progressPercent}% to extraction / {routePace.remainingStops} stop(s) left
+            撤离进度 {routePace.progressPercent}% / 还剩 {routePace.remainingStops} 站
           </small>
         </div>
         <div>
-          <span>Current beat</span>
+          <span>当前节点</span>
           <strong>{routePace.currentLabel}</strong>
           <small>{routePace.currentTitle}</small>
         </div>
         <div>
-          <span>Next stop</span>
+          <span>下一站</span>
           <strong>{routePace.nextLabel}</strong>
           <small>{routePace.nextTitle}</small>
         </div>
         <div>
-          <span>March clock</span>
+          <span>行进时间</span>
           <strong>{routePace.clockLabel}</strong>
           <small>{routePace.etaLabel}</small>
         </div>
       </div>
-      <div className="journey-track" aria-label="Expedition route progress">
+      <div className="journey-track" aria-label="出征路线进度">
         {routePace.forecast.map((stop) => (
           <span className={stop.state} key={`${journey.id}-pace-${stop.index}`}>
             <b>{stop.index}</b>
@@ -1773,23 +1773,23 @@ function JourneyPanel({
       </div>
       <div className="journey-status-grid">
         <div className="journey-pressure">
-          <span>Pressure</span>
+          <span>压力</span>
           <strong>{journey.pressure}%</strong>
           <i>
             <b style={{ width: `${Math.max(0, Math.min(100, journey.pressure))}%` }} />
           </i>
         </div>
         <div className="journey-condition">
-          <span>Road condition</span>
+          <span>路况</span>
           <div>
-            <strong>Dist {journey.condition.distance}</strong>
-            <strong>Fatigue {journey.condition.fatigue}</strong>
-            <strong>Hunger {journey.condition.hunger}</strong>
-            <strong>Thirst {journey.condition.thirst}</strong>
+            <strong>距离 {journey.condition.distance}</strong>
+            <strong>疲劳 {journey.condition.fatigue}</strong>
+            <strong>饥饿 {journey.condition.hunger}</strong>
+            <strong>口渴 {journey.condition.thirst}</strong>
           </div>
         </div>
         <div className={`journey-burden ${journey.burden.tier}`}>
-          <span>Pack burden</span>
+          <span>背包负重</span>
           <strong>
             {journey.burden.load}/{journey.burden.capacity}
           </strong>
@@ -1798,14 +1798,14 @@ function JourneyPanel({
           </i>
           <small>{burdenSummary(journey.burden)}</small>
         </div>
-        <JourneyResourceStrip title="Field supplies" resources={journey.fieldSupplies} />
-        <JourneyResourceStrip title="Salvage" resources={journey.bonusReward} />
+        <JourneyResourceStrip title="随身补给" resources={journey.fieldSupplies} />
+        <JourneyResourceStrip title="战利品" resources={journey.bonusReward} />
       </div>
       <div className={`journey-outlook ${outlook.tone}`}>
         <strong>{outlook.label}</strong>
         <span>{outlook.text}</span>
       </div>
-      <div className="base-command-strip" aria-label="Base commands">
+      <div className="base-command-strip" aria-label="基地指令">
         {baseCommands.map((command) => (
           <button
             disabled={!command.canUse}
@@ -1825,54 +1825,54 @@ function JourneyPanel({
         ))}
       </div>
       {segmentForecast && (
-        <div className={`march-forecast ${segmentForecast.riskLevel}`} aria-label="Next march forecast">
+        <div className={`march-forecast ${segmentForecast.riskLevel}`} aria-label="下一段行军预告">
           <div>
-            <span>Next march</span>
-            <strong>Segment {segmentForecast.segment}</strong>
+            <span>下一段</span>
+            <strong>路段 {segmentForecast.segment}</strong>
             <small>
               {segmentForecast.planLabel} / {segmentForecast.tacticLabel} / {segmentForecast.hours}h
             </small>
           </div>
           <div>
-            <span>Cost</span>
+            <span>消耗</span>
             <strong>{segmentForecast.supplyUse.join(" / ")}</strong>
             <small>{segmentForecast.threatLabel}</small>
           </div>
           <div>
-            <span>Change</span>
+            <span>变化</span>
             <strong>
-              F{formatSignedNumber(segmentForecast.conditionDeltas.fatigue)} H{formatSignedNumber(segmentForecast.conditionDeltas.hunger)} T
-              {formatSignedNumber(segmentForecast.conditionDeltas.thirst)} P{formatSignedPercent(segmentForecast.pressureDelta)}
+              疲{formatSignedNumber(segmentForecast.conditionDeltas.fatigue)} 饥{formatSignedNumber(segmentForecast.conditionDeltas.hunger)} 渴
+              {formatSignedNumber(segmentForecast.conditionDeltas.thirst)} 压{formatSignedPercent(segmentForecast.pressureDelta)}
             </strong>
-            <small>{segmentForecast.notes.slice(0, 2).join(" / ") || "Clean segment"}</small>
+            <small>{segmentForecast.notes.slice(0, 2).join(" / ") || "路段平稳"}</small>
           </div>
           <div>
-            <span>After</span>
+            <span>行进后</span>
             <strong>
-              F{segmentForecast.resultingCondition.fatigue} H{segmentForecast.resultingCondition.hunger} T{segmentForecast.resultingCondition.thirst}
+              疲{segmentForecast.resultingCondition.fatigue} 饥{segmentForecast.resultingCondition.hunger} 渴{segmentForecast.resultingCondition.thirst}
             </strong>
             <small>
-              Pressure {segmentForecast.resultingPressure}% / Clock {segmentForecast.resultingElapsedHours}h
+              压力 {segmentForecast.resultingPressure}% / 已行进 {segmentForecast.resultingElapsedHours} 小时
             </small>
             {segmentForecast.hardship && (
               <small className={`hardship-risk ${segmentForecast.hardship.severity}`}>
-                Risk: {segmentForecast.hardship.label} ({segmentForecast.hardship.effects.join(", ")})
+                风险：{segmentForecast.hardship.label}（{segmentForecast.hardship.effects.join("，")}）
               </small>
             )}
           </div>
         </div>
       )}
       {journey.travelHistory.length > 0 && (
-        <div className="travel-record-strip" aria-label="Road diary">
+        <div className="travel-record-strip" aria-label="路上日志">
           {journey.travelHistory.slice(-3).map((record) => (
             <div className={`travel-record-card ${record.tone}`} key={`${journey.id}-travel-${record.segment}`}>
               <div>
-                <span>Segment {record.segment}</span>
+                <span>路段 {record.segment}</span>
                 <strong>{record.title}</strong>
               </div>
               <p>{record.body}</p>
               <small>{record.planLabel}</small>
-              <small>Travel time {record.timeLabel}</small>
+              <small>行进时间 {record.timeLabel}</small>
               <small>{record.conditionText}</small>
               <div>
                 {record.effects.map((effect) => (
@@ -1884,10 +1884,10 @@ function JourneyPanel({
         </div>
       )}
       {journey.roadEvents.length > 0 && (
-        <div className="road-event-strip" aria-label="Recent road events">
+        <div className="road-event-strip" aria-label="近期路上事件">
           {journey.roadEvents.slice(-3).map((event) => (
             <div className={`road-event-card ${event.tone}`} key={`${journey.id}-road-${event.segment}-${event.title}`}>
-              <span>Seg {event.segment}</span>
+              <span>路段 {event.segment}</span>
               <strong>{event.title}</strong>
               <small>{event.outcome}</small>
             </div>
@@ -1895,18 +1895,18 @@ function JourneyPanel({
         </div>
       )}
       {journey.hardships.length > 0 && (
-        <div className="hardship-strip" aria-label="Recent road hardships">
+        <div className="hardship-strip" aria-label="近期路上苦难">
           {journey.hardships.slice(-3).map((hardship) => (
             <div className={`hardship-card ${hardship.severity}`} key={`${journey.id}-hardship-${hardship.segment}-${hardship.id}`}>
-              <span>Seg {hardship.segment}</span>
+              <span>路段 {hardship.segment}</span>
               <strong>{hardship.label}</strong>
               <small>{hardship.effects.join(" / ")}</small>
-              {hardship.targetName && <small>{hardship.targetName} marked for treatment</small>}
+              {hardship.targetName && <small>{hardship.targetName} 需要回基地治疗</small>}
             </div>
           ))}
         </div>
       )}
-      <div className="journey-plan-strip" aria-label="Road travel plan">
+      <div className="journey-plan-strip" aria-label="路上行军计划">
         {travelPlanList.map((plan) => (
           <button
             className={journey.travelPlan === plan.id ? "active" : ""}
@@ -1916,27 +1916,27 @@ function JourneyPanel({
           >
             <span>{plan.label}</span>
             <small>
-              F{formatSignedNumber(plan.fatigue)} P{formatSignedPercent(plan.pressure)}
+              疲{formatSignedNumber(plan.fatigue)} 压{formatSignedPercent(plan.pressure)}
             </small>
           </button>
         ))}
       </div>
-      <div className="segment-threat-card" aria-label="Segment threat">
+      <div className="segment-threat-card" aria-label="路段威胁">
         <div>
-          <span>Segment threat</span>
+          <span>路段威胁</span>
           <strong>{segmentThreat.label}</strong>
           <small>{segmentThreat.text}</small>
         </div>
         <div>
-          <span>Counter</span>
+          <span>反制方式</span>
           <strong>{counterLabels}</strong>
           <small>
-            F+{segmentThreat.fatigue} H+{segmentThreat.hunger} T+{segmentThreat.thirst} P+{segmentThreat.pressure}%
+            疲+{segmentThreat.fatigue} 饥+{segmentThreat.hunger} 渴+{segmentThreat.thirst} 压+{segmentThreat.pressure}%
           </small>
           <small>{mitigationLabel}</small>
         </div>
       </div>
-      <div className="segment-tactic-strip" aria-label="Next segment tactic">
+      <div className="segment-tactic-strip" aria-label="下一段战术">
         {segmentTacticList.map((tactic) => (
           <button
             className={journey.segmentTactic === tactic.id ? "active" : ""}
@@ -1945,9 +1945,9 @@ function JourneyPanel({
             onClick={() => onJourneyAction(`tactic-${tactic.id}` as JourneyAction)}
           >
             <span>{tactic.label}</span>
-            <small>{tactic.supplyPriority.length > 0 ? `Cost ${tactic.supplyPriority.map((key) => resourceLabels[key]).join("/")}` : "No cost"}</small>
+            <small>{tactic.supplyPriority.length > 0 ? `消耗 ${tactic.supplyPriority.map((key) => resourceLabels[key]).join("/")}` : "无消耗"}</small>
             <small>
-              F{formatSignedNumber(tactic.fatigue)} H{formatSignedNumber(tactic.hunger)} T{formatSignedNumber(tactic.thirst)} P
+              疲{formatSignedNumber(tactic.fatigue)} 饥{formatSignedNumber(tactic.hunger)} 渴{formatSignedNumber(tactic.thirst)} 压
               {formatSignedPercent(tactic.pressure)}
             </small>
           </button>
@@ -1955,9 +1955,9 @@ function JourneyPanel({
       </div>
       {(journey.trophies.length > 0 || journey.battleScars > 0) && (
         <div className="journey-aftermath">
-          <span>Combat aftermath</span>
-          {journey.trophies.length > 0 && <strong>Trophies: {journey.trophies.join(", ")}</strong>}
-          {journey.battleScars > 0 && <strong>Battle scars: {journey.battleScars}</strong>}
+        <span>战斗后果</span>
+          {journey.trophies.length > 0 && <strong>战利标记：{journey.trophies.join("，")}</strong>}
+          {journey.battleScars > 0 && <strong>战斗伤痕：{journey.battleScars}</strong>}
         </div>
       )}
       <div className="journey-node">
@@ -1967,8 +1967,8 @@ function JourneyPanel({
         {pendingRoad ? (
           <div className="road-choice-card">
             <div>
-              <strong>Road decision</strong>
-              <span>Segment {pendingRoad.segment} blocks the next stop. Resolve it before the squad reaches the next node.</span>
+              <strong>路上抉择</strong>
+              <span>路段 {pendingRoad.segment} 挡住了下一站。必须先处理，队伍才能继续推进。</span>
             </div>
             <div className="combat-loot-grid">
               {pendingRoad.choices.map((choice) => (
@@ -1976,9 +1976,9 @@ function JourneyPanel({
                   <strong>{choice.label}</strong>
                   <span>{choice.text}</span>
                   <small>
-                    {choice.supplyPriority.length > 0 ? `Cost ${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}; ` : ""}
-                    {formatResourceDelta(choice.reward)} | F{formatSignedNumber(choice.fatigue)} H{formatSignedNumber(choice.hunger)} T
-                    {formatSignedNumber(choice.thirst)} P{formatSignedPercent(choice.pressure)}
+                    {choice.supplyPriority.length > 0 ? `消耗 ${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}; ` : ""}
+                    {formatResourceDelta(choice.reward)} | 疲{formatSignedNumber(choice.fatigue)} 饥{formatSignedNumber(choice.hunger)} 渴
+                    {formatSignedNumber(choice.thirst)} 压{formatSignedPercent(choice.pressure)}
                   </small>
                   {choice.supportText && <small className="facility-support-note">{choice.supportText}</small>}
                 </button>
@@ -1988,8 +1988,8 @@ function JourneyPanel({
         ) : journey.pendingCombatLoot ? (
           <div className="combat-loot-card">
             <div>
-              <strong>{journey.pendingCombatLoot.enemyName} down</strong>
-              <span>Trophy secured: {journey.pendingCombatLoot.trophy}</span>
+              <strong>{journey.pendingCombatLoot.enemyName} 已倒下</strong>
+              <span>获得战利标记：{journey.pendingCombatLoot.trophy}</span>
             </div>
             <div className="combat-loot-grid">
               {combatLootList.map((option) => {
@@ -1999,9 +1999,9 @@ function JourneyPanel({
                     <strong>{option.label}</strong>
                     <span>{option.text}</span>
                     <small>
-                      {formatResourceDelta(outcome.reward)} | F{formatSignedNumber(outcome.fatigue)} | P{formatSignedPercent(outcome.pressure)}
-                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
-                      {outcome.battleScarRelief > 0 ? ` | Scar -${outcome.battleScarRelief}` : ""}
+                      {formatResourceDelta(outcome.reward)} | 疲{formatSignedNumber(outcome.fatigue)} | 压{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | 目标 +${outcome.objectiveBonus}` : ""}
+                      {outcome.battleScarRelief > 0 ? ` | 伤痕 -${outcome.battleScarRelief}` : ""}
                     </small>
                     {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                   </button>
@@ -2016,13 +2016,13 @@ function JourneyPanel({
               <span>{journey.combat.enemyTraitText}</span>
             </div>
             <div className="combat-intent">
-              <strong>Intent: {journey.combat.intentLabel}</strong>
+              <strong>意图：{journey.combat.intentLabel}</strong>
               <span>{journey.combat.intentText}</span>
             </div>
             <div className="combat-special">
               <strong>{activeCombatPulse?.label}</strong>
               <span>{activeCombatPulse?.text}</span>
-              <small>Counter: {activeCombatPulse?.counterActions.map(combatActionLabel).join(" / ")}</small>
+              <small>反制：{activeCombatPulse?.counterActions.map(combatActionLabel).join(" / ")}</small>
             </div>
             <div className="combat-rhythm">
               <div>
@@ -2038,7 +2038,7 @@ function JourneyPanel({
             </div>
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
-              <CombatBar label="Squad" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
+              <CombatBar label="队伍" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
             </div>
             <div className="frontline-grid">
               {journey.combat.frontline.map((line) => (
@@ -2054,18 +2054,18 @@ function JourneyPanel({
                   </div>
                   <small>
                     {line.stamina}/{line.maxStamina}
-                    {line.guard > 0 ? ` | Guard ${line.guard}` : ""}
-                    {line.wounds > 0 ? ` | Wounds ${line.wounds}` : ""}
-                    {line.status === "down" ? " | Down" : line.status === "strained" ? " | Strained" : ""}
+                    {line.guard > 0 ? ` | 防护 ${line.guard}` : ""}
+                    {line.wounds > 0 ? ` | 伤口 ${line.wounds}` : ""}
+                    {line.status === "down" ? " | 倒下" : line.status === "strained" ? " | 吃力" : ""}
                   </small>
                 </div>
               ))}
             </div>
             <div className="combat-stats">
-              <span>Atk {journey.combat.attack}</span>
-              <span>Armor {Math.max(0, journey.combat.armor - journey.combat.exposed)}</span>
-              <span>Exposed {journey.combat.exposed}</span>
-              <span>Bleed {journey.combat.bleed}</span>
+              <span>攻击 {journey.combat.attack}</span>
+              <span>护甲 {Math.max(0, journey.combat.armor - journey.combat.exposed)}</span>
+              <span>暴露 {journey.combat.exposed}</span>
+              <span>流血 {journey.combat.bleed}</span>
               <span>节奏 {journey.combat.tempo ?? 0}</span>
               <span>破势 {journey.combat.stagger ?? 0}</span>
             </div>
@@ -2081,7 +2081,7 @@ function JourneyPanel({
                     <div>
                       <Icon size={16} aria-hidden="true" />
                       <strong>{preview.label}</strong>
-                      <b>{preview.counterTag}</b>
+                      <b>{combatCounterTagLabel(preview.counterTag)}</b>
                     </div>
                     <span>{preview.actorName}</span>
                     <small>{preview.effect}</small>
@@ -2104,8 +2104,8 @@ function JourneyPanel({
         ) : activeNode.type === "shop" ? (
           <div className="shop-choice-card">
             <div>
-              <strong>Exchange decision</strong>
-              <span>Spend surviving field goods for rations, route intel, or a last repair package.</span>
+              <strong>交易抉择</strong>
+              <span>消耗剩余随身补给，换取口粮、路线情报或最后的修理包。</span>
             </div>
             <div className="combat-loot-grid">
               {shopActionList.map((action) => {
@@ -2119,9 +2119,9 @@ function JourneyPanel({
                     <strong>{outcome.label}</strong>
                     <span>{outcome.text}</span>
                     <small>
-                      Cost {outcome.costPriority.map((key) => resourceLabels[key]).join("/") || "none"} | Field{" "}
-                      {formatResourceDelta(outcome.fieldSupplyReward)} | Stash {formatResourceDelta(outcome.reward)} | P{formatSignedPercent(outcome.pressure)}
-                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
+                      消耗 {outcome.costPriority.map((key) => resourceLabels[key]).join("/") || "无"} | 随身{" "}
+                      {formatResourceDelta(outcome.fieldSupplyReward)} | 入库 {formatResourceDelta(outcome.reward)} | 压力{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | 目标 +${outcome.objectiveBonus}` : ""}
                     </small>
                     {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                   </button>
@@ -2131,15 +2131,15 @@ function JourneyPanel({
             <div className="journey-actions">
               <button className="ghost-button inline" type="button" onClick={() => onJourneyAction("skip")}>
                 <ShoppingCart size={17} aria-hidden="true" />
-                Skip exchange
+                跳过交易
               </button>
             </div>
           </div>
         ) : activeNode.type === "camp" ? (
           <div className="camp-choice-card">
             <div>
-              <strong>Camp decision</strong>
-              <span>Use field supplies and base support to recover, eat, or map the next leg.</span>
+              <strong>营地抉择</strong>
+              <span>使用随身补给和基地支援，恢复、进食或标记下一段路线。</span>
             </div>
             <div className="combat-loot-grid">
               {campActionList.map((action) => {
@@ -2153,9 +2153,9 @@ function JourneyPanel({
                     <strong>{outcome.label}</strong>
                     <span>{outcome.successLog}</span>
                     <small>
-                      Cost {outcome.supplyPriority.map((key) => resourceLabels[key]).join("/") || "none"} | F{formatSignedNumber(outcome.fatigue)} H
-                      {formatSignedNumber(outcome.hunger)} T{formatSignedNumber(outcome.thirst)} P{formatSignedPercent(outcome.pressure)}
-                      {outcome.objectiveBonus > 0 ? ` | Obj +${outcome.objectiveBonus}` : ""}
+                      消耗 {outcome.supplyPriority.map((key) => resourceLabels[key]).join("/") || "无"} | 疲劳{formatSignedNumber(outcome.fatigue)} 饥饿
+                      {formatSignedNumber(outcome.hunger)} 口渴{formatSignedNumber(outcome.thirst)} 压力{formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` | 目标 +${outcome.objectiveBonus}` : ""}
                     </small>
                     {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                   </button>
@@ -2165,13 +2165,13 @@ function JourneyPanel({
           </div>
         ) : (
           <button className="primary-button full-width" type="button" onClick={() => onJourneyAction("extract")}>
-            Extract and settle
+            撤离并结算
           </button>
         )}
         {canReturnEarly && (
           <div className="journey-actions">
             <button className="ghost-button inline danger-action" type="button" onClick={() => onJourneyAction("extract")}>
-              Return early
+              提前返程
             </button>
           </div>
         )}
@@ -2200,12 +2200,32 @@ function JourneyResourceStrip({ resources, title }: { resources: ResourceBundle;
   );
 }
 
+function journeyNodeTypeLabel(type: JourneyNode["type"]) {
+  const labels: Record<JourneyNode["type"], string> = {
+    camp: "营地",
+    combat: "战斗",
+    event: "事件",
+    extraction: "撤离",
+    shop: "商店"
+  };
+  return labels[type];
+}
+
+function roadToneLabel(tone: "find" | "hazard" | "road") {
+  const labels = {
+    find: "路上发现",
+    hazard: "路上险情",
+    road: "路口"
+  };
+  return labels[tone];
+}
+
 function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {
   const fill = Math.max(4, Math.min(100, Math.round((burden.load / burden.capacity) * 100)));
   return (
     <div className={`burden-preview ${burden.tier}`}>
       <div>
-        <span>Pack load</span>
+        <span>背包负重</span>
         <strong>
           {burden.load}/{burden.capacity}
         </strong>
@@ -2220,14 +2240,14 @@ function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {
 
 function burdenSummary(burden: JourneyCarryBurden) {
   if (burden.tier === "overloaded") {
-    return `Overloaded: start pressure +${burden.pressurePenalty}%, travel fatigue +${burden.fatiguePenalty}.`;
+    return `超载：初始压力 +${burden.pressurePenalty}%，行进疲劳 +${burden.fatiguePenalty}。`;
   }
 
   if (burden.tier === "heavy") {
-    return `Heavy pack: start pressure +${burden.pressurePenalty}%, travel fatigue +${burden.fatiguePenalty}.`;
+    return `负重偏高：初始压力 +${burden.pressurePenalty}%，行进疲劳 +${burden.fatiguePenalty}。`;
   }
 
-  return `Light pack: start pressure ${burden.pressurePenalty}%, no travel fatigue penalty.`;
+  return `轻装：初始压力 ${burden.pressurePenalty}%，没有额外行进疲劳。`;
 }
 
 function CombatBar({ label, max, tone, value }: { label: string; max: number; tone: "danger" | "safe"; value: number }) {
@@ -2502,9 +2522,9 @@ function applyJourneyChoice(journey: JourneyState, title: string, choice: Journe
     journey.pressure = clampPercent(journey.pressure + choice.pressure);
     journey.rollShift += choice.rollShift;
     journey.logs.push(
-      `${title}: ${choice.successLog} ${resourceLabels[spentKey]} -1, ${formatResourceDelta(choice.reward)}, pressure ${formatSignedPercent(
+      `${title}：${choice.successLog} ${resourceLabels[spentKey]} -1，${formatResourceDelta(choice.reward)}，压力 ${formatSignedPercent(
         choice.pressure
-      )}.`
+      )}。`
     );
     return;
   }
@@ -2512,7 +2532,7 @@ function applyJourneyChoice(journey: JourneyState, title: string, choice: Journe
   const fallbackPressure = choice.pressure < 0 ? 5 : Math.max(8, choice.pressure);
   journey.pressure = clampPercent(journey.pressure + fallbackPressure);
   journey.rollShift += choice.rollShift < 0 ? choice.rollShift / 2 : choice.rollShift;
-  journey.logs.push(`${title}: ${choice.fallbackLog} ${formatResourceDelta(choice.reward)}, pressure ${formatSignedPercent(fallbackPressure)}.`);
+  journey.logs.push(`${title}：${choice.fallbackLog} ${formatResourceDelta(choice.reward)}，压力 ${formatSignedPercent(fallbackPressure)}。`);
 }
 
 function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {
@@ -2567,13 +2587,22 @@ function combatActionIcon(action: CombatAction) {
 
 function combatActionLabel(action: CombatAction) {
   const labels: Record<CombatAction, string> = {
-    guard: "Guard",
-    patch: "Patch",
-    retreat: "Retreat",
-    strike: "Strike",
-    tactic: "Tactic"
+    guard: "防守",
+    patch: "包扎",
+    retreat: "撤退",
+    strike: "攻击",
+    tactic: "战术"
   };
   return labels[action];
+}
+
+function combatCounterTagLabel(tag: "Counter" | "Risk" | "Standard") {
+  const labels: Record<"Counter" | "Risk" | "Standard", string> = {
+    Counter: "反制",
+    Risk: "风险",
+    Standard: "常规"
+  };
+  return labels[tag];
 }
 
 function shopActionFromJourneyAction(action: JourneyAction): JourneyShopAction | null {
@@ -2600,23 +2629,23 @@ function getJourneyOutlook(journey: JourneyState) {
   const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
   if (journey.pressure >= 78 || worstCondition >= 82) {
     return {
-      label: "Red route",
-      text: "The next leg is likely to turn ugly. Returning early preserves field salvage.",
+      label: "红色路线",
+      text: "下一段很可能失控。提前返程可以保住已经拿到的野外收获。",
       tone: "danger"
     };
   }
 
   if (journey.pressure >= 52 || worstCondition >= 58) {
     return {
-      label: "Strained route",
-      text: "The squad can continue, but supplies or camp actions should solve the road soon.",
+      label: "吃紧路线",
+      text: "队伍还能继续，但补给或营地行动需要尽快解决路况。",
       tone: "warning"
     };
   }
 
   return {
-    label: "Open route",
-    text: "The road is still controllable. This is a good window to push, scout, or scavenge.",
+    label: "可控路线",
+    text: "道路仍在可控范围内。现在适合推进、侦察或搜刮。",
     tone: "safe"
   };
 }
@@ -2624,7 +2653,7 @@ function getJourneyOutlook(journey: JourneyState) {
 function formatResourceDelta(resources: ResourceBundle) {
   const entries = resourceKeys.filter((key) => resources[key] > 0);
   if (entries.length === 0) {
-    return "none";
+    return "无";
   }
 
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");

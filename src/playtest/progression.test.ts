@@ -16,9 +16,9 @@ describe("expedition doctrines", () => {
       "overwatch-route"
     ]);
     expect(doctrines[0]).toMatchObject({
-      effect: "Max HP +6 / Guard +1 / Opening guard +2",
+      effect: "生命上限 +6 / 防守 +1 / 开局防护 +2",
       facilityId: "dorm",
-      label: "Hold Formation"
+      label: "收紧队形"
     });
   });
 
