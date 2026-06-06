@@ -91,15 +91,15 @@ function assertCloudflarePagesConfig() {
 
   const config = readFileSync(path, "utf8");
   const outputDir = config.match(/^\s*pages_build_output_dir\s*=\s*"([^"]+)"\s*$/m)?.[1];
-  const assetsDir = config.match(/^\s*directory\s*=\s*"([^"]+)"\s*$/m)?.[1];
+  const hasAssetsSection = /^\s*\[assets\]\s*$/m.test(config);
 
   if (outputDir !== "dist") {
     console.error('wrangler.toml must set pages_build_output_dir = "dist" so Cloudflare Pages uses the built Vite output.');
     process.exit(1);
   }
 
-  if (assetsDir && assetsDir.replace(/^\.\//, "") !== "dist") {
-    console.error('wrangler.toml [assets] directory must point at "./dist" when present.');
+  if (hasAssetsSection) {
+    console.error('wrangler.toml must not include [assets]; Cloudflare Pages config validation rejects Workers static asset settings.');
     process.exit(1);
   }
 }

@@ -106,7 +106,7 @@ npm run release:preflight
 
 - 工作区必须干净。
 - 当前分支必须基于最新 `origin/master`。
-- `wrangler.toml` 必须声明 `pages_build_output_dir = "dist"`，避免线上部署忽略 Pages 配置。
+- `wrangler.toml` 必须声明 `pages_build_output_dir = "dist"`，并且不能包含 Pages 不支持的 `[assets]` 配置。
 - `npm test` 必须通过。
 - `npm run build` 必须通过。
 
