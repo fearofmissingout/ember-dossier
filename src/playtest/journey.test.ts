@@ -866,6 +866,33 @@ describe("journey route generation", () => {
     expect(ambushed.logs.join("\n")).toContain("路上伏击：坍塌楼梯间");
   });
 
+  test("controlled final travel reaches extraction without another road gate", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "clean-exit-road-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 2, fuel: 0, materials: 0, medicine: 1, water: 2 },
+        risk: "cautious",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 3;
+    journey.condition.distance = 3;
+    journey.condition.fatigue = 12;
+    journey.pressure = 8;
+
+    const advanced = advanceJourneyTravel(journey, squad, 75, 4);
+
+    expect(advanced.currentNodeIndex).toBe(4);
+    expect(advanced.nodes[4].type).toBe("extraction");
+    expect(advanced.pendingRoadEvent).toBeNull();
+    expect(advanced.logs.join("\n")).toContain("撤离线清晰");
+  });
+
   test("travel plans change road risk and salvage rhythm", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.6);
     const session = createStarterSession("user-a", "Alice", "travel-plan-room");
@@ -1545,6 +1572,50 @@ describe("journey route generation", () => {
     expect(hardened.logs.join("\n")).toContain("特性脉冲：甲壳闭锁");
     expect(countered.combat?.armor).toBe(2);
     expect(countered.logs.join("\n")).toContain("特性反制：甲壳闭锁");
+  });
+
+  test("low-pressure armored counterattacks spread damage instead of instantly downing a healthy striker", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "armored-counter-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const striker = squad.reduce((best, survivor) => (survivor.attributes.agility > best.attributes.agility ? survivor : best), squad[0]);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "cautious",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.pressure = 6;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    if (journey.combat) {
+      journey.combat.enemyTrait = "armored";
+      journey.combat.enemyTraitLabel = "装甲";
+      journey.combat.enemyTraitText = "外壳会惩罚盲目攻击。";
+      journey.combat.traitPulse = {
+        counterActions: ["tactic"],
+        label: "甲壳闭锁",
+        text: "未暴露时护甲会继续收紧。",
+        warning: "未暴露时盲目攻击会让护甲继续变厚。"
+      };
+      journey.combat.attack = 24;
+      journey.combat.armor = 3;
+      journey.combat.exposed = 0;
+      journey.combat.intent = "maul";
+      journey.combat.intentLabel = "猛击";
+      journey.combat.intentText = "一次直接重击即将到来。";
+    }
+
+    const resolved = resolveCombatRound(journey, "strike", squad, 75);
+    const resolvedStriker = resolved.combat?.frontline.find((combatant) => combatant.survivorId === striker.id);
+
+    expect(resolvedStriker?.status).not.toBe("down");
+    expect(resolved.battleScars).toBe(journey.battleScars);
+    expect(resolved.logs.join("\n")).toContain("队形分担");
   });
 
   test("retreat exits combat with pressure and route progress", () => {

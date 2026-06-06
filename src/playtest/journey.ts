@@ -1753,7 +1753,10 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
       pressureLog.push(`流血造成 ${combat.bleed}`);
     }
 
-    applyCombatDamage(next, combat, incoming, incomingFocusId);
+    const counterSpread = applyCombatCounterDamage(next, combat, incoming, incomingFocusId, action);
+    if (counterSpread) {
+      pressureLog.push("队形分担");
+    }
     if (combat.enemyTrait === "bleeder") {
       if (traitPulseCountered || patchedThisRound) {
         traitPulseLog.push("特性反制：裂伤被控制。");
@@ -1881,6 +1884,13 @@ export function advanceJourneyTravel(journey: JourneyState, squad: Survivor[], r
       pressureDelta
     })
   );
+
+  if (canReachExtractionCleanly(next, nextNodeIndex)) {
+    next.currentNodeIndex = nextNodeIndex;
+    next.logs.push("撤离线清晰：队伍保持队形通过最后一段，没有再被路口拖住。");
+    next.segmentTactic = "observe";
+    return next;
+  }
 
   queueRoadEncounter(next, squad, plan.id, routeSkill, nextNodeIndex);
 
@@ -3635,6 +3645,12 @@ function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: Jour
   journey.logs.push(`路口：${beat.title}。${body}`);
 }
 
+function canReachExtractionCleanly(journey: JourneyState, nextNodeIndex: number) {
+  const nextNode = journey.nodes[nextNodeIndex];
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  return nextNode?.type === "extraction" && journey.pressure < 35 && worstCondition < 55;
+}
+
 function createRoadEncounterChoices(
   beat: JourneyRoadBeatTemplate,
   tone: JourneyRoadEventTone,
@@ -3976,6 +3992,39 @@ function applyCombatDamage(journey: JourneyState, combat: JourneyCombat, amount:
   }
 
   syncCombatSquadHp(combat);
+}
+
+function applyCombatCounterDamage(
+  journey: JourneyState,
+  combat: JourneyCombat,
+  amount: number,
+  focusSurvivorId: string | null,
+  action: CombatAction
+) {
+  if (!shouldSpreadCounterDamage(journey, combat, action)) {
+    applyCombatDamage(journey, combat, amount, focusSurvivorId);
+    return false;
+  }
+
+  const targets = combat.frontline.filter((line) => line.status !== "down");
+  const damage = Math.max(0, Math.floor(amount));
+  const share = Math.floor(damage / targets.length);
+  const remainder = damage % targets.length;
+  targets.forEach((target, index) => {
+    applyCombatDamage(journey, combat, share + (index < remainder ? 1 : 0), target.survivorId);
+  });
+  journey.logs.push(`${combat.enemyName} 的反击被队形分担，没有集中压垮主攻手。`);
+  return true;
+}
+
+function shouldSpreadCounterDamage(journey: JourneyState, combat: JourneyCombat, action: CombatAction) {
+  return (
+    action === "strike" &&
+    combat.enemyTrait === "armored" &&
+    combat.exposed <= 0 &&
+    journey.pressure < 30 &&
+    combat.frontline.filter((line) => line.status !== "down").length > 1
+  );
 }
 
 function orderedCombatTargets(combat: JourneyCombat, focusSurvivorId: string | null) {
