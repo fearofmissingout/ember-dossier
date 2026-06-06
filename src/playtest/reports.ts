@@ -1,6 +1,6 @@
 import type { FeedItem } from "../game/types";
 
-export type FeedReportTimelineCategory = "route" | "combat" | "trade" | "camp" | "extraction" | "reward" | "risk";
+export type FeedReportTimelineCategory = "route" | "combat" | "trade" | "camp" | "extraction" | "reward" | "growth" | "risk";
 
 export type FeedReportTimelineStep = {
   body: string;
@@ -20,13 +20,14 @@ const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
   extraction: "撤离",
+  growth: "成长",
   reward: "收获",
   risk: "风险",
   route: "路线",
   trade: "交易"
 };
 
-const summaryOrder: FeedReportTimelineCategory[] = ["route", "combat", "trade", "camp", "extraction", "reward", "risk"];
+const summaryOrder: FeedReportTimelineCategory[] = ["growth", "route", "combat", "trade", "camp", "extraction", "reward", "risk"];
 
 export function summarizeFeedReportTimeline(item: FeedItem): FeedReportTimeline {
   if (item.kind !== "report") {
@@ -110,6 +111,10 @@ function classifyTimelineLine(line: string): FeedReportTimelineCategory | null {
 
   if (/收获|战利品|材料 \+|食物 \+|水 \+|药品 \+|燃料 \+|弹药 \+|目标 \+/.test(line)) {
     return "reward";
+  }
+
+  if (/成长|经验|升到 Lv\.|解锁/.test(line)) {
+    return "growth";
   }
 
   if (/受伤|伤痕|擦伤|危险|压力 \+/.test(line)) {

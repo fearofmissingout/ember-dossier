@@ -276,8 +276,11 @@ describe("playtest room loop", () => {
     });
 
     expect(result.session.account.survivors[0].level).toBe(2);
-    expect(result.report.logs.join("\n")).toContain("解锁");
-    expect(result.session.room.feed[0]?.body).toContain("升到 2 级");
+    expect(result.report.logs[0]).toContain("成长：");
+    expect(result.report.logs[0]).toContain("+8 经验");
+    expect(result.report.logs[0]).toContain("升到 Lv.2");
+    expect(result.report.logs[0]).toContain("解锁");
+    expect(result.session.room.feed[0]?.body.split("\n")[1]).toContain("成长：");
   });
 
   test("expedition reports include process beats and random encounters", () => {

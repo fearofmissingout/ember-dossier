@@ -20,6 +20,17 @@ export type SurvivorPerk = {
   description: string;
 };
 
+export type SurvivorAdvancement = {
+  afterLevel: number;
+  atLevelCap: boolean;
+  beforeLevel: number;
+  levelUps: number[];
+  survivor: AccountSurvivor;
+  unlockedPerks: SurvivorPerk[];
+  xpGained: number;
+  xpToNextLevel: number;
+};
+
 export type ExpeditionSupport = {
   ammoDamage: number;
   campCook: number;
@@ -66,6 +77,9 @@ export type ExpeditionSupportPlan = {
   totalEffects: number;
 };
 
+export const survivorLevelCap = 5;
+export const survivorMaxXp = survivorLevelCap * 20;
+
 export const survivorPerks: Record<SurvivorPerkId, SurvivorPerk> = {
   base_instinct: {
     description: "该幸存者执行搜寻、修理、守卫或护理时，基地班次产出 +1。",
@@ -104,7 +118,47 @@ export function hasSurvivorPerk(survivor: AccountSurvivor, perkId: SurvivorPerkI
 }
 
 export function xpForNextLevel(survivor: AccountSurvivor) {
+  if (isSurvivorAtLevelCap(survivor)) {
+    return survivorMaxXp;
+  }
+
   return survivor.level * 20;
+}
+
+export function isSurvivorAtLevelCap(survivor: Pick<AccountSurvivor, "level">) {
+  return survivor.level >= survivorLevelCap;
+}
+
+export function advanceSurvivorExperience(survivor: AccountSurvivor, xpGained: number): SurvivorAdvancement {
+  const beforeLevel = survivor.level;
+  const beforePerks = survivorPerkDetails(survivor);
+  const gained = Math.max(0, Math.floor(xpGained));
+  const survivorAfterGain: AccountSurvivor = {
+    ...survivor,
+    xp: Math.min(survivorMaxXp, survivor.xp + gained)
+  };
+  const levelUps: number[] = [];
+
+  while (!isSurvivorAtLevelCap(survivorAfterGain) && survivorAfterGain.xp >= xpForNextLevel(survivorAfterGain)) {
+    survivorAfterGain.level += 1;
+    levelUps.push(survivorAfterGain.level);
+  }
+
+  const unlockedPerks = survivorPerkDetails(survivorAfterGain).filter(
+    (perk) => !beforePerks.some((existing) => existing.id === perk.id)
+  );
+  const atLevelCap = isSurvivorAtLevelCap(survivorAfterGain);
+
+  return {
+    afterLevel: survivorAfterGain.level,
+    atLevelCap,
+    beforeLevel,
+    levelUps,
+    survivor: survivorAfterGain,
+    unlockedPerks,
+    xpGained: survivorAfterGain.xp - survivor.xp,
+    xpToNextLevel: atLevelCap ? 0 : Math.max(0, xpForNextLevel(survivorAfterGain) - survivorAfterGain.xp)
+  };
 }
 
 const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [

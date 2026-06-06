@@ -92,6 +92,7 @@ async function checkProductionBundle() {
     "房间目标",
     "撤离预案",
     "后勤预案",
+    "成长：",
     "捐入"
   ];
   const missingStrings = requiredStrings.filter((text) => !asset.includes(text));

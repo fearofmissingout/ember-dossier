@@ -7,6 +7,7 @@ describe("playtest report timeline", () => {
     const report: FeedItem = {
       body: [
         "队伍在北区水处理厂完成路线。结果：艰难完成。主要收获：水 +4。",
+        "成长：林岚 +10 经验，升到 Lv.2，解锁 野外跑手。",
         "出发：队长检查路线标记，队伍离开基地。",
         "路线：道路：路段 1，稳步推进，食物 -1，水 -1。疲劳 +8，压力 +6%。",
         "路线：遭遇战：第 1 回合，林发起攻击，造成 8 伤害，弹药 -1。",
@@ -25,6 +26,7 @@ describe("playtest report timeline", () => {
 
     expect(timeline.hasProcess).toBe(true);
     expect(timeline.steps.map((step) => step.category)).toEqual([
+      "growth",
       "route",
       "combat",
       "combat",
@@ -33,17 +35,22 @@ describe("playtest report timeline", () => {
       "extraction"
     ]);
     expect(timeline.steps[0]).toMatchObject({
+      label: "成长",
+      title: "成长"
+    });
+    expect(timeline.steps[1]).toMatchObject({
       label: "路线",
       title: "路段 1"
     });
-    expect(timeline.steps[1]).toMatchObject({
+    expect(timeline.steps[2]).toMatchObject({
       label: "战斗",
       title: "遭遇战"
     });
-    expect(timeline.steps[3]).toMatchObject({
+    expect(timeline.steps[4]).toMatchObject({
       label: "交易",
       title: "路边交易点"
     });
+    expect(timeline.summary).toContain("成长 1");
     expect(timeline.summary).toContain("路线 1");
     expect(timeline.summary).toContain("战斗 2");
     expect(timeline.summary).toContain("交易 1");

@@ -86,6 +86,7 @@ import {
   basePrepSupportFromAssignments,
   expeditionDoctrineOptions,
   expeditionSupportPlan,
+  isSurvivorAtLevelCap,
   mergeExpeditionSupport,
   supportFromFacilities,
   survivorPerkDetails,
@@ -1395,6 +1396,7 @@ function Survivors({
           const accountSurvivor = accountSurvivors.find((candidate) => candidate.id === survivor.id);
           const perks = accountSurvivor ? survivorPerkDetails(accountSurvivor) : [];
           const xpTarget = accountSurvivor ? xpForNextLevel(accountSurvivor) : 0;
+          const capped = accountSurvivor ? isSurvivorAtLevelCap(accountSurvivor) : false;
           return (
           <article className={selectedIds.includes(survivor.id) ? "survivor-card selected" : "survivor-card"} key={survivor.id}>
             <div className="portrait-mark">{survivor.codename.slice(0, 2)}</div>
@@ -1434,10 +1436,14 @@ function Survivors({
                 <div className="xp-line">
                   <span>经验</span>
                   <div>
-                    <i style={{ width: `${Math.max(5, Math.min(100, Math.round((accountSurvivor.xp / xpTarget) * 100)))}%` }} />
+                    <i
+                      style={{
+                        width: capped ? "100%" : `${Math.max(5, Math.min(100, Math.round((accountSurvivor.xp / xpTarget) * 100)))}%`
+                      }}
+                    />
                   </div>
                   <strong>
-                    {accountSurvivor.xp}/{xpTarget}
+                    {capped ? "已达上限" : `${accountSurvivor.xp}/${xpTarget}`}
                   </strong>
                 </div>
               )}
@@ -2469,7 +2475,7 @@ function ReportTimeline({ item }: { item: FeedItem }) {
         <strong>{timeline.summary}</strong>
       </div>
       <div className="report-timeline-grid">
-        {timeline.steps.slice(0, 6).map((step, index) => (
+        {timeline.steps.slice(0, 8).map((step, index) => (
           <article className={`report-timeline-step ${step.category}`} key={`${item.id}-timeline-${index}-${step.title}`}>
             <span>{step.label}</span>
             <strong>{step.title}</strong>

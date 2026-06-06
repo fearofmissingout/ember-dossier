@@ -653,6 +653,11 @@ button:disabled {
   background: #f7fbef;
 }
 
+.report-timeline-step.growth {
+  border-color: #b5a058;
+  background: #fff7d7;
+}
+
 .report-timeline-step.risk {
   border-color: #c56b62;
   background: #fff1ef;

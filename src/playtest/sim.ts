@@ -1,7 +1,7 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
 import { facilityActionCost, facilityActionLabel, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
-import { hasSurvivorPerk, survivorPerkDetails } from "./progression";
+import { advanceSurvivorExperience, hasSurvivorPerk, type SurvivorAdvancement } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { BaseWorkType, PlaytestSession } from "./types";
 
@@ -150,13 +150,7 @@ export function resolvePlaytestExpedition(
   next.room.base.morale = result.nextState.resources.morale;
   next.room.base.danger = result.nextState.resources.danger;
   next.room.feed = result.nextState.feed;
-  if (next.room.feed[0]) {
-    next.room.feed[0] = {
-      ...next.room.feed[0],
-      body: `${summarizePlaytestReport(result.report, request)}\n${process.logs.slice(0, 8).join("\n")}`
-    };
-  }
-  const progressionLogs: string[] = [];
+  const growthSummaries: string[] = [];
   next.account.survivors = next.account.survivors.map((survivor) => {
     const updated = result.nextState.survivors.find((candidate) => candidate.id === survivor.id);
     if (!updated) {
@@ -165,34 +159,31 @@ export function resolvePlaytestExpedition(
 
     const participated = request.survivorIds.includes(survivor.id);
     const trainingLevel = facilityLevel(next, "training");
-    const nextXp = participated ? survivor.xp + 8 + Math.floor((request.travelFatigue ?? 0) / 25) + trainingLevel * 2 : survivor.xp;
-    const nextLevel = participated && nextXp >= survivor.level * 20 ? survivor.level + 1 : survivor.level;
-    if (nextLevel > survivor.level) {
-      const unlocked = survivorPerkDetails({ ...survivor, level: nextLevel, xp: nextXp }).filter(
-        (perk) => !survivorPerkDetails(survivor).some((existing) => existing.id === perk.id)
-      );
-      progressionLogs.push(
-        `${survivor.name} 升到 ${nextLevel} 级${unlocked.length ? `，解锁 ${unlocked.map((perk) => perk.label).join("、")}` : ""}。`
-      );
+    const advancement = participated
+      ? advanceSurvivorExperience(survivor, expeditionXpGain(request.travelFatigue ?? 0, trainingLevel))
+      : null;
+    if (advancement) {
+      growthSummaries.push(formatSurvivorGrowth(advancement));
     }
 
     return {
       ...survivor,
       fatigue: participated ? clamp(updated.fatigue + Math.floor((request.travelFatigue ?? 0) / 5), 0, 100) : updated.fatigue,
       injuries: updated.injuries,
-      level: nextLevel,
+      level: advancement?.survivor.level ?? survivor.level,
       status: participated ? "available" : survivor.status,
-      xp: nextXp
+      xp: advancement?.survivor.xp ?? survivor.xp
     };
   });
+  const progressionLogs = growthSummaries.length ? [`成长：${growthSummaries.join("；")}。`] : [];
   if (progressionLogs.length) {
     result.report.logs.unshift(...progressionLogs);
-    if (next.room.feed[0]) {
-      next.room.feed[0] = {
-        ...next.room.feed[0],
-        body: `${next.room.feed[0].body}\n${progressionLogs.join("\n")}`
-      };
-    }
+  }
+  if (next.room.feed[0]) {
+    next.room.feed[0] = {
+      ...next.room.feed[0],
+      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...process.logs.slice(0, 8)].join("\n")
+    };
   }
   applyProcessEffects(next, request, process);
 
@@ -425,6 +416,27 @@ function formatSignedNumber(value: number): string {
 function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
   const status = request.extractionStatus === "early" ? "提前折返" : "完成路线";
   return `${report.squadNames.join("、")}在${report.locationName}${status}。结果：${expeditionOutcomeLabel(report.outcome)}。主要收获：${formatResources(report.reward)}。`;
+}
+
+function expeditionXpGain(travelFatigue: number, trainingLevel: number) {
+  return 8 + Math.floor(travelFatigue / 25) + trainingLevel * 2;
+}
+
+function formatSurvivorGrowth(advancement: SurvivorAdvancement) {
+  const base = `${advancement.survivor.name} +${advancement.xpGained} 经验`;
+  const unlocked = advancement.unlockedPerks.length
+    ? `，解锁 ${advancement.unlockedPerks.map((perk) => perk.label).join("、")}`
+    : "";
+
+  if (advancement.levelUps.length > 0) {
+    return `${base}，升到 Lv.${advancement.afterLevel}${unlocked}`;
+  }
+
+  if (advancement.atLevelCap) {
+    return `${base}，Lv.${advancement.afterLevel} 已达上限`;
+  }
+
+  return `${base}，距 Lv.${advancement.afterLevel + 1} 还差 ${advancement.xpToNextLevel}`;
 }
 
 function expeditionOutcomeLabel(outcome: ExpeditionReport["outcome"]) {

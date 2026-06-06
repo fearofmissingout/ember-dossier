@@ -1,7 +1,20 @@
 import { describe, expect, test } from "vitest";
 import { completeFacilities } from "../game/facilities";
 import { starterRoomFacilities } from "./content";
-import { basePrepSupportFromAssignments, expeditionDoctrineOptions, expeditionSupportPlan, mergeExpeditionSupport, supportFromFacilities } from "./progression";
+import type { AccountSurvivor } from "./types";
+import {
+  advanceSurvivorExperience,
+  basePrepSupportFromAssignments,
+  expeditionDoctrineOptions,
+  expeditionSupportPlan,
+  isSurvivorAtLevelCap,
+  mergeExpeditionSupport,
+  survivorLevelCap,
+  survivorMaxXp,
+  survivorPerkDetails,
+  supportFromFacilities,
+  xpForNextLevel
+} from "./progression";
 import { createStarterSession } from "./state";
 
 describe("expedition doctrines", () => {
@@ -120,5 +133,60 @@ describe("expedition doctrines", () => {
     expect(plan.summary).toBe("暂无后勤支援");
     expect(plan.totalEffects).toBe(0);
     expect(plan.stages).toHaveLength(0);
+  });
+});
+
+function survivor(overrides: Partial<AccountSurvivor> = {}): AccountSurvivor {
+  return {
+    attributes: {
+      agility: 72,
+      infectionResistance: 44,
+      luck: 48,
+      medical: 34,
+      social: 38,
+      stamina: 70,
+      technical: 42,
+      willpower: 46
+    },
+    codename: "Runner",
+    fatigue: 0,
+    flaw: "怕黑",
+    id: "survivor-runner",
+    injuries: [],
+    level: 1,
+    name: "林岚",
+    note: "轻装侦察员。",
+    ownerUserId: "user-a",
+    profession: "快递员",
+    role: "侦察员",
+    status: "available",
+    traits: ["灵活"],
+    xp: 0,
+    ...overrides
+  };
+}
+
+describe("survivor progression", () => {
+  test("advances through every reached threshold and reports unlocked perks", () => {
+    const result = advanceSurvivorExperience(survivor({ xp: 18 }), 45);
+
+    expect(result.survivor.level).toBe(4);
+    expect(result.survivor.xp).toBe(63);
+    expect(result.levelUps).toEqual([2, 3, 4]);
+    expect(result.unlockedPerks.map((perk) => perk.label)).toEqual(["野外跑手", "基地直觉"]);
+    expect(result.xpToNextLevel).toBe(17);
+    expect(survivorPerkDetails(result.survivor).map((perk) => perk.label)).toEqual(["野外跑手", "基地直觉"]);
+  });
+
+  test("keeps capped survivors at the long-term growth ceiling", () => {
+    const result = advanceSurvivorExperience(survivor({ level: survivorLevelCap, xp: survivorMaxXp - 2 }), 20);
+
+    expect(result.survivor.level).toBe(survivorLevelCap);
+    expect(result.survivor.xp).toBe(survivorMaxXp);
+    expect(result.levelUps).toEqual([]);
+    expect(result.xpToNextLevel).toBe(0);
+    expect(result.atLevelCap).toBe(true);
+    expect(isSurvivorAtLevelCap(result.survivor)).toBe(true);
+    expect(xpForNextLevel(result.survivor)).toBe(survivorMaxXp);
   });
 });
