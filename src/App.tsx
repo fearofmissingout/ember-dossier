@@ -1108,7 +1108,7 @@ export default function App() {
             onJourneyAction={resolveJourneyAction}
           />
         )}
-        {view === "reports" && <Reports state={state} latestReportId={latestReportId} />}
+        {view === "reports" && <Reports feed={session.room.feed} latestReportId={latestReportId} />}
         {view === "facilities" && (
           <Facilities state={state} developmentPlan={baseDevelopmentPlan(session)} onUpgrade={upgradeRoomFacility} />
         )}
@@ -2374,7 +2374,7 @@ function CombatBar({ label, max, tone, value }: { label: string; max: number; to
   );
 }
 
-function Reports({ state, latestReportId }: { state: GameState; latestReportId: string | null }) {
+function Reports({ feed, latestReportId }: { feed: FeedItem[]; latestReportId: string | null }) {
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -2385,7 +2385,7 @@ function Reports({ state, latestReportId }: { state: GameState; latestReportId: 
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
       </div>
       <div className="feed-list large">
-        {state.feed.map((item) => (
+        {feed.map((item) => (
           <article className="feed-item" key={item.id}>
             <span>{item.timestamp}</span>
             <div>
