@@ -366,7 +366,7 @@ export default function App() {
       setSyncRetryCount(0);
       setSyncStatus(result.mode === "initialized" ? "initialized" : "synced");
     } catch (error) {
-      console.error("Failed to load Supabase demo state", error);
+      console.warn("Failed to load Supabase demo state", error);
       setRemoteReady(false);
       setSyncError(describeSyncError(error));
       setSyncRetryCount((count) => count + 1);
