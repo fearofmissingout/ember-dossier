@@ -28,12 +28,16 @@ import {
   applyContribution,
   baseDayPreview,
   assignSurvivorToRoom,
+  accountBaseDevelopmentPlan,
   baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
   setBaseAssignment,
   treatSurvivor,
+  upgradeAccountBase,
   upgradeFacility,
+  type AccountBaseDevelopmentPlan,
+  type AccountBaseFacilityId,
   type BaseDevelopmentPlan,
   type BaseRecoveryPlan
 } from "./playtest/sim";
@@ -88,6 +92,7 @@ import {
   expeditionSupportPlan,
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
+  supportFromAccountBase,
   supportFromFacilities,
   survivorPerkDetails,
   xpForNextLevel,
@@ -709,6 +714,17 @@ export default function App() {
     }
   }
 
+  function upgradePersonalBase(facilityId: AccountBaseFacilityId) {
+    try {
+      const nextSession = upgradeAccountBase(session, session.account.profile.userId, facilityId);
+      applySession(nextSession);
+      persistPlaytestProgress(nextSession);
+    } catch (error) {
+      setSyncError(describeSyncError(error));
+      setSyncStatus("error");
+    }
+  }
+
   function endRoomDay() {
     try {
       const nextSession = advanceRoomDay(session, session.account.profile.userId);
@@ -737,6 +753,7 @@ export default function App() {
 
     applySession(preparedSession);
     const facilitySupport = supportFromFacilities(preparedSession.room.base.facilities, draft.doctrineId);
+    const accountSupport = supportFromAccountBase(preparedSession.account.base);
     const basePrepSupport = basePrepSupportFromAssignments(
       preparedSession.room.baseAssignments,
       preparedSession.account.survivors,
@@ -748,7 +765,7 @@ export default function App() {
         preparedSession,
         {
           ...draft,
-          support: mergeExpeditionSupport(facilitySupport, basePrepSupport)
+          support: mergeExpeditionSupport(mergeExpeditionSupport(facilitySupport, accountSupport), basePrepSupport)
         },
         selectedLocation.id,
         readiness
@@ -1061,8 +1078,10 @@ export default function App() {
           <Overview
             state={state}
             session={session}
+            accountBasePlan={accountBaseDevelopmentPlan(session.account)}
             contributionDraft={contributionDraft}
             goExpedition={() => setView("expedition")}
+            onAccountBaseUpgrade={upgradePersonalBase}
             onContributionChange={updateContribution}
             onContribute={submitContribution}
             onEndDay={endRoomDay}
@@ -1083,6 +1102,7 @@ export default function App() {
         )}
         {view === "expedition" && (
           <ExpeditionPrep
+            accountBase={session.account.base}
             accountSurvivors={session.account.survivors}
             baseAssignments={session.room.baseAssignments}
             state={state}
@@ -1135,16 +1155,20 @@ export default function App() {
 function Overview({
   state,
   session,
+  accountBasePlan,
   contributionDraft,
   goExpedition,
+  onAccountBaseUpgrade,
   onContributionChange,
   onContribute,
   onEndDay
 }: {
   state: GameState;
   session: PlaytestSession;
+  accountBasePlan: AccountBaseDevelopmentPlan;
   contributionDraft: ResourceBundle;
   goExpedition: () => void;
+  onAccountBaseUpgrade: (id: AccountBaseFacilityId) => void;
   onContributionChange: (key: ResourceKey, delta: number) => void;
   onContribute: () => void;
   onEndDay: () => void;
@@ -1153,23 +1177,67 @@ function Overview({
   const objectiveProgress = Math.round((objective.repairedParts / objective.requiredParts) * 100);
   const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
   const dayPreview = baseDayPreview(session);
+  const accountRooms = [
+    { label: "训练室", level: session.account.base.trainingRoomLevel },
+    { label: "医务室", level: session.account.base.medicalRoomLevel },
+    { label: "仓库", level: session.account.base.warehouseLevel },
+    { label: "电台", level: session.account.base.radioBenchLevel }
+  ];
 
   return (
     <div className="view-grid">
       <section className="panel account-band">
         <p className="eyebrow">个人基地</p>
         <h2>{session.account.profile.displayName}</h2>
-        <div className="metric-pair">
-          <span>训练室</span>
-          <strong>{session.account.base.trainingRoomLevel}</strong>
+        <div className="account-resource-strip" aria-label="个人资源">
+          <span>
+            材料 <b>{accountBasePlan.resources.materials}</b>
+          </span>
+          <span>
+            稀有零件 <b>{accountBasePlan.resources.rareParts}</b>
+          </span>
+          <span>
+            情报 <b>{accountBasePlan.resources.intel}</b>
+          </span>
         </div>
-        <div className="metric-pair">
-          <span>医务室</span>
-          <strong>{session.account.base.medicalRoomLevel}</strong>
+        <div className="account-base-levels">
+          {accountRooms.map((room) => (
+            <span key={room.label}>
+              {room.label}
+              <b>Lv.{room.level}</b>
+            </span>
+          ))}
         </div>
-        <div className="metric-pair">
-          <span>仓库</span>
-          <strong>{session.account.base.warehouseLevel}</strong>
+        <div className="account-base-plan" aria-label="个人基地发展计划">
+          <div>
+            <span>发展计划</span>
+            <strong>{accountBasePlan.summary}</strong>
+          </div>
+          <div className="account-upgrade-list">
+            {accountBasePlan.projects.map((project) => (
+              <div className={`account-upgrade-row ${project.status}`} key={project.id}>
+                <div>
+                  <strong>{project.name}</strong>
+                  <span>
+                    Lv.{project.currentLevel} → Lv.{project.nextLevel}
+                  </span>
+                  <small>{project.effect}</small>
+                </div>
+                <div>
+                  <small>{formatAccountBaseProjectCost(project.cost)}</small>
+                  <button
+                    className="ghost-button compact-action"
+                    disabled={!project.canAfford}
+                    type="button"
+                    onClick={() => onAccountBaseUpgrade(project.id)}
+                  >
+                    <Wrench size={16} aria-hidden="true" />
+                    {accountBaseProjectActionLabel(project)}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1488,6 +1556,7 @@ function Survivors({
 }
 
 function ExpeditionPrep({
+  accountBase,
   accountSurvivors,
   baseAssignments,
   state,
@@ -1509,6 +1578,7 @@ function ExpeditionPrep({
   onDispatch,
   onJourneyAction
 }: {
+  accountBase: PlaytestSession["account"]["base"];
   accountSurvivors: PlaytestSession["account"]["survivors"];
   baseAssignments: PlaytestSession["room"]["baseAssignments"];
   state: GameState;
@@ -1534,8 +1604,9 @@ function ExpeditionPrep({
   const doctrineOptions = expeditionDoctrineOptions(state.facilities);
   const selectedDoctrine = doctrineOptions.find((doctrine) => doctrine.id === draft.doctrineId) ?? doctrineOptions[0];
   const facilitySupport = supportFromFacilities(state.facilities, selectedDoctrine?.id);
+  const accountSupport = supportFromAccountBase(accountBase);
   const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
-  const support = mergeExpeditionSupport(facilitySupport, basePrepSupport);
+  const support = mergeExpeditionSupport(mergeExpeditionSupport(facilitySupport, accountSupport), basePrepSupport);
   const supportPlan = expeditionSupportPlan(support);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const previewFieldSupplies: ResourceBundle = {
@@ -1584,6 +1655,14 @@ function ExpeditionPrep({
     { label: "准备路段", sign: "+", value: basePrepSupport.roadSecure },
     { label: "准备交易", sign: "+", value: basePrepSupport.shopRations + basePrepSupport.shopService },
     { label: "准备降压", sign: "-", value: basePrepSupport.pressureRelief }
+  ].filter((item) => item.value > 0);
+  const accountSupportItems = [
+    { label: "训练生命", sign: "+", value: accountSupport.maxHp },
+    { label: "个人包扎", sign: "+", value: accountSupport.patchHeal },
+    { label: "个人背包", sign: "+", value: accountSupport.carryCapacity ?? 0 },
+    { label: "电台降压", sign: "-", value: accountSupport.pressureRelief },
+    { label: "路线情报", sign: "+", value: accountSupport.lootIntel },
+    { label: "商店情报", sign: "+", value: accountSupport.shopIntel }
   ].filter((item) => item.value > 0);
   return (
     <div className="expedition-layout">
@@ -1721,6 +1800,17 @@ function ExpeditionPrep({
             </strong>
           ))}
           {!hasBaseSupport && <strong>暂无设施支援</strong>}
+          <span>个人基地</span>
+          {accountSupportItems.length ? (
+            accountSupportItems.map((item) => (
+              <strong key={item.label}>
+                {item.label} {item.sign}
+                {item.value}
+              </strong>
+            ))
+          ) : (
+            <strong>个人基地尚未形成额外支援</strong>
+          )}
           <span>基地准备</span>
           {basePrepItems.length ? (
             basePrepItems.map((item) => (
@@ -2807,6 +2897,28 @@ function facilityProjectActionLabel(action: "Build" | "Upgrade" | "Maxed") {
     Maxed: "满级"
   };
   return labels[action];
+}
+
+function accountBaseProjectActionLabel(project: AccountBaseDevelopmentPlan["projects"][number]) {
+  if (project.status === "maxed") {
+    return "已满级";
+  }
+
+  if (!project.canAfford) {
+    return "资源不足";
+  }
+
+  return `升级：${formatAccountBaseProjectCost(project.cost)}`;
+}
+
+function formatAccountBaseProjectCost(cost: AccountBaseDevelopmentPlan["projects"][number]["cost"]) {
+  const parts = [
+    cost.materials > 0 ? `材料 ${cost.materials}` : "",
+    cost.rareParts > 0 ? `零件 ${cost.rareParts}` : "",
+    cost.intel > 0 ? `情报 ${cost.intel}` : ""
+  ].filter(Boolean);
+
+  return parts.join(" / ") || "无消耗";
 }
 
 function facilityCategoryLabel(category?: string) {

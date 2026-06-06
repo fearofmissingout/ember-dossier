@@ -3,7 +3,7 @@ import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey }
 import { facilityActionCost, facilityActionLabel, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
 import { advanceSurvivorExperience, hasSurvivorPerk, type SurvivorAdvancement } from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
-import type { BaseWorkType, PlaytestSession } from "./types";
+import type { AccountState, BaseWorkType, PlaytestSession } from "./types";
 
 type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   battleScars?: number;
@@ -16,6 +16,145 @@ type PlaytestExpeditionRequest = Omit<ExpeditionRequest, "squadIds"> & {
   travelFatigue?: number;
   userId: string;
 };
+
+export type AccountBaseFacilityId = "medical" | "radio" | "training" | "warehouse";
+
+export type AccountBaseProject = {
+  canAfford: boolean;
+  cost: {
+    intel: number;
+    materials: number;
+    rareParts: number;
+  };
+  currentLevel: number;
+  effect: string;
+  id: AccountBaseFacilityId;
+  name: string;
+  nextLevel: number;
+  status: "available" | "blocked" | "maxed";
+};
+
+export type AccountBaseDevelopmentPlan = {
+  affordableCount: number;
+  blockedCount: number;
+  projects: AccountBaseProject[];
+  resources: Pick<AccountState["resources"], "intel" | "materials" | "rareParts">;
+  summary: string;
+};
+
+type AccountBaseLevelKey = "medicalRoomLevel" | "radioBenchLevel" | "trainingRoomLevel" | "warehouseLevel";
+
+const accountBaseLevelCap = 3;
+
+const accountBaseFacilities: Array<{
+  effect: (level: number) => string;
+  id: AccountBaseFacilityId;
+  key: AccountBaseLevelKey;
+  name: string;
+}> = [
+  {
+    effect: (level) => `出征经验 +${Math.max(0, level - 1) * 2}，战斗生命准备 +${Math.max(0, level - 1) * 2}`,
+    id: "training",
+    key: "trainingRoomLevel",
+    name: "训练室"
+  },
+  {
+    effect: (level) => `治疗疲劳额外 -${Math.max(0, level - 1) * 4}，野外包扎 +${Math.max(0, level - 1) * 2}`,
+    id: "medical",
+    key: "medicalRoomLevel",
+    name: "医务室"
+  },
+  {
+    effect: (level) => `背包容量 +${Math.max(0, level - 1) * 2}，更适合长线搜刮`,
+    id: "warehouse",
+    key: "warehouseLevel",
+    name: "仓库"
+  },
+  {
+    effect: (level) => `路线压力 -${level * 2}，情报与商店线索 +${level}`,
+    id: "radio",
+    key: "radioBenchLevel",
+    name: "电台工作台"
+  }
+];
+
+export function accountBaseDevelopmentPlan(account: AccountState): AccountBaseDevelopmentPlan {
+  const projects = accountBaseFacilities.map((facility) => {
+    const currentLevel = account.base[facility.key];
+    const nextLevel = Math.min(accountBaseLevelCap, currentLevel + 1);
+    const cost = accountBaseUpgradeCost(facility.id, nextLevel);
+    const maxed = currentLevel >= accountBaseLevelCap;
+    const canAfford =
+      !maxed &&
+      account.resources.materials >= cost.materials &&
+      account.resources.rareParts >= cost.rareParts &&
+      account.resources.intel >= cost.intel;
+
+    return {
+      canAfford,
+      cost,
+      currentLevel,
+      effect: facility.effect(nextLevel),
+      id: facility.id,
+      name: facility.name,
+      nextLevel,
+      status: maxed ? "maxed" : canAfford ? "available" : "blocked"
+    } satisfies AccountBaseProject;
+  });
+  const activeProjects = projects.filter((project) => project.status !== "maxed");
+  const affordableCount = activeProjects.filter((project) => project.canAfford).length;
+  const blockedCount = activeProjects.length - affordableCount;
+
+  return {
+    affordableCount,
+    blockedCount,
+    projects,
+    resources: {
+      intel: account.resources.intel,
+      materials: account.resources.materials,
+      rareParts: account.resources.rareParts
+    },
+    summary: `个人基地有 ${activeProjects.length} 项可发展，可立即升级 ${affordableCount} 项，受限 ${blockedCount} 项。`
+  };
+}
+
+export function upgradeAccountBase(session: PlaytestSession, userId: string, facilityId: AccountBaseFacilityId): PlaytestSession {
+  const next = clone(session);
+  ensureUser(next, userId);
+
+  const project = accountBaseDevelopmentPlan(next.account).projects.find((candidate) => candidate.id === facilityId);
+  if (!project) {
+    throw new Error(`未知个人基地项目：${facilityId}`);
+  }
+  if (project.status === "maxed") {
+    throw new Error(`${project.name} 已经达到发展上限。`);
+  }
+  if (!project.canAfford) {
+    throw new Error(`个人库存不足，无法升级${project.name}。`);
+  }
+
+  next.account.resources.materials -= project.cost.materials;
+  next.account.resources.rareParts -= project.cost.rareParts;
+  next.account.resources.intel -= project.cost.intel;
+  setAccountBaseFacilityLevel(next.account.base, facilityId, project.nextLevel);
+  next.account.base.level = Math.max(
+    1,
+    next.account.base.medicalRoomLevel,
+    next.account.base.radioBenchLevel,
+    next.account.base.trainingRoomLevel,
+    next.account.base.warehouseLevel
+  );
+  next.room.feed.unshift({
+    body: `${project.name}升级到 Lv.${project.nextLevel}。消耗${formatAccountBaseCost(project.cost)}；${project.effect}。`,
+    id: `feed-account-base-${Date.now()}`,
+    kind: "member",
+    timestamp: "刚刚",
+    title: "个人基地升级"
+  });
+
+  refreshUiState(next);
+  return next;
+}
 
 export function applyContribution(session: PlaytestSession, userId: string, resources: ResourceBundle): PlaytestSession {
   const next = clone(session);
@@ -158,7 +297,7 @@ export function resolvePlaytestExpedition(
     }
 
     const participated = request.survivorIds.includes(survivor.id);
-    const trainingLevel = facilityLevel(next, "training");
+    const trainingLevel = facilityLevel(next, "training") + Math.max(0, next.account.base.trainingRoomLevel - 1);
     const advancement = participated
       ? advanceSurvivorExperience(survivor, expeditionXpGain(request.travelFatigue ?? 0, trainingLevel))
       : null;
@@ -217,12 +356,16 @@ export function treatSurvivor(session: PlaytestSession, userId: string, survivor
     throw new Error("基地药品不足，无法治疗幸存者。");
   }
 
+  const medicalBonus = Math.max(0, next.account.base.medicalRoomLevel - 1) * 4;
+  const fatigueRecovery = 18 + medicalBonus;
   next.room.base.resources.medicine -= 1;
   survivor.injuries = survivor.injuries.slice(1);
-  survivor.fatigue = clamp(survivor.fatigue - 18, 0, 100);
+  survivor.fatigue = clamp(survivor.fatigue - fatigueRecovery, 0, 100);
   survivor.status = survivor.injuries.length > 0 ? "recovering" : "available";
   next.room.feed.unshift({
-    body: `${survivor.name} 在医务角安静处理了一班。药品 -1，疲劳下降，并清除 1 个伤病。`,
+    body: `${survivor.name} 在医务角安静处理了一班。药品 -1，疲劳 -${fatigueRecovery}，并清除 1 个伤病${
+      medicalBonus > 0 ? `；个人医务室 Lv.${next.account.base.medicalRoomLevel} 额外恢复 ${medicalBonus}` : ""
+    }。`,
     id: `feed-treatment-${Date.now()}`,
     kind: "system",
     timestamp: "刚刚",
@@ -371,6 +514,33 @@ const baseWorkLabels: Record<BaseWorkType, string> = {
   guard: "守卫班",
   repair: "修理班"
 };
+
+function accountBaseUpgradeCost(facilityId: AccountBaseFacilityId, nextLevel: number) {
+  return {
+    intel: facilityId === "radio" && nextLevel >= 2 ? nextLevel - 1 : 0,
+    materials: nextLevel * 4,
+    rareParts: nextLevel >= 3 ? 1 : 0
+  };
+}
+
+function setAccountBaseFacilityLevel(base: AccountState["base"], facilityId: AccountBaseFacilityId, level: number) {
+  const config = accountBaseFacilities.find((facility) => facility.id === facilityId);
+  if (!config) {
+    throw new Error(`未知个人基地项目：${facilityId}`);
+  }
+
+  base[config.key] = level;
+}
+
+function formatAccountBaseCost(cost: AccountBaseProject["cost"]) {
+  const parts = [
+    cost.materials > 0 ? `材料 -${cost.materials}` : "",
+    cost.rareParts > 0 ? `稀有零件 -${cost.rareParts}` : "",
+    cost.intel > 0 ? `情报 -${cost.intel}` : ""
+  ].filter(Boolean);
+
+  return parts.join("，") || "无额外资源";
+}
 
 const facilityEffectSummaries: Record<string, string> = {
   barricade: "每日危险和守卫压力得到改善",

@@ -12,6 +12,7 @@ import {
   survivorLevelCap,
   survivorMaxXp,
   survivorPerkDetails,
+  supportFromAccountBase,
   supportFromFacilities,
   xpForNextLevel
 } from "./progression";
@@ -133,6 +134,24 @@ describe("expedition doctrines", () => {
     expect(plan.summary).toBe("暂无后勤支援");
     expect(plan.totalEffects).toBe(0);
     expect(plan.stages).toHaveLength(0);
+  });
+
+  test("account base support adds personal preparation without replacing room facilities", () => {
+    const support = supportFromAccountBase({
+      level: 3,
+      medicalRoomLevel: 2,
+      radioBenchLevel: 1,
+      trainingRoomLevel: 3,
+      userId: "user-a",
+      warehouseLevel: 2
+    });
+
+    expect(support.maxHp).toBe(4);
+    expect(support.patchHeal).toBe(2);
+    expect(support.carryCapacity).toBe(2);
+    expect(support.pressureRelief).toBe(2);
+    expect(support.lootIntel).toBe(1);
+    expect(support.shopIntel).toBe(1);
   });
 });
 

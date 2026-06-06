@@ -9,6 +9,7 @@ import {
   savePlaytestSession
 } from "./state";
 import {
+  accountBaseDevelopmentPlan,
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
@@ -18,6 +19,7 @@ import {
   resolvePlaytestExpedition,
   setBaseAssignment,
   treatSurvivor,
+  upgradeAccountBase,
   upgradeFacility
 } from "./sim";
 
@@ -97,6 +99,30 @@ describe("playtest room loop", () => {
     );
     expect(next.room.feed[0]?.body).toContain("Alice");
     expect(next.room.feed[0]?.body).toContain("食物 +2");
+  });
+
+  test("upgrades account base rooms with account resources and readable planning", () => {
+    const session = createStarterSession("user-a", "Alice", "account-base-room");
+    session.account.resources.materials = 20;
+    session.account.resources.rareParts = 2;
+
+    const plan = accountBaseDevelopmentPlan(session.account);
+    const trainingProject = plan.projects.find((project) => project.id === "training");
+
+    expect(plan.summary).toContain("4 项可发展");
+    expect(trainingProject).toMatchObject({
+      canAfford: true,
+      currentLevel: 1,
+      nextLevel: 2
+    });
+
+    const next = upgradeAccountBase(session, "user-a", "training");
+
+    expect(next.account.base.trainingRoomLevel).toBe(2);
+    expect(next.account.resources.materials).toBe(12);
+    expect(next.account.resources.rareParts).toBe(2);
+    expect(next.room.feed[0]?.title).toContain("个人基地升级");
+    expect(next.room.feed[0]?.body).toContain("训练室升级到 Lv.2");
   });
 
   test("assigns an account survivor to the room without transferring ownership", () => {
@@ -538,6 +564,35 @@ describe("playtest room loop", () => {
     expect(result.session.account.survivors[0].xp).toBe(12);
   });
 
+  test("personal training room also improves expedition xp without changing the shared room", () => {
+    let session = createStarterSession("user-a", "Alice", "personal-training-room");
+    session.account.base.trainingRoomLevel = 2;
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.32, 0.24, 0.18, 0.64, 0.31],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.session.account.survivors[0].xp).toBe(10);
+    expect(result.session.room.base.facilities.find((facility) => facility.id === "training")?.level).toBe(0);
+  });
+
   test("treats injured survivors by spending medicine", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     const survivorId = session.account.survivors[0].id;
@@ -551,6 +606,20 @@ describe("playtest room loop", () => {
     expect(next.account.survivors[0].injuries).toEqual([]);
     expect(next.account.survivors[0].fatigue).toBeLessThan(44);
     expect(next.room.feed[0]?.title).toContain("治疗完成");
+  });
+
+  test("personal medical room improves treatment recovery after the first level", () => {
+    const session = createStarterSession("user-a", "Alice", "medical-base-room");
+    const survivorId = session.account.survivors[0].id;
+    session.account.base.medicalRoomLevel = 3;
+    session.account.survivors[0].injuries = ["深度割伤"];
+    session.account.survivors[0].fatigue = 70;
+    session.room.base.resources.medicine = 4;
+
+    const next = treatSurvivor(session, "user-a", survivorId);
+
+    expect(next.account.survivors[0].fatigue).toBe(44);
+    expect(next.room.feed[0]?.body).toContain("个人医务室 Lv.3");
   });
 
   test("upgrades room facilities by spending materials", () => {

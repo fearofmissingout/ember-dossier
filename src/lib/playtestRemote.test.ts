@@ -78,5 +78,16 @@ describe("playtest remote client", () => {
     const roomBaseBody = JSON.parse(String(roomBaseInit.body));
     expect(roomBaseBody.assignments).toBeUndefined();
     expect(roomBaseBody.objective.assignments).toEqual(session.room.baseAssignments);
+
+    const accountBasePatch = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes("/rest/v1/account_bases") && init?.method === "PATCH"
+    );
+    expect(accountBasePatch).toBeTruthy();
+    const [, accountBaseInit] = accountBasePatch as [URL, RequestInit];
+    expect(JSON.parse(String(accountBaseInit.body))).toMatchObject({
+      medical_room_level: session.account.base.medicalRoomLevel,
+      training_room_level: session.account.base.trainingRoomLevel,
+      warehouse_level: session.account.base.warehouseLevel
+    });
   });
 });

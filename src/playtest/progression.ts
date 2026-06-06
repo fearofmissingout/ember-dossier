@@ -1,6 +1,6 @@
 import type { Facility, ResourceBundle } from "../game/types";
 import { resourceKeys, resourceLabels } from "../game/labels";
-import type { AccountSurvivor, RoomBaseAssignment } from "./types";
+import type { AccountBase, AccountSurvivor, RoomBaseAssignment } from "./types";
 
 export type SurvivorPerkId = "field_runner" | "steady_hands" | "base_instinct";
 export type ExpeditionDoctrineId =
@@ -337,6 +337,25 @@ export function basePrepSupportFromAssignments(
       support.guardBlock += 1;
     }
   }
+
+  return support;
+}
+
+export function supportFromAccountBase(base: AccountBase): ExpeditionSupport {
+  const support = emptyExpeditionSupport();
+  const trainingBonus = Math.max(0, base.trainingRoomLevel - 1);
+  const medicalBonus = Math.max(0, base.medicalRoomLevel - 1);
+  const warehouseBonus = Math.max(0, base.warehouseLevel - 1);
+  const radioBonus = Math.max(0, base.radioBenchLevel);
+
+  support.maxHp += trainingBonus * 2;
+  support.patchHeal += medicalBonus * 2;
+  support.lootMedicine += Math.floor(medicalBonus / 2);
+  support.carryCapacity = (support.carryCapacity ?? 0) + warehouseBonus * 2;
+  support.pressureRelief += radioBonus * 2;
+  support.lootIntel += radioBonus;
+  support.shopIntel += radioBonus;
+  support.campScout += radioBonus;
 
   return support;
 }

@@ -93,6 +93,8 @@ async function checkProductionBundle() {
     "撤离预案",
     "后勤预案",
     "成长：",
+    "个人基地升级",
+    "训练生命",
     "捐入"
   ];
   const missingStrings = requiredStrings.filter((text) => !asset.includes(text));

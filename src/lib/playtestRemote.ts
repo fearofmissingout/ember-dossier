@@ -20,14 +20,7 @@ export async function bootstrapAccount(accessToken: string, userId: string, disp
     display_name: account.profile.displayName,
     user_id: account.profile.userId
   });
-  await upsert(accessToken, "account_bases", {
-    level: account.base.level,
-    medical_room_level: account.base.medicalRoomLevel,
-    radio_bench_level: account.base.radioBenchLevel,
-    training_room_level: account.base.trainingRoomLevel,
-    user_id: account.base.userId,
-    warehouse_level: account.base.warehouseLevel
-  });
+  await upsert(accessToken, "account_bases", serializeAccountBase(account.base));
   await upsert(accessToken, "account_resources", {
     resources: account.resources,
     user_id: account.profile.userId
@@ -228,6 +221,7 @@ export async function saveRoomActivity(accessToken: string, session: PlaytestSes
 
 async function saveCoreProgress(accessToken: string, session: PlaytestSession) {
   await Promise.all([
+    patchRows(accessToken, "account_bases", { user_id: `eq.${session.account.profile.userId}` }, serializeAccountBase(session.account.base)),
     patchRows(accessToken, "account_resources", { user_id: `eq.${session.account.profile.userId}` }, { resources: session.account.resources }),
     patchRows(
       accessToken,
@@ -246,6 +240,17 @@ async function saveCoreProgress(accessToken: string, session: PlaytestSession) {
       upsert(accessToken, "account_survivors", serializeAccountSurvivor(survivor), "user_id,content_id")
     )
   ]);
+}
+
+function serializeAccountBase(base: AccountState["base"]) {
+  return {
+    level: base.level,
+    medical_room_level: base.medicalRoomLevel,
+    radio_bench_level: base.radioBenchLevel,
+    training_room_level: base.trainingRoomLevel,
+    user_id: base.userId,
+    warehouse_level: base.warehouseLevel
+  };
 }
 
 function serializeAccountSurvivor(survivor: AccountSurvivor) {
