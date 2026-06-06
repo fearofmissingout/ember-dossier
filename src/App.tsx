@@ -100,7 +100,7 @@ import {
   type ExpeditionDoctrineId
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
-import { summarizeFeedReportTimeline } from "./playtest/reports";
+import { summarizeFeedReportSettlement, summarizeFeedReportTimeline } from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
@@ -2601,12 +2601,49 @@ function Reports({ feed, latestReportId }: { feed: FeedItem[]; latestReportId: s
             <div>
               <strong>{item.title}</strong>
               <p>{item.body}</p>
+              <ReportSettlement item={item} />
               <ReportTimeline item={item} />
             </div>
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function ReportSettlement({ item }: { item: FeedItem }) {
+  const settlement = summarizeFeedReportSettlement(item);
+  if (!settlement.hasSettlement) {
+    return null;
+  }
+
+  const groups = [
+    { items: settlement.resources, label: "资源" },
+    { items: settlement.objective, label: "目标" },
+    { items: settlement.growth, label: "成长" },
+    { items: settlement.risk, label: "风险" }
+  ].filter((group) => group.items.length);
+
+  return (
+    <div className="report-settlement" aria-label="远征结算摘要">
+      <div className="report-settlement-heading">
+        <span>结算摘要</span>
+        <strong>{settlement.headline}</strong>
+      </div>
+      <p>{settlement.summary}</p>
+      <div className="report-settlement-grid">
+        {groups.map((group) => (
+          <article className="report-settlement-group" key={`${item.id}-settlement-${group.label}`}>
+            <span>{group.label}</span>
+            <ul>
+              {group.items.slice(0, 4).map((entry) => (
+                <li key={entry}>{entry}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -16,6 +16,16 @@ export type FeedReportTimeline = {
   summary: string;
 };
 
+export type FeedReportSettlement = {
+  growth: string[];
+  hasSettlement: boolean;
+  headline: string;
+  objective: string[];
+  resources: string[];
+  risk: string[];
+  summary: string;
+};
+
 const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
@@ -29,15 +39,42 @@ const categoryLabels: Record<FeedReportTimelineCategory, string> = {
 
 const summaryOrder: FeedReportTimelineCategory[] = ["growth", "route", "combat", "trade", "camp", "extraction", "reward", "risk"];
 
+const resourceNames = ["水", "食物", "材料", "药品", "燃料", "弹药", "稀有零件", "情报"];
+
+export function summarizeFeedReportSettlement(item: FeedItem): FeedReportSettlement {
+  if (item.kind !== "report") {
+    return emptySettlement();
+  }
+
+  const lines = reportLines(item);
+  const headline = parseResultHeadline(lines) ?? "远征结算";
+  const resources = parseSettlementResources(lines);
+  const objective = parseObjectiveProgress(lines);
+  const growth = parseGrowth(lines);
+  const risk = parseRisk(lines);
+  const hasSettlement = Boolean(resources.length || objective.length || growth.length || risk.length || headline !== "远征结算");
+
+  if (!hasSettlement) {
+    return emptySettlement();
+  }
+
+  return {
+    growth,
+    hasSettlement,
+    headline,
+    objective,
+    resources,
+    risk,
+    summary: summarizeSettlement(resources, objective, growth, risk)
+  };
+}
+
 export function summarizeFeedReportTimeline(item: FeedItem): FeedReportTimeline {
   if (item.kind !== "report") {
     return emptyTimeline();
   }
 
-  const steps = item.body
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
+  const steps = reportLines(item)
     .map(parseTimelineStep)
     .filter((step): step is FeedReportTimelineStep => Boolean(step));
 
@@ -52,12 +89,155 @@ export function summarizeFeedReportTimeline(item: FeedItem): FeedReportTimeline 
   };
 }
 
+function emptySettlement(): FeedReportSettlement {
+  return {
+    growth: [],
+    hasSettlement: false,
+    headline: "暂无结算摘要",
+    objective: [],
+    resources: [],
+    risk: [],
+    summary: "暂无结算摘要"
+  };
+}
+
 function emptyTimeline(): FeedReportTimeline {
   return {
     hasProcess: false,
     steps: [],
     summary: "暂无过程回放"
   };
+}
+
+function reportLines(item: FeedItem): string[] {
+  return item.body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseResultHeadline(lines: string[]): string | null {
+  for (const line of lines) {
+    const match = line.match(/结果：([^。]+)。/);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+
+function parseSettlementResources(lines: string[]): string[] {
+  const totals = new Map<string, number>();
+  const orderedNames: string[] = [];
+
+  for (const line of lines) {
+    const segment = settlementResourceSegment(line);
+    if (!segment) {
+      continue;
+    }
+
+    for (const delta of parseResourceDeltas(segment)) {
+      if (!totals.has(delta.name)) {
+        orderedNames.push(delta.name);
+      }
+      totals.set(delta.name, (totals.get(delta.name) ?? 0) + delta.value);
+    }
+  }
+
+  return orderedNames
+    .map((name) => ({ name, value: totals.get(name) ?? 0 }))
+    .filter((delta) => delta.value !== 0)
+    .map(formatDelta);
+}
+
+function settlementResourceSegment(line: string): string | null {
+  const summaryMatch = line.match(/主要收获：([^。]+)/);
+  if (summaryMatch?.[1]) {
+    return summaryMatch[1];
+  }
+
+  const accountSpoils = line.match(/^账号战利：(.+)/);
+  return accountSpoils?.[1] ?? null;
+}
+
+function parseResourceDeltas(segment: string): Array<{ name: string; value: number }> {
+  const matches = [...segment.matchAll(new RegExp(`(${resourceNames.join("|")})\\s*([+-]\\d+)`, "g"))];
+  return matches.map((match) => ({
+    name: match[1],
+    value: Number(match[2])
+  }));
+}
+
+function parseObjectiveProgress(lines: string[]): string[] {
+  const total = lines.reduce((sum, line) => {
+    const matches = [...line.matchAll(/目标\s*([+-]\d+)/g)];
+    return sum + matches.reduce((lineSum, match) => lineSum + Number(match[1]), 0);
+  }, 0);
+
+  return total ? [`目标 ${signedNumber(total)}`] : [];
+}
+
+function parseGrowth(lines: string[]): string[] {
+  return lines
+    .filter((line) => /^成长：/.test(line))
+    .map((line) => line.replace(/^成长：/, "").replace(/。$/, "").trim())
+    .filter(Boolean);
+}
+
+function parseRisk(lines: string[]): string[] {
+  const risk: string[] = [];
+  const injuries = lines
+    .filter((line) => /^伤病：/.test(line))
+    .map((line) => line.replace(/^伤病：/, "").replace(/。$/, "").trim())
+    .filter(Boolean);
+
+  risk.push(...injuries);
+
+  const pressure = sumPatternDeltas(lines, /压力\s*([+-]\d+)%/g);
+  if (pressure) {
+    risk.push(`压力净变化 ${signedNumber(pressure)}%`);
+  }
+
+  const fatigue = sumPatternDeltas(lines, /疲劳\s*([+-]\d+)/g);
+  if (fatigue) {
+    risk.push(`疲劳 ${signedNumber(fatigue)}`);
+  }
+
+  return risk;
+}
+
+function sumPatternDeltas(lines: string[], pattern: RegExp): number {
+  return lines.reduce((sum, line) => {
+    const matches = [...line.matchAll(pattern)];
+    return sum + matches.reduce((lineSum, match) => lineSum + Number(match[1]), 0);
+  }, 0);
+}
+
+function formatDelta(delta: { name: string; value: number }): string {
+  return `${delta.name} ${signedNumber(delta.value)}`;
+}
+
+function signedNumber(value: number): string {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function summarizeSettlement(resources: string[], objective: string[], growth: string[], risk: string[]): string {
+  const parts: string[] = [];
+
+  if (resources.length) {
+    parts.push(`带回 ${resources.length} 项资源`);
+  }
+  if (objective.length) {
+    parts.push(`目标推进 ${objective.length} 次`);
+  }
+  if (growth.length) {
+    parts.push(`${growth.length} 名幸存者成长`);
+  }
+  if (risk.length) {
+    parts.push(`风险记录 ${risk.length} 条`);
+  }
+
+  return `${parts.join("，")}。`;
 }
 
 function parseTimelineStep(line: string): FeedReportTimelineStep | null {

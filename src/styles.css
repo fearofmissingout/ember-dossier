@@ -691,6 +691,80 @@ button:disabled {
   padding: 16px;
 }
 
+.report-settlement {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #d6c49f;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.report-settlement-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-settlement-heading span {
+  color: #8c523c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.report-settlement-heading strong {
+  color: #25312c;
+  font-size: 15px;
+}
+
+.report-settlement > p {
+  margin: 0;
+  color: #5f6d61;
+  font-size: 13px;
+}
+
+.report-settlement-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-settlement-group {
+  display: grid;
+  gap: 7px;
+  min-height: 92px;
+  padding: 10px;
+  border: 1px solid #dccda9;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.report-settlement-group span {
+  color: #8a6348;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-settlement-group ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-settlement-group li {
+  overflow: hidden;
+  color: #2f3b35;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .report-timeline {
   display: grid;
   gap: 10px;
@@ -3174,6 +3248,7 @@ button:disabled {
   .travel-record-strip,
   .road-event-strip,
   .development-project-strip,
+  .report-settlement-grid,
   .report-timeline-grid,
   .hardship-strip {
     grid-template-columns: 1fr 1fr;
@@ -3266,6 +3341,7 @@ button:disabled {
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,
+  .report-settlement-grid,
   .report-timeline-grid,
   .hardship-strip,
   .development-project-strip,

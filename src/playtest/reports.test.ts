@@ -1,8 +1,37 @@
 import { describe, expect, test } from "vitest";
 import type { FeedItem } from "../game/types";
-import { summarizeFeedReportTimeline } from "./reports";
+import { summarizeFeedReportSettlement, summarizeFeedReportTimeline } from "./reports";
 
 describe("playtest report timeline", () => {
+  test("extracts a readable post-expedition settlement from report logs", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在北区水处理厂完成路线。结果：艰难完成。主要收获：水 +4，材料 +2。",
+        "成长：林岚 +10 经验，升到 Lv.2，解锁 野外跑手。",
+        "路线：道路：路段 1，稳步推进，食物 -1，水 -1。疲劳 +8，压力 +6%。",
+        "路线：遭遇战：走廊群 被击退。材料 +1，战利标记：破甲碎片，压力 -12%。",
+        "路线：路边交易点：购买路线情报。目标 +1，压力 -5%。",
+        "伤病：林岚 擦伤，回基地后需要治疗。",
+        "账号战利：个人仓库回收材料 +2，稀有零件 +1，情报 +2。",
+        "撤离：队伍带回足够细节，下一队能做出更好的路线选择。"
+      ].join("\n"),
+      id: "feed-report-settlement",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "北区水处理厂远征完成"
+    };
+
+    const settlement = summarizeFeedReportSettlement(report);
+
+    expect(settlement.hasSettlement).toBe(true);
+    expect(settlement.headline).toBe("艰难完成");
+    expect(settlement.resources).toEqual(["水 +4", "材料 +4", "稀有零件 +1", "情报 +2"]);
+    expect(settlement.objective).toEqual(["目标 +1"]);
+    expect(settlement.growth).toEqual(["林岚 +10 经验，升到 Lv.2，解锁 野外跑手"]);
+    expect(settlement.risk).toEqual(["林岚 擦伤，回基地后需要治疗", "压力净变化 -11%", "疲劳 +8"]);
+    expect(settlement.summary).toBe("带回 4 项资源，目标推进 1 次，1 名幸存者成长，风险记录 3 条。");
+  });
+
   test("groups expedition feed logs into readable route combat trade and extraction beats", () => {
     const report: FeedItem = {
       body: [
