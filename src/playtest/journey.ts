@@ -332,6 +332,19 @@ export type JourneyCombatLoot = {
   trait: JourneyEnemy["trait"];
 };
 
+export type JourneyCombatReplayTone = "safe" | "warning" | "danger";
+
+export type JourneyCombatRoundRecord = {
+  actionLabel: string;
+  actorName: string;
+  counterText: string;
+  enemyText: string;
+  id: string;
+  outcomeText: string;
+  round: number;
+  tone: JourneyCombatReplayTone;
+};
+
 export type JourneyCondition = {
   distance: number;
   fatigue: number;
@@ -345,6 +358,7 @@ export type JourneyState = {
   bonusReward: ResourceBundle;
   burden: JourneyCarryBurden;
   combat: JourneyCombat | null;
+  combatHistory: JourneyCombatRoundRecord[];
   currentNodeIndex: number;
   elapsedHours: number;
   extractionStatus: JourneyExtractionStatus;
@@ -1464,6 +1478,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     burden,
     bonusReward: createEmptyResourceBundle(),
     combat: null,
+    combatHistory: [],
     currentNodeIndex: 0,
     elapsedHours: 0,
     extractionStatus: "in-progress",
@@ -1693,6 +1708,122 @@ export function combatActionPreview(journey: JourneyState, action: CombatAction,
   };
 }
 
+type CombatReplaySnapshot = {
+  enemyHp: number;
+  pressure: number;
+  round: number;
+  squadHp: number;
+  stagger: number;
+  tempo: number;
+};
+
+function combatReplayActionLabel(action: CombatAction) {
+  const labels: Record<CombatAction, string> = {
+    guard: "防守",
+    patch: "包扎",
+    retreat: "撤退",
+    strike: "攻击",
+    tactic: "战术"
+  };
+  return labels[action];
+}
+
+function pushCombatRoundReplay(
+  journey: JourneyState,
+  combat: JourneyCombat,
+  action: CombatAction,
+  actorName: string,
+  before: CombatReplaySnapshot,
+  countered: boolean
+) {
+  const enemyDamage = Math.max(0, before.enemyHp - combat.enemyHp);
+  const squadDamage = Math.max(0, before.squadHp - combat.squadHp);
+  const pressureDelta = journey.pressure - before.pressure;
+  const enemyDefeated = combat.enemyHp <= 0;
+  const history = journey.combatHistory ?? [];
+  const record: JourneyCombatRoundRecord = {
+    actionLabel: combatReplayActionLabel(action),
+    actorName,
+    counterText: combatReplayCounterText(action, before, combat, countered),
+    enemyText: combatReplayEnemyText(combat, action, enemyDefeated, squadDamage, pressureDelta),
+    id: `combat-round-${journey.id}-${before.round}-${history.length}-${journey.logs.length}`,
+    outcomeText: combatReplayOutcomeText(action, before, combat, enemyDamage),
+    round: before.round,
+    tone: combatReplayTone(action, countered, enemyDefeated, squadDamage, pressureDelta)
+  };
+
+  journey.combatHistory = [...history.slice(-4), record];
+}
+
+function combatReplayCounterText(action: CombatAction, before: CombatReplaySnapshot, combat: JourneyCombat, countered: boolean) {
+  if (action === "retreat") {
+    return "脱离接触：本回合不保留反制节奏。";
+  }
+
+  if (countered) {
+    const tempoDelta = Math.max(0, combatTempoValue(combat) - before.tempo);
+    const tempoText = tempoDelta > 0 ? `节奏 +${tempoDelta}` : "节奏保持满档";
+    if (before.stagger + 1 >= combatStaggerBreak) {
+      return `反制成功：${tempoText}，破势触发。`;
+    }
+    return `反制成功：${tempoText}，破势 +1。`;
+  }
+
+  const tempoLoss = Math.max(0, before.tempo - combatTempoValue(combat));
+  if (tempoLoss > 0) {
+    return `节奏受挫：节奏 -${tempoLoss}。`;
+  }
+
+  return "未形成反制节奏。";
+}
+
+function combatReplayEnemyText(
+  combat: JourneyCombat,
+  action: CombatAction,
+  enemyDefeated: boolean,
+  squadDamage: number,
+  pressureDelta: number
+) {
+  if (enemyDefeated) {
+    return "敌人被击退，等待战利品选择。";
+  }
+
+  if (action === "retreat") {
+    return `脱离接触，队伍承受 ${squadDamage} 伤害，压力 ${formatSignedPercent(pressureDelta)}。`;
+  }
+
+  return `${combat.enemyName} 反击 ${squadDamage} 伤害，压力 ${formatSignedPercent(pressureDelta)}。`;
+}
+
+function combatReplayOutcomeText(action: CombatAction, before: CombatReplaySnapshot, combat: JourneyCombat, enemyDamage: number) {
+  const enemyHp = before.enemyHp === combat.enemyHp ? `敌人 ${combat.enemyHp}/${combat.enemyMaxHp}` : `敌人 ${before.enemyHp}->${combat.enemyHp}/${combat.enemyMaxHp}`;
+  const squadHp = before.squadHp === combat.squadHp ? `队伍 ${combat.squadHp}/${combat.squadMaxHp}` : `队伍 ${before.squadHp}->${combat.squadHp}/${combat.squadMaxHp}`;
+  const result = enemyDamage > 0 ? `，造成 ${enemyDamage} 伤害` : "";
+  return `${combatReplayActionLabel(action)}结算：${squadHp}，${enemyHp}${result}。`;
+}
+
+function combatReplayTone(
+  action: CombatAction,
+  countered: boolean,
+  enemyDefeated: boolean,
+  squadDamage: number,
+  pressureDelta: number
+): JourneyCombatReplayTone {
+  if (enemyDefeated || (countered && squadDamage <= 4 && pressureDelta <= 0)) {
+    return "safe";
+  }
+
+  if (action === "retreat" || squadDamage >= 12 || pressureDelta >= 8) {
+    return "danger";
+  }
+
+  if (squadDamage > 0 || pressureDelta > 0) {
+    return "warning";
+  }
+
+  return "safe";
+}
+
 export function resolveCombatRound(journey: JourneyState, action: CombatAction, squad: Survivor[], readiness: number): JourneyState {
   const node = journey.nodes[journey.currentNodeIndex];
   const next = structuredClone(journey) as JourneyState;
@@ -1705,7 +1836,17 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
   const striker = combatActorForAction(combat, squad, "strike");
   const tactician = combatActorForAction(combat, squad, "tactic");
   const medic = combatActorForAction(combat, squad, "patch");
+  const beforeRound: CombatReplaySnapshot = {
+    enemyHp: combat.enemyHp,
+    pressure: next.pressure,
+    round: combat.round,
+    squadHp: combat.squadHp,
+    stagger: combatStaggerValue(combat),
+    tempo: combatTempoValue(combat)
+  };
+  const wasCountered = action !== "retreat" && (combatIntentCountersAction(combat, action) || enemyPulseCountersAction(combat, action));
   let actionActorId: string | null = null;
+  let replayActorName = lead.name;
 
   if (action === "retreat") {
     applyCombatDamage(next, combat, Math.max(3, Math.ceil(combat.attack / 2)), lead.id);
@@ -1713,6 +1854,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     next.pressure = clampPercent(next.pressure + retreatPressure);
     next.rollShift += retreatPressure / 100;
     next.logs.push(`${node.title}：队伍顶着压力撤退，全队体力受损，压力 +${retreatPressure}%。`);
+    pushCombatRoundReplay(next, combat, action, replayActorName, beforeRound, wasCountered);
     next.currentNodeIndex += 1;
     next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], squad, readiness, next.support);
     return next;
@@ -1728,6 +1870,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
 
   if (action === "strike") {
     actionActorId = striker.id;
+    replayActorName = striker.name;
     markCombatantAction(combat, striker.id, "攻击");
     const ammoSpent = spendFieldSupply(next, "ammo", 1);
     const armorPenalty = Math.max(0, combat.armor + intent.armor - combat.exposed - (ammoSpent ? 2 : 0));
@@ -1755,6 +1898,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     );
   } else if (action === "guard") {
     actionActorId = lead.id;
+    replayActorName = lead.name;
     markCombatantAction(combat, lead.id, "防守");
     const guardValue = Math.floor((lead.attributes.willpower + lead.attributes.stamina) / 30) + next.support.guardBlock + tempoBonus;
     const windupBlock = combat.intent === "windup" ? 6 : 0;
@@ -1775,6 +1919,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     );
   } else if (action === "patch") {
     actionActorId = medic.id;
+    replayActorName = medic.name;
     markCombatantAction(combat, medic.id, "包扎");
     patchedThisRound = true;
     const medicineSpent = spendFieldSupply(next, "medicine", 1);
@@ -1799,6 +1944,7 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     );
   } else if (action === "tactic") {
     actionActorId = tactician.id;
+    replayActorName = tactician.name;
     markCombatantAction(combat, tactician.id, "战术");
     const braceBreak = combat.intent === "brace" ? 2 : 0;
     const prowlRead = combat.intent === "prowl" ? 1 : 0;
@@ -1942,6 +2088,8 @@ export function resolveCombatRound(journey: JourneyState, action: CombatAction, 
     };
     next.combat = null;
   }
+
+  pushCombatRoundReplay(next, combat, action, replayActorName, beforeRound, wasCountered);
 
   return next;
 }

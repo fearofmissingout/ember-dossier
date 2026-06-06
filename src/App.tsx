@@ -79,6 +79,7 @@ import {
   type CombatAction,
   type JourneyAction,
   type JourneyCampAction,
+  type JourneyCombatRoundRecord,
   type JourneyCombatLootAction,
   type JourneyChoice,
   type JourneyCarryBurden,
@@ -2320,6 +2321,7 @@ function JourneyPanel({
               <strong>{journey.pendingCombatLoot.enemyName} 已倒下</strong>
               <span>获得战利标记：{journey.pendingCombatLoot.trophy}</span>
             </div>
+            <CombatReplayStrip records={journey.combatHistory} />
             <div className="combat-loot-grid">
               {combatLootList.map((option) => {
                 const outcome = combatLootOutcome(option, journey.support);
@@ -2389,6 +2391,7 @@ function JourneyPanel({
                 <small>三次读对意图会击破架势：护甲 -1，暴露 +2。</small>
               </div>
             </div>
+            <CombatReplayStrip records={journey.combatHistory} />
             <div className="combat-bars">
               <CombatBar label={journey.combat.enemyName} value={journey.combat.enemyHp} max={journey.combat.enemyMaxHp} tone="danger" />
               <CombatBar label="队伍" value={journey.combat.squadHp} max={journey.combat.squadMaxHp} tone="safe" />
@@ -2601,6 +2604,29 @@ function burdenSummary(burden: JourneyCarryBurden) {
   }
 
   return `轻装：初始压力 ${burden.pressurePenalty}%，没有额外行进疲劳。`;
+}
+
+function CombatReplayStrip({ records }: { records?: JourneyCombatRoundRecord[] }) {
+  const recentRecords = (records ?? []).slice(-3);
+  if (recentRecords.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="combat-replay" aria-label="战斗回合回放">
+      {recentRecords.map((record) => (
+        <article className={`combat-replay-card ${record.tone}`} key={record.id}>
+          <span>
+            第 {record.round} 回合 / {record.actionLabel}
+          </span>
+          <strong>{record.actorName}</strong>
+          <small>{record.outcomeText}</small>
+          <small>{record.enemyText}</small>
+          <em>{record.counterText}</em>
+        </article>
+      ))}
+    </div>
+  );
 }
 
 function CombatBar({ label, max, tone, value }: { label: string; max: number; tone: "danger" | "safe"; value: number }) {

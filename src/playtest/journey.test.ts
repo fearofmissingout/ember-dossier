@@ -1442,6 +1442,42 @@ describe("journey route generation", () => {
     expect(guarded.logs.join("\n")).toContain("战斗节奏：节奏 +1，破势 +1");
   });
 
+  test("combat rounds keep a readable replay of action, counter, and damage", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-replay-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "windup";
+      journey.combat.intentLabel = "蓄力";
+      journey.combat.intentText = "重击正在积蓄。防守可以反制。";
+    }
+
+    const guarded = resolveCombatRound(journey, "guard", squad, 60);
+    const replay = guarded.combatHistory.at(-1);
+
+    expect(replay).toMatchObject({
+      actionLabel: "防守",
+      counterText: expect.stringContaining("破势 +1"),
+      round: 1,
+      tone: "safe"
+    });
+    expect(squad.map((survivor) => survivor.name)).toContain(replay?.actorName);
+    expect(replay?.enemyText).toContain("反击");
+    expect(replay?.outcomeText).toContain("队伍");
+  });
+
   test("repeated counters can break enemy posture", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "combat-stagger-room");
