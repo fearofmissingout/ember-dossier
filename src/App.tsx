@@ -59,6 +59,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyObjectivePreview,
+  journeyProcessDigest,
   journeyRouteBriefing,
   resolveCampAction,
   resolveBaseCommand,
@@ -1978,6 +1979,7 @@ function JourneyPanel({
   const nodeBody = pendingRoad?.body ?? activeNode.body;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
+  const processDigest = journeyProcessDigest(journey);
   const segmentForecast =
     !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
@@ -2028,6 +2030,24 @@ function JourneyPanel({
             <small>{stop.label}</small>
           </span>
         ))}
+      </div>
+      <div className="journey-process-digest" aria-label="出征过程摘要">
+        <div className="journey-process-heading">
+          <div>
+            <span>出征过程</span>
+            <strong>{processDigest.headline}</strong>
+          </div>
+          <small>{processDigest.summary}</small>
+        </div>
+        <div className="journey-process-grid">
+          {processDigest.steps.slice(0, 6).map((step) => (
+            <article className={`journey-process-step ${step.tone}`} key={step.id}>
+              <span>{step.label}</span>
+              <strong>{step.title}</strong>
+              <small>{step.body}</small>
+            </article>
+          ))}
+        </div>
       </div>
       <div className="journey-status-grid">
         <div className="journey-pressure">

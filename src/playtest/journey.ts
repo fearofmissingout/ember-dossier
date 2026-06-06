@@ -174,6 +174,22 @@ export type JourneyRoutePace = {
   totalStops: number;
 };
 
+export type JourneyProcessStepTone = "neutral" | "safe" | "warning" | "danger";
+
+export type JourneyProcessStep = {
+  body: string;
+  id: string;
+  label: string;
+  title: string;
+  tone: JourneyProcessStepTone;
+};
+
+export type JourneyProcessDigest = {
+  headline: string;
+  steps: JourneyProcessStep[];
+  summary: string;
+};
+
 export type JourneyRoadEventRecord = {
   outcome: string;
   segment: number;
@@ -731,6 +747,114 @@ export function routePaceFor(journey: JourneyState): JourneyRoutePace {
   };
 }
 
+export function journeyProcessDigest(journey: JourneyState): JourneyProcessDigest {
+  const pace = routePaceFor(journey);
+  const activeNode = journey.nodes[Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, journey.nodes.length - 1)))] ?? null;
+  const latestTravel = journey.travelHistory[journey.travelHistory.length - 1] ?? null;
+  const latestRoad = journey.roadEvents[journey.roadEvents.length - 1] ?? null;
+  const latestCombat = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const steps: JourneyProcessStep[] = [
+    {
+      body: journey.pendingRoadEvent?.body ?? activeNode?.body ?? "队伍正在等待下一步指令。",
+      id: "current-node",
+      label: "当前节点",
+      title: pace.currentTitle,
+      tone: journey.pendingRoadEvent ? roadToneForDigest(journey.pendingRoadEvent.tone) : nodeToneForDigest(activeNode?.type)
+    },
+    {
+      body: `${pace.clockLabel}，${pace.etaLabel}。下一站：${pace.nextLabel}，${pace.nextTitle}。`,
+      id: "route-pace",
+      label: "路线进度",
+      title: `${pace.progressPercent}% · 还剩 ${pace.remainingStops} 站`,
+      tone: pace.remainingStops === 0 ? "safe" : pace.progressPercent >= 60 ? "warning" : "neutral"
+    }
+  ];
+
+  if (latestTravel) {
+    steps.push({
+      body: `${latestTravel.planLabel}，${latestTravel.conditionText}。${latestTravel.effects.slice(0, 4).join(" / ")}`,
+      id: `travel-${latestTravel.segment}`,
+      label: "最近行军",
+      title: `${latestTravel.title} · ${latestTravel.timeLabel}`,
+      tone: latestTravel.tone
+    });
+  }
+
+  if (journey.pendingRoadEvent) {
+    steps.push({
+      body: journey.pendingRoadEvent.body,
+      id: `pending-road-${journey.pendingRoadEvent.segment}`,
+      label: "待处理路口",
+      title: journey.pendingRoadEvent.title,
+      tone: roadToneForDigest(journey.pendingRoadEvent.tone)
+    });
+  } else if (latestRoad) {
+    steps.push({
+      body: latestRoad.outcome,
+      id: `road-${latestRoad.segment}-${latestRoad.title}`,
+      label: "路上事件",
+      title: latestRoad.title,
+      tone: roadToneForDigest(latestRoad.tone)
+    });
+  }
+
+  if (journey.combat) {
+    steps.push({
+      body: `${journey.combat.intentLabel}：${journey.combat.intentText}。敌方生命 ${journey.combat.enemyHp}/${journey.combat.enemyMaxHp}，队伍生命 ${journey.combat.squadHp}/${journey.combat.squadMaxHp}。`,
+      id: "active-combat",
+      label: "当前战斗",
+      title: journey.combat.enemyName,
+      tone: journey.combat.squadHp / Math.max(1, journey.combat.squadMaxHp) < 0.4 ? "danger" : "warning"
+    });
+  }
+
+  if (latestCombat) {
+    steps.push({
+      body: `第 ${latestCombat.round} 回合：${latestCombat.actorName} ${latestCombat.actionLabel}。${latestCombat.outcomeText} ${latestCombat.enemyText} ${latestCombat.counterText}`,
+      id: latestCombat.id,
+      label: "最近战斗",
+      title: latestCombat.tone === "safe" ? "优势回合" : latestCombat.tone === "danger" ? "危险回合" : "胶着回合",
+      tone: latestCombat.tone
+    });
+  }
+
+  if (journey.pendingCombatLoot) {
+    steps.push({
+      body: `已击退 ${journey.pendingCombatLoot.enemyName}，等待选择如何处理 ${journey.pendingCombatLoot.trophy}。`,
+      id: "combat-loot",
+      label: "战利抉择",
+      title: "战后处理",
+      tone: "safe"
+    });
+  }
+
+  steps.push({
+    body:
+      journey.extractionStatus === "complete"
+        ? "路线已经打通，完整撤离会带回地点主体进度。"
+        : journey.extractionStatus === "early"
+          ? "队伍已经进入返程状态，只保留已入袋收获和路线线索。"
+          : "随时可以评估提前返程；完整撤离会带回更多地点奖励和目标进度。",
+    id: "extraction-status",
+    label: "撤离状态",
+    title: journey.extractionStatus === "in-progress" ? "尚在路上" : journey.extractionStatus === "early" ? "提前返程" : "完整撤离",
+    tone: journey.extractionStatus === "complete" ? "safe" : journey.extractionStatus === "early" ? "warning" : "neutral"
+  });
+
+  const blockers = [
+    journey.pendingRoadEvent ? "路口待处理" : "",
+    journey.pendingCombatLoot ? "战利抉择未完成" : "",
+    journey.combat ? "战斗未解决" : "",
+    activeNode?.type === "extraction" ? "可以完整撤离" : ""
+  ].filter(Boolean);
+
+  return {
+    headline: `第 ${pace.currentStop}/${pace.totalStops} 站：${pace.currentLabel}`,
+    steps,
+    summary: `${pace.currentTitle}。${blockers.length > 0 ? blockers.join("，") : "可以推进下一段或提前返程"}。${pace.clockLabel}，${pace.etaLabel}。`
+  };
+}
+
 function nodeTypeLabel(type?: JourneyNode["type"]): string {
   if (!type) {
     return "路线";
@@ -756,6 +880,26 @@ function roadEventLabel(tone: JourneyRoadEventTone): string {
     hazard: "路上险情"
   };
   return labels[tone];
+}
+
+function nodeToneForDigest(type?: JourneyNode["type"]): JourneyProcessStepTone {
+  const tones: Record<JourneyNode["type"], JourneyProcessStepTone> = {
+    camp: "safe",
+    combat: "warning",
+    event: "neutral",
+    extraction: "safe",
+    shop: "safe"
+  };
+  return type ? tones[type] : "neutral";
+}
+
+function roadToneForDigest(tone: JourneyRoadEventTone): JourneyProcessStepTone {
+  const tones: Record<JourneyRoadEventTone, JourneyProcessStepTone> = {
+    find: "safe",
+    hazard: "danger",
+    road: "warning"
+  };
+  return tones[tone];
 }
 
 export type JourneyCombatActionPreview = {

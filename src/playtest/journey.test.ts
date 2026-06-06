@@ -11,6 +11,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyObjectivePreview,
+  journeyProcessDigest,
   journeyRouteBriefing,
   resolveJourneyExtraction,
   roadEncounterChoicePreview,
@@ -222,6 +223,41 @@ describe("journey route generation", () => {
       hours: 2,
       timeLabel: "2 小时"
     });
+  });
+
+  test("summarizes active journey process with route road and combat beats", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "process-digest-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const opening = journeyProcessDigest(journey);
+    const road = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 60);
+    const roadDigest = journeyProcessDigest(road);
+    const combatStart = {
+      ...journey,
+      combat: createCombatForNode(journey.nodes[1], squad, 60),
+      currentNodeIndex: 1
+    };
+    const fought = resolveCombatRound(combatStart, "strike", squad, 60);
+    const combatDigest = journeyProcessDigest(fought);
+
+    expect(opening.headline).toContain("第 1/5 站");
+    expect(opening.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["当前节点", "路线进度", "撤离状态"]));
+    expect(road.pendingRoadEvent).not.toBeNull();
+    expect(roadDigest.summary).toContain("路口待处理");
+    expect(roadDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["最近行军", "待处理路口"]));
+    expect(combatDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["当前战斗", "最近战斗"]));
+    expect(combatDigest.steps.find((step) => step.label === "最近战斗")?.body).toContain("第 1 回合");
   });
 
   test("combat inherits enemy stats and salvage rewards from the route node", () => {
