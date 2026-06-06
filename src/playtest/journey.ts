@@ -234,10 +234,22 @@ export type JourneySegmentForecast = {
   resultingElapsedHours: number;
   resultingPressure: number;
   riskLevel: JourneySegmentForecastRisk;
+  roadEventForecast: JourneyRoadEventForecast;
   segment: number;
   supplyUse: string[];
   tacticLabel: string;
   threatLabel: string;
+};
+
+export type JourneyRoadEventForecast = {
+  advice: string;
+  beatTitle: string;
+  findChancePercent: number;
+  hazardChancePercent: number;
+  likelyTone: JourneyRoadEventTone;
+  riskLabel: string;
+  roadChancePercent: number;
+  summary: string;
 };
 
 export type JourneyRoadEncounterChoice = {
@@ -2066,6 +2078,9 @@ export function forecastNextSegment(journey: JourneyState, squad: Survivor[], re
     resultingElapsedHours: journeyElapsedHours(next),
     resultingPressure: next.pressure,
     riskLevel: segmentForecastRisk(next),
+    roadEventForecast: canReachExtractionCleanly(next, journey.currentNodeIndex + 1)
+      ? cleanExtractionRoadForecast()
+      : roadEventForecastFor(next, squad, plan.id, routeSkill, tactic.id, threat),
     segment: next.condition.distance,
     supplyUse: [foodSpent ? "食物 -1" : "没有食物", waterSpent ? "水 -1" : "没有水"],
     tacticLabel: tactic.label,
@@ -3710,15 +3725,7 @@ function carryBurdenLabel(tier: JourneyCarryBurdenTier) {
 function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: JourneyTravelPlan, routeSkill: number, nextNodeIndex: number) {
   const table = familyRoadBeats[journey.locationFamily] ?? familyRoadBeats.urban;
   const beat = table[Math.max(0, journey.condition.distance - 1) % table.length];
-  const bestLuck = bestBy(squad, "luck").attributes.luck;
-  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
-  const roll =
-    Math.random() +
-    routeSkill * 0.05 +
-    Math.floor(bestLuck / 40) * 0.03 +
-    roadBeatPlanBonus(plan) -
-    journey.pressure / 260 -
-    worstCondition / 260;
+  const roll = Math.random() + roadEncounterRollModifier(journey, squad, plan, routeSkill);
 
   let tone: JourneyRoadEventTone = "road";
   let body = beat.neutralLog;
@@ -3740,6 +3747,99 @@ function queueRoadEncounter(journey: JourneyState, squad: Survivor[], plan: Jour
     tone
   };
   journey.logs.push(`路口：${beat.title}。${body}`);
+}
+
+function roadEventForecastFor(
+  journey: JourneyState,
+  squad: Survivor[],
+  plan: JourneyTravelPlan,
+  routeSkill: number,
+  tactic: JourneySegmentTactic,
+  threat: JourneySegmentThreat
+): JourneyRoadEventForecast {
+  const table = familyRoadBeats[journey.locationFamily] ?? familyRoadBeats.urban;
+  const beat = table[Math.max(0, journey.condition.distance - 1) % table.length];
+  const modifier = roadEncounterRollModifier(journey, squad, plan, routeSkill);
+  const hazardChance = clampChance(0.22 - modifier);
+  const findChance = clampChance(0.22 + modifier);
+  const roadChance = Math.max(0, 1 - hazardChance - findChance);
+  const likelyTone = likelyRoadEventTone({ find: findChance, hazard: hazardChance, road: roadChance });
+  const recommendedTactics = threat.counterTactics
+    .map((tacticId) => segmentTacticOptions[tacticId]?.label ?? tacticId)
+    .join(" / ");
+
+  return {
+    advice: threat.counterTactics.includes(tactic)
+      ? `${segmentTacticOptions[tactic]?.label ?? "当前战术"}正在压低险情。`
+      : `可考虑 ${recommendedTactics}，或用基地路线支援处理。`,
+    beatTitle: beat.title,
+    findChancePercent: chancePercent(findChance),
+    hazardChancePercent: chancePercent(hazardChance),
+    likelyTone,
+    riskLabel: roadEventForecastLabel(likelyTone, hazardChance),
+    roadChancePercent: chancePercent(roadChance),
+    summary: `路上事件：${beat.title}。机会 ${chancePercent(findChance)}%，险情 ${chancePercent(hazardChance)}%，普通路口 ${chancePercent(roadChance)}%。`
+  };
+}
+
+function cleanExtractionRoadForecast(): JourneyRoadEventForecast {
+  return {
+    advice: "保持队形撤离，不需要再处理路上抉择。",
+    beatTitle: "撤离线",
+    findChancePercent: 0,
+    hazardChancePercent: 0,
+    likelyTone: "road",
+    riskLabel: "撤离线清晰",
+    roadChancePercent: 100,
+    summary: "撤离线清晰：下一段不会再触发额外路上事件。"
+  };
+}
+
+function roadEncounterRollModifier(
+  journey: Pick<JourneyState, "condition" | "locationFamily" | "pressure">,
+  squad: Survivor[],
+  plan: JourneyTravelPlan,
+  routeSkill: number
+) {
+  const bestLuck = squad.length > 0 ? bestBy(squad, "luck").attributes.luck : 0;
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  return routeSkill * 0.05 + Math.floor(bestLuck / 40) * 0.03 + roadBeatPlanBonus(plan) - journey.pressure / 260 - worstCondition / 260;
+}
+
+function likelyRoadEventTone(chances: Record<JourneyRoadEventTone, number>): JourneyRoadEventTone {
+  if (chances.hazard >= chances.find && chances.hazard >= chances.road) {
+    return "hazard";
+  }
+
+  if (chances.find >= chances.road) {
+    return "find";
+  }
+
+  return "road";
+}
+
+function roadEventForecastLabel(tone: JourneyRoadEventTone, hazardChance: number) {
+  if (hazardChance >= 0.45) {
+    return "险情偏高";
+  }
+
+  if (tone === "find") {
+    return "机会偏高";
+  }
+
+  if (tone === "hazard") {
+    return "险情接近";
+  }
+
+  return "路口可控";
+}
+
+function clampChance(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function chancePercent(value: number) {
+  return Math.round(clampChance(value) * 100);
 }
 
 function canReachExtractionCleanly(journey: JourneyState, nextNodeIndex: number) {

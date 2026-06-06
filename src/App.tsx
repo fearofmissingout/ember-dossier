@@ -2174,6 +2174,16 @@ function JourneyPanel({
               </small>
             )}
           </div>
+          <div className={`road-event-risk ${segmentForecast.roadEventForecast.likelyTone}`}>
+            <span>路上事件</span>
+            <strong>{segmentForecast.roadEventForecast.riskLabel}</strong>
+            <small>
+              机会 {segmentForecast.roadEventForecast.findChancePercent}% / 险情 {segmentForecast.roadEventForecast.hazardChancePercent}% / 路口{" "}
+              {segmentForecast.roadEventForecast.roadChancePercent}%
+            </small>
+            <small>{segmentForecast.roadEventForecast.beatTitle}</small>
+            <small>{segmentForecast.roadEventForecast.advice}</small>
+          </div>
         </div>
       )}
       {journey.travelHistory.length > 0 && (

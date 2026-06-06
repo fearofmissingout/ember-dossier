@@ -619,6 +619,38 @@ describe("journey route generation", () => {
     expect(forecast.hardship?.effects).toEqual(expect.arrayContaining(["战斗伤痕 +1", "压力 +8%"]));
   });
 
+  test("next segment forecast estimates road event tone chances before advancing", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const session = createStarterSession("user-a", "Alice", "road-forecast-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 1, medicine: 0, water: 0 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "farm",
+      55
+    );
+    journey.pressure = 72;
+    journey.condition.fatigue = 66;
+    journey.condition.thirst = 68;
+
+    const exposed = forecastNextSegment(journey, squad, 55);
+    const braced = forecastNextSegment(setJourneySegmentTactic(journey, "brace"), squad, 55);
+
+    expect(exposed.roadEventForecast).toMatchObject({
+      beatTitle: "刺线沟",
+      likelyTone: "hazard",
+      riskLabel: "险情偏高"
+    });
+    expect(exposed.roadEventForecast.hazardChancePercent).toBeGreaterThan(exposed.roadEventForecast.findChancePercent);
+    expect(exposed.roadEventForecast.summary).toContain("路上事件");
+    expect(braced.roadEventForecast.hazardChancePercent).toBeLessThan(exposed.roadEventForecast.hazardChancePercent);
+    expect(braced.roadEventForecast.advice).toContain("收紧队形");
+  });
+
   test("severe road hardships mark survivors and appear in the road diary", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const session = createStarterSession("user-a", "Alice", "hardship-room");
