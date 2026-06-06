@@ -26,6 +26,7 @@ import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./gam
 import {
   advanceRoomDay,
   applyContribution,
+  baseDayPreview,
   assignSurvivorToRoom,
   baseDevelopmentPlan,
   baseRecoveryPlan,
@@ -1147,6 +1148,7 @@ function Overview({
   const objective = session.room.base.objective;
   const objectiveProgress = Math.round((objective.repairedParts / objective.requiredParts) * 100);
   const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
+  const dayPreview = baseDayPreview(session);
 
   return (
     <div className="view-grid">
@@ -1184,6 +1186,45 @@ function Overview({
         <div className="metric-pair">
           <span>剩余期限</span>
           <strong>{daysRemaining} 天</strong>
+        </div>
+        <div className="base-day-preview" aria-label="基地日程预报">
+          <div>
+            <span>明日预报</span>
+            <strong>第 {dayPreview.nextDay} 天</strong>
+            <small>{dayPreview.summary}</small>
+          </div>
+          <div className="base-day-preview-grid">
+            <span>
+              补给
+              <b>
+                食物 -{dayPreview.foodNeed - dayPreview.foodShortage}/{dayPreview.foodNeed} / 水 -{dayPreview.waterNeed - dayPreview.waterShortage}/
+                {dayPreview.waterNeed}
+              </b>
+              <small>{dayPreview.supplySummary}</small>
+            </span>
+            <span>
+              压力
+              <b>
+                士气 {formatSignedNumber(dayPreview.moraleDelta)} / 危险 {formatSignedNumber(dayPreview.dangerDelta)}
+              </b>
+              <small>设施与守卫减压 {dayPreview.dangerRelief}</small>
+            </span>
+            <span>
+              目标
+              <b>
+                {dayPreview.objectiveProjected}/{objective.requiredParts}
+              </b>
+              <small>{dayPreview.repairSummary}</small>
+            </span>
+            <span>
+              恢复
+              <b>{dayPreview.shiftCounts.care} 个护理班</b>
+              <small>{dayPreview.recoverySummary}</small>
+            </span>
+          </div>
+          <small className="base-day-preview-note">
+            {dayPreview.guardSummary}；{dayPreview.forageSummary}
+          </small>
         </div>
         <button className="primary-button full-width" type="button" disabled={objective.status !== "active"} onClick={onEndDay}>
           <CalendarDays size={18} aria-hidden="true" />

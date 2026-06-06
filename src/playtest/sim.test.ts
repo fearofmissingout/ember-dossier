@@ -12,6 +12,7 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseDayPreview,
   baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
@@ -641,6 +642,49 @@ describe("playtest room loop", () => {
     expect(next.room.base.danger).toBeLessThan(18);
     expect(next.room.feed[0]?.body).toContain("厨房");
     expect(next.room.feed[0]?.body).toContain("路障线");
+  });
+
+  test("base day preview summarizes upkeep shifts recovery and objective pressure before ending the day", () => {
+    let session = createStarterSession("user-a", "Alice", "day-preview-room");
+    session.room.members.push({
+      displayName: "Bob",
+      joinedAt: "2026-06-06T00:00:00.000Z",
+      lastSeenAt: "2026-06-06T00:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+    session.room.base.resources.food = 2;
+    session.room.base.resources.water = 6;
+    session.room.base.danger = 22;
+    session.room.base.objective.repairedParts = 2;
+    const barricade = session.room.base.facilities.find((facility) => facility.id === "barricade");
+    if (barricade) {
+      barricade.level = 1;
+    }
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "repair");
+    session = setBaseAssignment(session, "user-a", session.account.survivors[1].id, "guard");
+
+    const preview = baseDayPreview(session);
+
+    expect(preview).toMatchObject({
+      nextDay: 2,
+      foodNeed: 4,
+      foodAvailable: 2,
+      foodShortage: 2,
+      waterNeed: 4,
+      waterAvailable: 6,
+      waterShortage: 0,
+      moraleDelta: -12,
+      objectiveCurrent: 2,
+      shiftCounts: { care: 0, forage: 0, guard: 1, repair: 1 }
+    });
+    expect(preview.dangerDelta).toBeLessThan(6);
+    expect(preview.objectiveProjected).toBeGreaterThan(2);
+    expect(preview.summary).toContain("明天进入第 2 天");
+    expect(preview.summary).toContain("食物短缺 2");
+    expect(preview.repairSummary).toContain("修理班 1");
+    expect(preview.guardSummary).toContain("守卫班 1");
+    expect(preview.recoverySummary).toContain("疲劳恢复");
   });
 
   test("base day events punish uncovered perimeter breaches", () => {

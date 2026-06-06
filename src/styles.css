@@ -411,6 +411,61 @@ button:disabled {
   background: #fff0e5;
 }
 
+.base-day-preview {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #b8c99d;
+  border-radius: 8px;
+  background: #f5faef;
+}
+
+.base-day-preview > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.base-day-preview span,
+.base-day-preview small {
+  color: #5f6e62;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-day-preview strong,
+.base-day-preview b {
+  color: #26452f;
+  font-weight: 900;
+}
+
+.base-day-preview > div:first-child span {
+  color: #365f43;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.base-day-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.base-day-preview-grid span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid #d4dfc6;
+  border-radius: 8px;
+  background: #fbfff7;
+}
+
+.base-day-preview-note {
+  padding-top: 2px;
+}
+
 .contribution-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -2620,6 +2675,7 @@ button:disabled {
 
   .journey-plan-strip,
   .march-forecast,
+  .base-day-preview-grid,
   .segment-tactic-strip,
   .segment-threat-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));

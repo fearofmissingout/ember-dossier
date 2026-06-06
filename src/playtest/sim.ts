@@ -295,8 +295,8 @@ export function advanceRoomDay(session: PlaytestSession, userId: string): Playte
   const kitchenLevel = facilityLevel(next, "kitchen");
   const barricadeLevel = facilityLevel(next, "barricade");
   const radioLevel = facilityLevel(next, "radio");
-  const foodNeed = Math.max(1, Math.max(2, next.room.members.length * 2) - kitchenLevel);
-  const waterNeed = Math.max(1, Math.max(2, next.room.members.length * 2) - Math.floor(kitchenLevel / 2));
+  const foodNeed = roomFoodNeed(next);
+  const waterNeed = roomWaterNeed(next);
   const foodShortage = spendWithShortage(next.room.base.resources, "food", foodNeed);
   const waterShortage = spendWithShortage(next.room.base.resources, "water", waterNeed);
   const shortagePressure = foodShortage + waterShortage;
@@ -416,6 +416,10 @@ function formatResources(resources: ResourceBundle) {
     .join(", ");
 
   return summary || "没有可用物资";
+}
+
+function formatSignedNumber(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value}`;
 }
 
 function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
@@ -538,6 +542,29 @@ export type BaseDevelopmentPlan = {
   summary: string;
 };
 
+export type BaseDayPreview = {
+  dangerDelta: number;
+  dangerRelief: number;
+  foodAvailable: number;
+  foodNeed: number;
+  foodShortage: number;
+  forageSummary: string;
+  guardSummary: string;
+  moraleDelta: number;
+  nextDay: number;
+  objectiveCurrent: number;
+  objectiveGain: number;
+  objectiveProjected: number;
+  recoverySummary: string;
+  repairSummary: string;
+  shiftCounts: BaseShiftCoverage;
+  summary: string;
+  supplySummary: string;
+  waterAvailable: number;
+  waterNeed: number;
+  waterShortage: number;
+};
+
 export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
   const dormLevel = facilityLevel(session, "dorm");
   const clinicLevel = facilityLevel(session, "clinic");
@@ -608,6 +635,54 @@ export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPl
     projects,
     recommended: activeProjects.slice(0, 3),
     summary: `当前材料 ${materials}。可推进 ${affordableCount} 个项目，仍受材料限制 ${blockedCount} 个。`
+  };
+}
+
+export function baseDayPreview(session: PlaytestSession): BaseDayPreview {
+  const nextDay = session.room.base.day + 1;
+  const shifts = previewBaseAssignments(session);
+  const foodNeed = roomFoodNeed(session);
+  const waterNeed = roomWaterNeed(session);
+  const foodAvailable = session.room.base.resources.food;
+  const waterAvailable = session.room.base.resources.water;
+  const foodShortage = Math.max(0, foodNeed - foodAvailable);
+  const waterShortage = Math.max(0, waterNeed - waterAvailable);
+  const shortagePressure = foodShortage + waterShortage;
+  const watchtowerLevel = facilityLevel(session, "watchtower");
+  const barricadeLevel = facilityLevel(session, "barricade");
+  const moraleDelta = shortagePressure > 0 ? -shortagePressure * 6 : 2;
+  const dangerDelta = shortagePressure * 3 - watchtowerLevel - barricadeLevel - shifts.dangerReduction;
+  const recovery = baseRecoveryPlan(session);
+  const radioObjectiveBonus = facilityLevel(session, "radio") >= 2 ? 1 : 0;
+  const objectiveCurrent = session.room.base.objective.repairedParts;
+  const objectiveGain = shifts.objectiveGain + radioObjectiveBonus;
+  const objectiveProjected = Math.min(session.room.base.objective.requiredParts, objectiveCurrent + objectiveGain);
+  const supplyPressure = foodShortage + waterShortage > 0 ? `食物短缺 ${foodShortage}，水短缺 ${waterShortage}` : "食物和水足够过夜";
+
+  return {
+    dangerDelta,
+    dangerRelief: Math.max(0, watchtowerLevel + barricadeLevel + shifts.dangerReduction),
+    foodAvailable,
+    foodNeed,
+    foodShortage,
+    forageSummary: shifts.shiftCounts.forage > 0 ? `搜寻班 ${shifts.shiftCounts.forage}，预计食物 +${shifts.foodGain}，水 +${shifts.waterGain}` : "没有搜寻班",
+    guardSummary: shifts.shiftCounts.guard > 0 ? `守卫班 ${shifts.shiftCounts.guard}，危险压力 -${shifts.dangerReduction}` : "没有守卫班",
+    moraleDelta,
+    nextDay,
+    objectiveCurrent,
+    objectiveGain,
+    objectiveProjected,
+    recoverySummary: `${recovery.recoveringCount} 人恢复中，疲劳恢复 -${recovery.dailyRecovery}，护理班 ${recovery.careShifts}`,
+    repairSummary:
+      shifts.shiftCounts.repair > 0
+        ? `修理班 ${shifts.shiftCounts.repair}，预计目标 +${shifts.objectiveGain}${shifts.materialGain > 0 ? `，材料 +${shifts.materialGain}` : ""}`
+        : "没有修理班",
+    shiftCounts: shifts.shiftCounts,
+    summary: `明天进入第 ${nextDay} 天：${supplyPressure}，士气 ${formatSignedNumber(moraleDelta)}，危险 ${formatSignedNumber(dangerDelta)}，目标预计 ${objectiveProjected}/${session.room.base.objective.requiredParts}。`,
+    supplySummary: `需要食物 ${foodNeed} / 水 ${waterNeed}，当前食物 ${foodAvailable} / 水 ${waterAvailable}。`,
+    waterAvailable,
+    waterNeed,
+    waterShortage
   };
 }
 
@@ -738,12 +813,77 @@ function facilityLevel(session: PlaytestSession, facilityId: string): number {
   return session.room.base.facilities.find((facility) => facility.id === facilityId)?.level ?? 0;
 }
 
+function roomFoodNeed(session: PlaytestSession): number {
+  return Math.max(1, Math.max(2, session.room.members.length * 2) - facilityLevel(session, "kitchen"));
+}
+
+function roomWaterNeed(session: PlaytestSession): number {
+  return Math.max(1, Math.max(2, session.room.members.length * 2) - Math.floor(facilityLevel(session, "kitchen") / 2));
+}
+
 function createEmptyShiftCoverage(): BaseShiftCoverage {
   return {
     care: 0,
     forage: 0,
     guard: 0,
     repair: 0
+  };
+}
+
+function previewBaseAssignments(session: PlaytestSession) {
+  const shiftCounts = createEmptyShiftCoverage();
+  let dangerReduction = 0;
+  let foodGain = 0;
+  let waterGain = 0;
+  let objectiveGain = 0;
+  let materialGain = 0;
+
+  for (const assignment of session.room.baseAssignments) {
+    const survivor = session.account.survivors.find(
+      (candidate) => candidate.id === assignment.survivorId && candidate.ownerUserId === assignment.userId
+    );
+    if (!survivor || survivor.status === "assigned") {
+      continue;
+    }
+
+    shiftCounts[assignment.type] += 1;
+    const fatiguePenalty = survivor.fatigue >= 70 ? 1 : 0;
+    const baseInstinctBonus = hasSurvivorPerk(survivor, "base_instinct") ? 1 : 0;
+
+    if (assignment.type === "forage") {
+      const kitchenBonus = Math.floor(facilityLevel(session, "kitchen") / 2);
+      const yieldScore = Math.max(
+        1,
+        Math.floor((survivor.attributes.stamina + survivor.attributes.luck) / 6) - fatiguePenalty + baseInstinctBonus + kitchenBonus
+      );
+      foodGain += yieldScore;
+      waterGain += Math.max(1, yieldScore - 1);
+    }
+
+    if (assignment.type === "repair") {
+      const workshopBonus = Math.floor(facilityLevel(session, "workshop") / 2);
+      const radioBonus = facilityLevel(session, "radio") >= 1 ? 1 : 0;
+      const repairScore = Math.max(1, Math.floor(survivor.attributes.technical / 5) - fatiguePenalty + baseInstinctBonus + workshopBonus + radioBonus);
+      objectiveGain += repairScore;
+      materialGain += repairScore > 1 ? 1 : 0;
+    }
+
+    if (assignment.type === "guard") {
+      const barricadeBonus = facilityLevel(session, "barricade");
+      dangerReduction += Math.max(
+        1,
+        Math.floor((survivor.attributes.willpower + survivor.attributes.agility) / 7) - fatiguePenalty + baseInstinctBonus + barricadeBonus
+      );
+    }
+  }
+
+  return {
+    dangerReduction,
+    foodGain,
+    materialGain,
+    objectiveGain,
+    shiftCounts,
+    waterGain
   };
 }
 
