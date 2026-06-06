@@ -1,0 +1,93 @@
+import { describe, expect, test } from "vitest";
+import { createWorkflowContractReport } from "./check-workflow-contract.mjs";
+
+function completeContractFiles(overrides = {}) {
+  return {
+    docs: `# Workflow
+## 1. Principles
+### 2.1 Design
+### 2.2 Implementation
+Rules live in src/playtest/
+### 2.3 Local test
+npm run iteration:check
+### 2.4 Commit
+git status --short
+### 2.5 Release
+npm run release:preflight
+### 2.6 Production acceptance
+npm run release:verify
+### 2.7 Rollback
+git revert
+Cloudflare Token
+Supabase
+## 4. Copy
+HP
+XP
+https://ember-dossier.pages.dev/?room=playtest-smoke
+`,
+    gates: `
+assertCloudflarePagesConfig();
+run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["test"], "Unit and smoke tests");
+run("npm", ["run", "build"], "Typecheck and production build");
+if (productionMode) {
+  run("npm", ["run", "playtest:check"], "Production playtest smoke");
+}
+`,
+    packageJson: JSON.stringify({
+      scripts: {
+        "iteration:check": "node scripts/check-iteration-gates.mjs",
+        "playtest:check": "node scripts/check-production-playtest.mjs",
+        "release:preflight": "node scripts/check-iteration-gates.mjs --release",
+        "release:publish:api": "node scripts/publish-github-api.mjs",
+        "release:verify": "node scripts/check-iteration-gates.mjs --production",
+        "workflow:check": "node scripts/check-workflow-contract.mjs"
+      }
+    }),
+    workflow: `
+- run: npm test
+- run: npm run build
+- name: Deploy to Cloudflare Pages
+- name: Production playtest smoke
+  run: npm run playtest:check
+`,
+    ...overrides
+  };
+}
+
+describe("playtest iteration workflow contract", () => {
+  test("covers the required design implementation test release and recovery gates", () => {
+    const report = createWorkflowContractReport(completeContractFiles());
+
+    expect(report.ok).toBe(true);
+    expect(report.missing).toEqual([]);
+  });
+
+  test("reports drift when release discipline loses production smoke checks", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        gates: 'run("npm", ["test"], "Unit and smoke tests"); run("npm", ["run", "build"], "Typecheck and production build");',
+        packageJson: JSON.stringify({
+          scripts: {
+            "iteration:check": "node scripts/check-iteration-gates.mjs",
+            "playtest:check": "node scripts/check-production-playtest.mjs",
+            "release:preflight": "node scripts/check-iteration-gates.mjs --release",
+            "release:publish:api": "node scripts/publish-github-api.mjs",
+            "release:verify": "node scripts/check-iteration-gates.mjs --production"
+          }
+        }),
+        workflow: "- run: npm test\n- run: npm run build"
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(
+      expect.arrayContaining([
+        "package script: workflow:check",
+        "release gate: workflow contract",
+        "release gate: production playtest smoke",
+        "GitHub Actions: production playtest smoke"
+      ])
+    );
+  });
+});

@@ -54,9 +54,16 @@ npm run iteration:check
 
 这个命令会执行：
 
+- 迭代工作流契约检查，确认本文、`package.json`、本地门禁脚本和 GitHub Actions 没有互相漂移。
 - Cloudflare Pages 输出目录配置检查。
 - `npm test`
 - `npm run build`
+
+如果只改发布流程、文档或 CI，可以先单独运行：
+
+```bash
+npm run workflow:check
+```
 
 涉及数据库或线上共享房间时，还要按需运行：
 

@@ -12,6 +12,7 @@
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "supabase:check": "node scripts/check-supabase-demo.mjs",
     "playtest:check": "node scripts/check-production-playtest.mjs",
+    "workflow:check": "node scripts/check-workflow-contract.mjs",
     "iteration:check": "node scripts/check-iteration-gates.mjs",
     "release:preflight": "node scripts/check-iteration-gates.mjs --release",
     "release:publish:api": "node scripts/publish-github-api.mjs",
