@@ -14,7 +14,7 @@
 禁止事项：
 
 - 禁止把数据库密码、Cloudflare Token、Supabase 密钥写进源码或文档。
-- 禁止手工改 GitHub 远端树或用 GitHub API 拼发布提交。
+- 禁止在仓库脚本外手工改 GitHub 远端树或临时拼 GitHub API 发布提交。
 - 禁止 force push 到 `master`。
 - 禁止在没有测试、构建和生产冒烟的情况下说“已发布”。
 - 禁止玩家可见界面中英文混杂。默认语言是中文；`HP`、`XP`、`API`、`GitHub`、`Cloudflare`、`Supabase` 等必要缩写或产品名可以保留英文。
@@ -115,6 +115,25 @@ npm run release:preflight
 ```bash
 git push origin HEAD:master
 ```
+
+如果当前网络环境下 `git fetch` 或 `git push` 无法连接 GitHub，但 `gh api` 可用，允许使用固定 fallback 脚本发布当前已提交切片：
+
+```bash
+npm run iteration:check
+git status --short
+npm run release:publish:api -- --files <本次切片文件列表>
+```
+
+fallback 脚本会：
+
+- 先运行本地门禁，除非显式传入 `--skip-checks`。
+- 要求工作区干净。
+- 读取 GitHub `master` 当前父提交。
+- 用当前本地 commit 的文件内容创建远端提交。
+- 非 force 更新 `master`。
+- 校验远端 tree 中的文件 blob 与本地 commit 完全一致。
+
+fallback 只用于 git 传输不可用的情况。禁止把聊天里临时复制的 Node 片段当作发布方式。
 
 发布后必须等待 GitHub Actions：
 

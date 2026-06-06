@@ -14,6 +14,7 @@
     "playtest:check": "node scripts/check-production-playtest.mjs",
     "iteration:check": "node scripts/check-iteration-gates.mjs",
     "release:preflight": "node scripts/check-iteration-gates.mjs --release",
+    "release:publish:api": "node scripts/publish-github-api.mjs",
     "release:verify": "node scripts/check-iteration-gates.mjs --production"
   },
   "dependencies": {
