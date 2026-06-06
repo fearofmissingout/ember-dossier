@@ -57,6 +57,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyObjectivePreview,
+  journeyRouteBriefing,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -240,7 +241,7 @@ export default function App() {
 
   async function submitPasswordAuth(mode: "signin" | "signup") {
     if (!authEmail.trim()) {
-      setAuthNotice("Enter a username first.");
+      setAuthNotice("请先输入账号。");
       return;
     }
 
@@ -340,7 +341,7 @@ export default function App() {
     void loadRemotePlaytestSession(
       authSession.accessToken,
       authSession.userId,
-      player.name || authSession.email || "Player",
+      player.name || authSession.email || "玩家",
       roomSlug
     )
       .then((loadedSession) => {
@@ -855,7 +856,7 @@ export default function App() {
       if (selectedShopAction) {
         next = resolveShopAction(next, selectedShopAction);
       } else {
-        next.logs.push(`${node.title}: the squad keeps moving and saves its bargaining power.`);
+        next.logs.push(`${node.title}：队伍没有停留交易，保留议价筹码继续前进。`);
       }
     }
 
@@ -1109,6 +1110,7 @@ export default function App() {
             draft={draft}
             selectedLocation={selectedLocation}
             readiness={readiness}
+            session={session}
             squadReady={squadReady}
             canAffordLoadout={canAffordLoadout && objectiveActive}
             objective={session.room.base.objective}
@@ -1563,6 +1565,7 @@ function ExpeditionPrep({
   draft,
   selectedLocation,
   readiness,
+  session,
   squadReady,
   canAffordLoadout,
   objective,
@@ -1585,6 +1588,7 @@ function ExpeditionPrep({
   draft: ExpeditionDraft;
   selectedLocation: GameState["locations"][number];
   readiness: number;
+  session: PlaytestSession;
   squadReady: boolean;
   canAffordLoadout: boolean;
   objective: PlaytestSession["room"]["base"]["objective"];
@@ -1608,6 +1612,7 @@ function ExpeditionPrep({
   const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
   const support = mergeExpeditionSupport(mergeExpeditionSupport(facilitySupport, accountSupport), basePrepSupport);
   const supportPlan = expeditionSupportPlan(support);
+  const routeBriefing = journeyRouteBriefing(session, { ...draft, support }, selectedLocation.id, readiness);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const previewFieldSupplies: ResourceBundle = {
     ...draft.loadout
@@ -1774,6 +1779,59 @@ function ExpeditionPrep({
           <Activity size={24} aria-hidden="true" />
         </div>
         <p>{selectedLocation.dossier}</p>
+        <div
+          className={`route-briefing-card ${
+            routeBriefing.pressureLabel === "高压" ? "danger" : routeBriefing.pressureLabel === "紧张" ? "warning" : "safe"
+          }`}
+          aria-label="出征路线情报"
+        >
+          <div className="route-briefing-heading">
+            <div>
+              <span>路线情报</span>
+              <strong>{routeBriefing.locationName}</strong>
+              <small>
+                {routeBriefing.familyLabel} / 预计 {routeBriefing.estimatedHours} 小时到撤离窗口
+              </small>
+            </div>
+            <b>
+              {routeBriefing.pressureLabel} {routeBriefing.pressure}%
+            </b>
+          </div>
+          <div className="route-briefing-track">
+            {routeBriefing.routePattern.map((step, index) => (
+              <span key={`${selectedLocation.id}-briefing-${step}`}>
+                <i>{index + 1}</i>
+                {step}
+              </span>
+            ))}
+          </div>
+          <div className="route-briefing-grid">
+            <div>
+              <span>生存预估</span>
+              <strong>{routeBriefing.survivalSummary}</strong>
+            </div>
+            <div>
+              <span>随身补给</span>
+              <strong>{routeBriefing.fieldSupplySummary}</strong>
+            </div>
+            <div>
+              <span>后勤支援</span>
+              <strong>{routeBriefing.supportSummary}</strong>
+            </div>
+          </div>
+          {(routeBriefing.warnings.length > 0 || routeBriefing.recommendations.length > 0) && (
+            <div className="route-briefing-notes">
+              {routeBriefing.warnings.map((warning) => (
+                <small className="warning" key={warning}>
+                  {warning}
+                </small>
+              ))}
+              {routeBriefing.recommendations.map((recommendation) => (
+                <small key={recommendation}>{recommendation}</small>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="readiness-meter">
           <span>编队适配度</span>
           <div>
@@ -2742,7 +2800,7 @@ function Members() {
 function ArchiveView({ state }: { state: GameState }) {
   return (
     <section className="panel">
-      <p className="eyebrow">Archive</p>
+      <p className="eyebrow">档案</p>
       <h2>档案/图鉴</h2>
       <div className="archive-grid">
         <div>
@@ -3010,5 +3068,5 @@ function describeSyncError(error: unknown) {
     return error.message;
   }
 
-  return "Supabase request failed";
+  return "Supabase 请求失败";
 }

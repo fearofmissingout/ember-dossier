@@ -1233,6 +1233,171 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.route-briefing-card {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #b9c7a6;
+  border-radius: 8px;
+  background: #f8fbef;
+}
+
+.route-briefing-card.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.route-briefing-card.danger {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.route-briefing-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.route-briefing-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.route-briefing-heading span,
+.route-briefing-grid span {
+  color: #63725b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.route-briefing-card.warning .route-briefing-heading span,
+.route-briefing-card.warning .route-briefing-grid span {
+  color: #7b5a13;
+}
+
+.route-briefing-card.danger .route-briefing-heading span,
+.route-briefing-card.danger .route-briefing-grid span {
+  color: #8a3524;
+}
+
+.route-briefing-heading strong {
+  color: #2f5438;
+  font-size: 16px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.route-briefing-card.warning .route-briefing-heading strong {
+  color: #755315;
+}
+
+.route-briefing-card.danger .route-briefing-heading strong {
+  color: #84321f;
+}
+
+.route-briefing-heading small {
+  color: #65715c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.route-briefing-heading b {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #345b3b;
+  color: #fffaf0;
+  font-size: 12px;
+}
+
+.route-briefing-card.warning .route-briefing-heading b {
+  background: #9a6c1f;
+}
+
+.route-briefing-card.danger .route-briefing-heading b {
+  background: #9c3d27;
+}
+
+.route-briefing-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 7px;
+}
+
+.route-briefing-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid rgba(77, 95, 69, 0.18);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #39443e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.route-briefing-track i {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: #e4ead8;
+  color: #2f5438;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.route-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.route-briefing-grid div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid rgba(77, 95, 69, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.route-briefing-grid strong {
+  color: #334f38;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.route-briefing-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.route-briefing-notes small {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(47, 117, 108, 0.1);
+  color: #2f615b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.route-briefing-notes small.warning {
+  background: rgba(156, 61, 39, 0.1);
+  color: #8a3524;
+}
+
 .support-plan-card {
   display: grid;
   gap: 10px;

@@ -11,6 +11,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyObjectivePreview,
+  journeyRouteBriefing,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -127,6 +128,32 @@ describe("journey route generation", () => {
     expect(journey.nodes[4].title).toBe("撤离窗口");
     expect(journey.logs.join("\n")).toContain("路线开启");
     expect(journey.logs.join("\n")).toContain("随身补给");
+  });
+
+  test("previews expedition route pressure supplies warnings and recommendations before dispatch", () => {
+    const session = createStarterSession("user-a", "Alice", "route-briefing-room");
+    const squad = session.account.survivors.slice(0, 2);
+    const briefing = journeyRouteBriefing(
+      session,
+      {
+        loadout: { ammo: 10, food: 10, fuel: 10, materials: 10, medicine: 10, water: 10 },
+        risk: "greedy",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      42
+    );
+
+    expect(briefing.locationName).toBe("北区水处理厂");
+    expect(briefing.routePattern).toEqual(["事件", "战斗", "营地", "商店", "撤离"]);
+    expect(briefing.estimatedHours).toBe(12);
+    expect(briefing.pressureLabel).toBe("高压");
+    expect(briefing.fieldSupplySummary).toContain("食物 10");
+    expect(briefing.survivalSummary).toContain("超载");
+    expect(briefing.warnings).toEqual(
+      expect.arrayContaining(["编队少于 3 人，远征无法稳定出发。", "背包超载会显著增加开局压力和行军疲劳。"])
+    );
+    expect(briefing.recommendations).toEqual(expect.arrayContaining(["优先补足 3-5 人编队。", "减少携带物资，或升级仓库、训练室和工坊类支援。"]));
   });
 
   test("route pace surfaces pending road encounters as the current beat", () => {

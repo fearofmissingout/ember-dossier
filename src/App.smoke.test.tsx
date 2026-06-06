@@ -22,6 +22,7 @@ describe("App smoke render", () => {
     expect(html).toContain("个人基地");
     expect(html).toContain("房间目标");
     expect(html).toContain("ED-12");
+    expect(html).not.toMatch(/Repair the communications tower|Shared base online|Room base initialized|Archive|Enter a username first|Supabase request failed/);
   });
 
   test("renders the hosted playtest login shell when Supabase is configured", async () => {

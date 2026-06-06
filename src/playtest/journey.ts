@@ -465,6 +465,20 @@ export type JourneyExtractionPreview = {
   remainingStops: number;
 };
 
+export type JourneyRouteBriefing = {
+  estimatedHours: number;
+  familyLabel: string;
+  fieldSupplySummary: string;
+  locationName: string;
+  pressure: number;
+  pressureLabel: string;
+  recommendations: string[];
+  routePattern: string[];
+  supportSummary: string;
+  survivalSummary: string;
+  warnings: string[];
+};
+
 export function journeyObjectivePreview(
   journey: Pick<JourneyState, "extractionStatus" | "objectiveBonus">,
   objective: RoomObjective
@@ -498,6 +512,71 @@ export function journeyObjectivePreview(
     statusLabel,
     summary,
     title: objective.title
+  };
+}
+
+export function journeyRouteBriefing(
+  session: PlaytestSession,
+  draft: JourneyDraft,
+  locationId: string,
+  readiness: number
+): JourneyRouteBriefing {
+  const location = session.room.locations.find((candidate) => candidate.id === locationId);
+  const family = location?.family ?? "urban";
+  const support = draft.support ?? emptySupport();
+  const squad = session.account.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
+  const fieldSupplies = { ...draft.loadout };
+  addPartialResources(fieldSupplies, support.startingSupplies);
+  const burden = calculateCarryBurden(squad, fieldSupplies, support);
+  const basePressure = draft.risk === "cautious" ? 10 : draft.risk === "greedy" ? 28 : 18;
+  const pressure = clampPercent(basePressure + burden.pressurePenalty);
+  const routePattern = ["事件", "战斗", "营地", "商店", "撤离"];
+  const estimatedHours = Math.max(0, routePattern.length - 1) * travelPlanOptions.steady.hours;
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+
+  if (squad.length < 3) {
+    warnings.push("编队少于 3 人，远征无法稳定出发。");
+    recommendations.push("优先补足 3-5 人编队。");
+  } else if (squad.length > 5) {
+    warnings.push("编队超过 5 人，远征队形会变得难以管理。");
+    recommendations.push("压缩到 3-5 人，让疲劳和补给消耗保持可控。");
+  }
+
+  if (burden.tier === "overloaded") {
+    warnings.push("背包超载会显著增加开局压力和行军疲劳。");
+    recommendations.push("减少携带物资，或升级仓库、训练室和工坊类支援。");
+  } else if (burden.tier === "heavy") {
+    warnings.push("背包偏重，路上更容易累积疲劳。");
+    recommendations.push("保留食物、水、药品和弹药，压低非必要材料。");
+  }
+
+  if (readiness < 50) {
+    warnings.push("编队适配度偏低，关键属性没有覆盖地点需求。");
+    recommendations.push("调整幸存者，让推荐属性更接近地点要求。");
+  }
+
+  if (fieldSupplies.food === 0 || fieldSupplies.water === 0) {
+    warnings.push("食物或饮水不足，路线消耗会更快转化为压力。");
+    recommendations.push("至少携带 1 份食物和 1 份水，或选择路上口粮纪律。");
+  }
+
+  if (draft.risk === "greedy") {
+    recommendations.push("贪婪策略适合冲战利品，但要准备提前返程。");
+  }
+
+  return {
+    estimatedHours,
+    familyLabel: familyLabelFor(family),
+    fieldSupplySummary: formatResourceCounts(fieldSupplies),
+    locationName: location?.name ?? "未知地点",
+    pressure,
+    pressureLabel: pressureLabelFor(pressure),
+    recommendations: uniqueText(recommendations),
+    routePattern,
+    supportSummary: supportSummaryFor(support),
+    survivalSummary: `开局压力 ${pressure}%（${pressureLabelFor(pressure)}），背包${carryBurdenLabel(burden.tier)} ${burden.load}/${burden.capacity}，预计 ${estimatedHours} 小时抵达撤离窗口。`,
+    warnings: uniqueText(warnings)
   };
 }
 
@@ -4130,6 +4209,58 @@ function formatBundle(resources: ResourceBundle) {
   }
 
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
+}
+
+function formatResourceCounts(resources: ResourceBundle | Partial<ResourceBundle>) {
+  const entries = resourceKeys.filter((key) => (resources[key] ?? 0) > 0);
+  if (entries.length === 0) {
+    return "无";
+  }
+
+  return entries.map((key) => `${resourceLabels[key]} ${resources[key] ?? 0}`).join(" / ");
+}
+
+function familyLabelFor(family: LocationFamily) {
+  const labels: Record<LocationFamily, string> = {
+    resources: "生存资源点",
+    urban: "城市风险点",
+    weird: "剧情/怪异点",
+    wilds: "荒野探索点"
+  };
+  return labels[family];
+}
+
+function pressureLabelFor(pressure: number) {
+  if (pressure >= 60) {
+    return "高压";
+  }
+
+  if (pressure >= 30) {
+    return "紧张";
+  }
+
+  return "可控";
+}
+
+function supportSummaryFor(support: ExpeditionSupport) {
+  const effects = [
+    support.maxHp > 0 ? `生命 +${support.maxHp}` : "",
+    support.guardBlock > 0 ? `防守 +${support.guardBlock}` : "",
+    support.patchHeal > 0 ? `包扎 +${support.patchHeal}` : "",
+    support.pressureRelief > 0 ? `压力 -${support.pressureRelief}` : "",
+    support.roadSecure + support.roadSearch + support.roadPush > 0
+      ? `路线 +${support.roadSecure + support.roadSearch + support.roadPush}`
+      : "",
+    support.campCook + support.campRest + support.campScout > 0 ? `营地 +${support.campCook + support.campRest + support.campScout}` : "",
+    support.shopRations + support.shopIntel + support.shopService > 0 ? `商店 +${support.shopRations + support.shopIntel + support.shopService}` : "",
+    formatResourceCounts(support.startingSupplies) !== "无" ? `出发补给：${formatResourceCounts(support.startingSupplies)}` : ""
+  ].filter(Boolean);
+
+  return effects.length > 0 ? effects.join(" / ") : "暂无可用后勤支援";
+}
+
+function uniqueText(items: string[]) {
+  return [...new Set(items)];
 }
 
 function formatSignedPercent(value: number) {
