@@ -323,7 +323,7 @@ export default function App() {
         if (typeof window !== "undefined") {
           window.history.replaceState(null, "", `/?room=${roomSlug}`);
         }
-        setAuthNotice("Email confirmed. Loading your playtest account.");
+        setAuthNotice("邮箱已确认，正在读取你的试玩账号。");
         setAuthSession(nextSession);
       })
       .catch((error) => {

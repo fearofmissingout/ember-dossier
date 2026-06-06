@@ -274,8 +274,8 @@ async function createRemoteStateError(response: Response) {
 
   try {
     const payload = JSON.parse(text) as { message?: string };
-    return new Error(payload.message ?? `Supabase request failed with HTTP ${response.status}`);
+    return new Error(payload.message ?? `Supabase 请求失败，HTTP ${response.status}`);
   } catch {
-    return new Error(text || `Supabase request failed with HTTP ${response.status}`);
+    return new Error(text || `Supabase 请求失败，HTTP ${response.status}`);
   }
 }

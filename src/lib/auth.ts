@@ -20,7 +20,7 @@ export function usernameToPlaytestEmail(username: string): string {
 }
 
 const emailConfirmationRequiredMessage =
-  "账号已创建，但 Supabase 仍要求邮箱确认。请去邮箱点击确认链接，或先点 Continue as guest 试玩；如果想注册后立刻进入，请在 Supabase Auth 里关闭 Confirm email。";
+  "账号已创建，但 Supabase 仍要求邮箱确认。请去邮箱点击确认链接，或先用游客模式试玩；如果想注册后立刻进入，请在 Supabase Auth 里关闭邮箱确认。";
 
 type EmailOtpType = "email" | "magiclink" | "signup" | "recovery" | "invite" | "email_change";
 
@@ -66,7 +66,7 @@ export async function signUpWithPassword(email: string, password: string): Promi
 export async function signUpWithUsername(username: string, password: string): Promise<AuthSession> {
   const normalizedUsername = normalizePlaytestUsername(username);
   if (!normalizedUsername) {
-    throw new Error("Username must be 3-20 letters, numbers, or underscores.");
+    throw new Error("账号需要 3-20 位小写字母、数字或下划线。");
   }
 
   const response = await fetch("/api/auth/register", {
@@ -97,13 +97,13 @@ export async function signInWithPassword(email: string, password: string): Promi
     method: "POST"
   });
 
-  return readAuthSessionResponse(response, "Supabase did not return a session for this email and password.");
+  return readAuthSessionResponse(response, "Supabase 没有返回这个邮箱账号的登录会话。");
 }
 
 export async function signInWithUsername(username: string, password: string): Promise<AuthSession> {
   const normalizedUsername = normalizePlaytestUsername(username);
   if (!normalizedUsername) {
-    throw new Error("Username must be 3-20 letters, numbers, or underscores.");
+    throw new Error("账号需要 3-20 位小写字母、数字或下划线。");
   }
 
   return signInWithPassword(usernameToPlaytestEmail(normalizedUsername), password);
@@ -159,7 +159,7 @@ export async function verifyTokenHash(tokenHash: string, type: EmailOtpType): Pr
     method: "POST"
   });
 
-  return readAuthSessionResponse(response, "Supabase did not return a session for this email link.");
+  return readAuthSessionResponse(response, "Supabase 没有返回邮箱链接的登录会话。");
 }
 
 export async function fetchAuthUser(accessToken: string): Promise<AuthSession> {
@@ -234,7 +234,7 @@ async function readPlaytestSignupResponse(response: Response): Promise<AuthSessi
 
   const payload = (await response.json()) as Partial<AuthSession>;
   if (!payload.accessToken || !payload.userId) {
-    throw new Error("Username signup did not return a session.");
+    throw new Error("账号注册没有返回登录会话。");
   }
 
   return {

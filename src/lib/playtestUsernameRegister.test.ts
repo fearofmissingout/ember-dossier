@@ -17,7 +17,7 @@ describe("playtest username register function", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
-      message: "Username must be 3-20 letters, numbers, or underscores."
+      message: "账号需要 3-20 位小写字母、数字或下划线。"
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -30,7 +30,7 @@ describe("playtest username register function", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({
-      message: "Username must be 3-20 letters, numbers, or underscores."
+      message: "账号需要 3-20 位小写字母、数字或下划线。"
     });
   });
 
@@ -143,7 +143,7 @@ describe("playtest username register function", () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
       message:
-        "Account created, but Supabase did not return a session. Disable Confirm email for playtests or add SUPABASE_SERVICE_ROLE_KEY to Cloudflare."
+        "账号已创建，但 Supabase 没有返回登录会话。请关闭邮箱确认，或在 Cloudflare 配置 SUPABASE_SERVICE_ROLE_KEY 以便试玩账号可直接进入。"
     });
   });
 });

@@ -5,11 +5,11 @@ export async function onRequestPost({ request, env }) {
     const password = typeof body.password === "string" ? body.password : "";
 
     if (!username) {
-      return json({ message: "Username must be 3-20 letters, numbers, or underscores." }, 400);
+      return json({ message: "账号需要 3-20 位小写字母、数字或下划线。" }, 400);
     }
 
     if (password.length < 6) {
-      return json({ message: "Password needs at least 6 characters." }, 400);
+      return json({ message: "密码至少需要 6 个字符。" }, 400);
     }
 
     const config = readConfig(env);
@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
 
     return json(session.payload);
   } catch (error) {
-    return json({ message: error instanceof Error ? error.message : "Registration failed." }, 500);
+    return json({ message: error instanceof Error ? error.message : "注册失败，请稍后重试。" }, 500);
   }
 }
 
@@ -46,7 +46,7 @@ function readConfig(env) {
   const serviceRoleKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!url || !publishableKey) {
-    throw new Error("Username signup is not configured. Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY to Cloudflare.");
+    throw new Error("试玩账号注册尚未配置。请在 Cloudflare 中添加 SUPABASE_URL 和 SUPABASE_PUBLISHABLE_KEY。");
   }
 
   return {
@@ -81,7 +81,8 @@ async function signUp(config, email, password, username) {
   if (!payload.access_token || !payload.user?.id) {
     return {
       ok: false,
-      message: "Account created, but Supabase did not return a session. Disable Confirm email for playtests or add SUPABASE_SERVICE_ROLE_KEY to Cloudflare.",
+      message:
+        "账号已创建，但 Supabase 没有返回登录会话。请关闭邮箱确认，或在 Cloudflare 配置 SUPABASE_SERVICE_ROLE_KEY 以便试玩账号可直接进入。",
       status: 409
     };
   }
@@ -121,7 +122,7 @@ async function createConfirmedUser(config, email, password, username) {
 
   const message = await readAuthError(response);
   if (/already|registered|exists/i.test(message)) {
-    return { ok: false, message: "Username already exists. Sign in instead.", status: 409 };
+    return { ok: false, message: "这个账号已经存在，请直接登录。", status: 409 };
   }
 
   return { ok: false, message, status: response.status };
@@ -145,7 +146,7 @@ async function signIn(config, email, password) {
 
   const payload = await response.json();
   if (!payload.access_token || !payload.user?.id) {
-    return { ok: false, message: "Supabase did not return a session for this username.", status: 502 };
+    return { ok: false, message: "Supabase 没有返回这个账号的登录会话。", status: 502 };
   }
 
   return {
@@ -182,7 +183,7 @@ async function readAuthError(response) {
     const payload = JSON.parse(text);
     return payload.message ?? payload.msg ?? payload.error_description ?? payload.error ?? text;
   } catch {
-    return text || `Supabase request failed with HTTP ${response.status}`;
+    return text || `Supabase 请求失败，HTTP ${response.status}`;
   }
 }
 
