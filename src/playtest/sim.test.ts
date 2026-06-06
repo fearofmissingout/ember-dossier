@@ -527,6 +527,44 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("账号战利");
   });
 
+  test("early extraction preserves a small account cache without full rare spoils", () => {
+    let session = createStarterSession("user-a", "Alice", "early-account-cache-room");
+    session.account.resources.materials = 2;
+    session.account.resources.intel = 0;
+    session.account.resources.rareParts = 0;
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      extractionStatus: "early",
+      journeyLogs: ["测绘闸门：队伍标记回撤线。", "紧急返程：队伍放弃当前阻碍，保住已入袋战利和路线线索。"],
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 1,
+        medicine: 1,
+        water: 1
+      },
+      locationId: "water-plant",
+      randomRolls: [0.04, 0.08, 0.12, 0.2, 0.3],
+      risk: "standard",
+      routeObjectiveBonus: 1,
+      survivorIds: squad,
+      trophies: ["装甲碎片"],
+      userId: "user-a"
+    });
+
+    expect(result.session.account.resources.materials).toBeGreaterThan(2);
+    expect(result.session.account.resources.intel).toBe(1);
+    expect(result.session.account.resources.rareParts).toBe(0);
+    expect(result.report.logs.join("\n")).toContain("返程回收");
+    expect(result.session.room.feed[0]?.body).toContain("返程回收");
+  });
+
   test("combat scar targets are applied to named survivors first", () => {
     let session = createStarterSession("user-a", "Alice", "named-scar-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
