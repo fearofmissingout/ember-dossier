@@ -335,9 +335,10 @@ export function resolvePlaytestExpedition(
   const accountSpoilsLogs = applyAccountExpeditionSpoils(next, request, result.report);
 
   if (next.room.feed[0]) {
+    const processLogs = selectFeedProcessLogs(process.logs);
     next.room.feed[0] = {
       ...next.room.feed[0],
-      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...process.logs.slice(0, 8), ...accountSpoilsLogs].join("\n")
+      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...processLogs, ...accountSpoilsLogs].join("\n")
     };
   }
 
@@ -588,6 +589,16 @@ function formatSignedNumber(value: number): string {
 function summarizePlaytestReport(report: ExpeditionReport, request: PlaytestExpeditionRequest) {
   const status = request.extractionStatus === "early" ? "提前折返" : "完成路线";
   return `${report.squadNames.join("、")}在${report.locationName}${status}。结果：${expeditionOutcomeLabel(report.outcome)}。主要收获：${formatResources(report.reward)}。`;
+}
+
+function selectFeedProcessLogs(logs: string[]): string[] {
+  const priority = logs.filter(isPriorityProcessLog);
+  const rest = logs.filter((line) => !isPriorityProcessLog(line));
+  return [...priority, ...rest].slice(0, 8);
+}
+
+function isPriorityProcessLog(line: string): boolean {
+  return /紧急返程|提前截断路线|提前撤离|撤离：|呼叫基地接应|保住已入袋/.test(line);
 }
 
 function expeditionXpGain(travelFatigue: number, trainingLevel: number) {

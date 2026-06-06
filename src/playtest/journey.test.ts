@@ -12,6 +12,7 @@ import {
   journeyExtractionPreview,
   journeyObjectivePreview,
   journeyRouteBriefing,
+  resolveJourneyExtraction,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -1841,5 +1842,44 @@ describe("journey route generation", () => {
       rewardScalePercent: 100
     });
     expect(complete?.summary).toContain("地点主体进度 +0-2");
+  });
+
+  test("emergency return can settle from blocked combat loot or road states", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "emergency-return-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const roadBlocked = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 60);
+    const roadReturn = resolveJourneyExtraction(roadBlocked);
+
+    expect(roadBlocked.pendingRoadEvent).not.toBeNull();
+    expect(roadReturn.extractionStatus).toBe("early");
+    expect(roadReturn.pendingRoadEvent).toBeNull();
+    expect(roadReturn.logs.join("\n")).toContain("紧急返程");
+    expect(roadReturn.logs.join("\n")).toContain("保住已入袋");
+
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+    }
+    const won = resolveCombatRound(journey, "strike", squad, 60);
+    const lootReturn = resolveJourneyExtraction(won);
+
+    expect(won.pendingCombatLoot).not.toBeNull();
+    expect(lootReturn.extractionStatus).toBe("early");
+    expect(lootReturn.pendingCombatLoot).toBeNull();
+    expect(lootReturn.combat).toBeNull();
+    expect(lootReturn.logs.join("\n")).toContain("紧急返程");
   });
 });

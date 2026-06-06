@@ -436,6 +436,26 @@ describe("playtest room loop", () => {
     expect(full.session.room.base.objective.repairedParts).toBeGreaterThan(early.session.room.base.objective.repairedParts);
     expect(early.report.logs.join("\n")).toContain("提前撤离");
     expect(early.session.room.feed[0]?.body).toContain("提前折返");
+
+    const emergency = resolvePlaytestExpedition(earlySession, {
+      ...request,
+      extractionStatus: "early",
+      journeyLogs: [
+        "路线开启：北区水处理厂，3 名幸存者出发。",
+        "携带物资已转为随身补给。",
+        "背包负重：5/15，轻装。",
+        "闸门绕行：队伍测绘闸门。",
+        "路段威胁：氯雾。",
+        "道路：路段 1，疲劳 +9，压力 +15%。",
+        "路口：淹水下穿道。",
+        "道路受阻：压力 +6%。",
+        "路线：额外噪音引来伏击。",
+        "战斗：队伍顶着压力撤退。",
+        "紧急返程：队伍放弃当前阻碍，保住已入袋战利和路线线索。"
+      ]
+    });
+
+    expect(emergency.session.room.feed[0]?.body).toContain("紧急返程");
   });
 
   test("combat aftermath applies injuries, trophies, and report logs", () => {

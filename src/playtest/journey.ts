@@ -637,6 +637,24 @@ export function journeyExtractionPreview(journey: JourneyState, objective: RoomO
   };
 }
 
+export function resolveJourneyExtraction(journey: JourneyState): JourneyState {
+  const next = structuredClone(journey) as JourneyState;
+  const activeNode = next.nodes[next.currentNodeIndex];
+  const completedRoute = !activeNode || activeNode.type === "extraction";
+
+  next.extractionStatus = completedRoute ? "complete" : "early";
+  next.combat = null;
+  next.pendingCombatLoot = null;
+  next.pendingRoadEvent = null;
+  next.logs.push(
+    completedRoute
+      ? "队伍标记撤离路线，呼叫基地接应。"
+      : "紧急返程：队伍放弃当前阻碍，保住已入袋战利和路线线索。"
+  );
+
+  return next;
+}
+
 export function routePaceFor(journey: JourneyState): JourneyRoutePace {
   const totalStops = journey.nodes.length;
   const safeIndex = Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, totalStops - 1)));

@@ -62,6 +62,7 @@ import {
   resolveBaseCommand,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
+  resolveJourneyExtraction,
   resolveShopAction,
   routePaceFor,
   segmentTacticList,
@@ -785,6 +786,11 @@ export default function App() {
       return;
     }
 
+    if (action === "extract") {
+      finishJourney(resolveJourneyExtraction(journey));
+      return;
+    }
+
     const selectedRoadAction = roadEncounterActionFromJourneyAction(action);
     if (journey.pendingRoadEvent) {
       if (!selectedRoadAction) {
@@ -828,18 +834,8 @@ export default function App() {
     }
 
     const node = journey.nodes[journey.currentNodeIndex];
-    if (!node || node.type === "extraction" || action === "extract") {
-      const completedRoute = !node || node.type === "extraction";
-      finishJourney({
-        ...journey,
-        extractionStatus: completedRoute ? "complete" : "early",
-        logs: [
-          ...journey.logs,
-          completedRoute
-            ? "队伍标记撤离路线，呼叫基地接应。"
-            : "队伍提前折返，在路线恶化前把随身战利带回。"
-        ]
-      });
+    if (!node || node.type === "extraction") {
+      finishJourney(resolveJourneyExtraction(journey));
       return;
     }
 
@@ -1945,7 +1941,9 @@ function JourneyPanel({
 }) {
   const outlook = getJourneyOutlook(journey);
   const pendingRoad = journey.pendingRoadEvent;
-  const canReturnEarly = !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction";
+  const extractionPreview = journeyExtractionPreview(journey, objective);
+  const canReturnEarly = activeNode.type !== "extraction";
+  const returnEarlyLabel = extractionPreview.canExtractNow ? "提前返程" : "紧急返程";
   const nodeTypeLabel = pendingRoad ? roadToneLabel(pendingRoad.tone) : journeyNodeTypeLabel(activeNode.type);
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
@@ -1957,7 +1955,6 @@ function JourneyPanel({
   const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
   const baseCommands = baseCommandOptions(journey);
   const objectivePreview = journeyObjectivePreview(journey, objective);
-  const extractionPreview = journeyExtractionPreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
@@ -2488,7 +2485,7 @@ function JourneyPanel({
         {canReturnEarly && (
           <div className="journey-actions">
             <button className="ghost-button inline danger-action" type="button" onClick={() => onJourneyAction("extract")}>
-              提前返程
+              {returnEarlyLabel}
             </button>
           </div>
         )}
