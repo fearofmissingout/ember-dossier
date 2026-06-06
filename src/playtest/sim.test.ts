@@ -17,6 +17,7 @@ import {
   baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
+  roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
   upgradeAccountBase,
@@ -99,6 +100,62 @@ describe("playtest room loop", () => {
     );
     expect(next.room.feed[0]?.body).toContain("Alice");
     expect(next.room.feed[0]?.body).toContain("食物 +2");
+  });
+
+  test("summarizes each room member contribution assignments and base shifts", () => {
+    let session = createStarterSession("user-a", "Alice", "member-summary-room");
+    session = applyContribution(session, "user-a", {
+      ammo: 0,
+      food: 2,
+      fuel: 0,
+      materials: 0,
+      medicine: 0,
+      water: 1
+    });
+    session.room.members.push({
+      displayName: "阿周",
+      joinedAt: "2026-06-06T09:00:00.000Z",
+      lastSeenAt: "2026-06-06T10:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+    session.room.contributions.push({
+      createdAt: "2026-06-06T10:05:00.000Z",
+      id: "contribution-b",
+      resources: { ammo: 0, food: 0, fuel: 0, materials: 4, medicine: 1, water: 0 },
+      roomId: session.room.id,
+      userId: "user-b"
+    });
+    session.room.assignedSurvivors.push({
+      assignedAt: "2026-06-06T10:10:00.000Z",
+      roomId: session.room.id,
+      survivorId: "zhou-scout",
+      userId: "user-b"
+    });
+    session.room.baseAssignments.push({
+      roomId: session.room.id,
+      survivorId: "zhou-guard",
+      type: "guard",
+      userId: "user-b"
+    });
+
+    const summaries = roomMemberSummaries(session);
+    const alice = summaries.find((member) => member.userId === "user-a");
+    const zhou = summaries.find((member) => member.userId === "user-b");
+
+    expect(alice).toMatchObject({
+      contributionText: expect.stringContaining("食物 +2"),
+      displayName: "Alice",
+      roleLabel: "房主"
+    });
+    expect(zhou).toMatchObject({
+      assignedCount: 1,
+      baseShiftText: "守卫 1",
+      contributionText: expect.stringContaining("材料 +4"),
+      displayName: "阿周",
+      roleLabel: "成员"
+    });
+    expect(zhou?.contributionText).toContain("药品 +1");
   });
 
   test("upgrades account base rooms with account resources and readable planning", () => {

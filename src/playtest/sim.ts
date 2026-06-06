@@ -765,6 +765,55 @@ export type BaseDayPreview = {
   waterShortage: number;
 };
 
+export type RoomMemberSummary = {
+  assignedCount: number;
+  baseShiftText: string;
+  contributionCount: number;
+  contributionText: string;
+  displayName: string;
+  lastSeenAt: string;
+  roleLabel: string;
+  userId: string;
+};
+
+export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary[] {
+  return session.room.members
+    .map((member) => {
+      const contributionTotals = emptyLoadout();
+      let contributionCount = 0;
+      for (const contribution of session.room.contributions.filter((entry) => entry.userId === member.userId)) {
+        contributionCount += 1;
+        for (const key of resourceKeys) {
+          contributionTotals[key] += contribution.resources[key] ?? 0;
+        }
+      }
+
+      const assignedCount = session.room.assignedSurvivors.filter((assignment) => assignment.userId === member.userId).length;
+      const shiftCounts = createEmptyShiftCoverage();
+      for (const assignment of session.room.baseAssignments.filter((entry) => entry.userId === member.userId)) {
+        shiftCounts[assignment.type] += 1;
+      }
+
+      return {
+        assignedCount,
+        baseShiftText: formatBaseShiftCounts(shiftCounts),
+        contributionCount,
+        contributionText: formatResources(contributionTotals),
+        displayName: member.displayName,
+        lastSeenAt: member.lastSeenAt,
+        roleLabel: member.role === "host" ? "房主" : "成员",
+        userId: member.userId
+      };
+    })
+    .sort((left, right) =>
+      left.roleLabel === right.roleLabel
+        ? left.displayName.localeCompare(right.displayName, "zh-Hans-CN")
+        : left.roleLabel === "房主"
+          ? -1
+          : 1
+    );
+}
+
 export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
   const dormLevel = facilityLevel(session, "dorm");
   const clinicLevel = facilityLevel(session, "clinic");
@@ -1107,6 +1156,21 @@ function createEmptyShiftCoverage(): BaseShiftCoverage {
     guard: 0,
     repair: 0
   };
+}
+
+function formatBaseShiftCounts(shiftCounts: BaseShiftCoverage) {
+  const labels: Record<BaseWorkType, string> = {
+    care: "护理",
+    forage: "搜寻",
+    guard: "守卫",
+    repair: "修理"
+  };
+  const text = (Object.keys(labels) as BaseWorkType[])
+    .filter((type) => shiftCounts[type] > 0)
+    .map((type) => `${labels[type]} ${shiftCounts[type]}`)
+    .join(" / ");
+
+  return text || "未安排";
 }
 
 function previewBaseAssignments(session: PlaytestSession) {

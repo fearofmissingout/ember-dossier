@@ -32,6 +32,7 @@ import {
   baseDevelopmentPlan,
   baseRecoveryPlan,
   resolvePlaytestExpedition,
+  roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
   upgradeAccountBase,
@@ -39,7 +40,8 @@ import {
   type AccountBaseDevelopmentPlan,
   type AccountBaseFacilityId,
   type BaseDevelopmentPlan,
-  type BaseRecoveryPlan
+  type BaseRecoveryPlan,
+  type RoomMemberSummary
 } from "./playtest/sim";
 import {
   addResources,
@@ -1140,6 +1142,7 @@ export default function App() {
           <RoomMembers
             player={player}
             players={roomPlayers}
+            memberSummaries={roomMemberSummaries(session)}
             roomSlug={roomSlug}
             copyStatus={copyStatus}
             onCopyRoomLink={copyRoomLink}
@@ -2815,6 +2818,7 @@ function Facilities({
 function RoomMembers({
   player,
   players,
+  memberSummaries,
   roomSlug,
   copyStatus,
   onCopyRoomLink,
@@ -2823,6 +2827,7 @@ function RoomMembers({
 }: {
   player: RoomPlayer;
   players: RoomPlayer[];
+  memberSummaries: RoomMemberSummary[];
   roomSlug: string;
   copyStatus: "idle" | "copied" | "failed";
   onCopyRoomLink: () => void;
@@ -2868,30 +2873,29 @@ function RoomMembers({
           </div>
         ))}
       </div>
-    </section>
-  );
-}
 
-function Members() {
-  const members = [
-    ["你", "房主 / 工程员"],
-    ["阿周", "成员 / 侦察员"],
-    ["小许", "成员 / 医疗员"]
-  ];
-
-  return (
-    <section className="panel">
-      <p className="eyebrow">房间</p>
-      <h2>成员与权限</h2>
-      <div className="member-list">
-        {members.map(([name, role]) => (
-          <div className="member-row" key={name}>
-            <span>{name}</span>
-            <strong>{role}</strong>
-          </div>
+      <div className="member-summary-list" aria-label="成员协作记录">
+        {memberSummaries.map((member) => (
+          <article className="member-summary-row" key={member.userId}>
+            <div>
+              <span>{member.roleLabel}</span>
+              <strong>{member.displayName}</strong>
+              <small>最近在线 {formatLastSeen(member.lastSeenAt)}</small>
+            </div>
+            <div className="member-metrics">
+              <span>
+                捐入 <b>{member.contributionText}</b>
+              </span>
+              <span>
+                出征编队 <b>{member.assignedCount}</b>
+              </span>
+              <span>
+                基地班次 <b>{member.baseShiftText}</b>
+              </span>
+            </div>
+          </article>
         ))}
       </div>
-      <p className="muted-copy">真实邀请、白名单、魔法链接登录会在 Supabase 接入后启用。</p>
     </section>
   );
 }

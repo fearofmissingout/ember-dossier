@@ -3291,6 +3291,57 @@ button:disabled {
   font-weight: 800;
 }
 
+.member-summary-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.member-summary-row {
+  display: grid;
+  grid-template-columns: minmax(132px, 0.8fr) minmax(0, 1.6fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d7cab0;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.member-summary-row > div:first-child,
+.member-metrics {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.member-summary-row span,
+.member-summary-row small {
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.member-summary-row strong {
+  color: #2c342f;
+  font-size: 16px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.member-metrics span {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.member-metrics b {
+  color: #7d3f2d;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .player-mark {
   width: 14px;
   height: 38px;
@@ -3448,6 +3499,7 @@ button:disabled {
   .report-timeline-grid,
   .hardship-strip,
   .development-project-strip,
+  .member-summary-row,
   .resource-grid {
     grid-template-columns: 1fr;
   }
