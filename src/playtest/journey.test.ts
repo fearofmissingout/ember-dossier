@@ -9,6 +9,7 @@ import {
   createJourney,
   createCombatForNode,
   forecastNextSegment,
+  journeyExtractionPreview,
   journeyObjectivePreview,
   resolveCampAction,
   resolveBaseCommand,
@@ -1693,5 +1694,54 @@ describe("journey route generation", () => {
     expect(dressed.battleScars).toBeLessThan(won.battleScars);
     expect(dressed.bonusReward.medicine).toBeGreaterThan(won.bonusReward.medicine);
     expect(dressed.logs.join("\n")).toContain("战伤 -1");
+  });
+
+  test("extraction preview compares early return with full extraction rewards and objective progress", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "extraction-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 2, fuel: 1, materials: 0, medicine: 1, water: 2 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+    journey.bonusReward.materials = 2;
+    journey.bonusReward.medicine = 1;
+    journey.objectiveBonus = 1;
+    journey.battleScars = 1;
+    journey.condition.fatigue = 42;
+    journey.pressure = 57;
+    journey.currentNodeIndex = 2;
+    session.room.base.objective.repairedParts = 4;
+
+    const preview = journeyExtractionPreview(journey, session.room.base.objective);
+    const early = preview.options.find((option) => option.id === "early");
+    const complete = preview.options.find((option) => option.id === "complete");
+
+    expect(preview.canExtractNow).toBe(true);
+    expect(preview.currentStop).toBe(3);
+    expect(preview.remainingStops).toBe(2);
+    expect(preview.bankedReward.materials).toBe(2);
+    expect(preview.fieldSupplySummary).toContain("食物");
+    expect(early).toMatchObject({
+      label: "现在返程",
+      objectiveProjectedMin: 5,
+      objectiveProjectedMax: 5,
+      rewardScalePercent: 40
+    });
+    expect(early?.summary).toContain("保住已入袋");
+    expect(early?.riskSummary).toContain("战斗伤痕 1");
+    expect(complete).toMatchObject({
+      label: "完整撤离",
+      objectiveProjectedMin: 5,
+      objectiveProjectedMax: 7,
+      rewardScalePercent: 100
+    });
+    expect(complete?.summary).toContain("地点主体进度 +0-2");
   });
 });

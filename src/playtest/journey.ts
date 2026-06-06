@@ -437,6 +437,34 @@ export type JourneyObjectivePreview = {
   title: string;
 };
 
+export type JourneyExtractionPreviewOption = {
+  id: "early" | "complete";
+  label: string;
+  objectiveCurrent: number;
+  objectiveProjectedMax: number;
+  objectiveProjectedMin: number;
+  objectiveRouteBonus: number;
+  objectiveSiteBonusMax: number;
+  objectiveSiteBonusMin: number;
+  rewardScalePercent: number;
+  rewardSummary: string;
+  riskSummary: string;
+  summary: string;
+  title: string;
+};
+
+export type JourneyExtractionPreview = {
+  bankedReward: ResourceBundle;
+  battleScars: number;
+  canExtractNow: boolean;
+  currentStop: number;
+  fatigue: number;
+  fieldSupplySummary: string;
+  options: JourneyExtractionPreviewOption[];
+  pressure: number;
+  remainingStops: number;
+};
+
 export function journeyObjectivePreview(
   journey: Pick<JourneyState, "extractionStatus" | "objectiveBonus">,
   objective: RoomObjective
@@ -470,6 +498,63 @@ export function journeyObjectivePreview(
     statusLabel,
     summary,
     title: objective.title
+  };
+}
+
+export function journeyExtractionPreview(journey: JourneyState, objective: RoomObjective): JourneyExtractionPreview {
+  const pace = routePaceFor(journey);
+  const requiredParts = Math.max(1, objective.requiredParts);
+  const objectiveCurrent = Math.max(0, Math.min(requiredParts, objective.repairedParts));
+  const objectiveRouteBonus = Math.max(0, Math.floor(journey.objectiveBonus));
+  const routedProgress = Math.min(requiredParts, objectiveCurrent + objectiveRouteBonus);
+  const fatigue = Math.round(journey.condition.fatigue);
+  const pressure = Math.round(journey.pressure);
+  const riskSummary = [`压力 ${pressure}%`, `疲劳 ${fatigue}`, `战斗伤痕 ${Math.max(0, journey.battleScars)}`].join(" / ");
+  const bankedText = formatBundle(journey.bonusReward);
+  const fieldSupplySummary = formatBundle(journey.fieldSupplies);
+  const canExtractNow = !journey.combat && !journey.pendingCombatLoot && !journey.pendingRoadEvent;
+
+  return {
+    bankedReward: { ...journey.bonusReward },
+    battleScars: Math.max(0, journey.battleScars),
+    canExtractNow,
+    currentStop: pace.currentStop,
+    fatigue,
+    fieldSupplySummary,
+    options: [
+      {
+        id: "early",
+        label: "现在返程",
+        objectiveCurrent,
+        objectiveProjectedMax: routedProgress,
+        objectiveProjectedMin: routedProgress,
+        objectiveRouteBonus,
+        objectiveSiteBonusMax: 0,
+        objectiveSiteBonusMin: 0,
+        rewardScalePercent: 40,
+        rewardSummary: `已入袋：${bankedText}。地点主体奖励约 40%。`,
+        riskSummary,
+        summary: "保住已入袋战利和路线线索，但放弃地点主体进度。适合压力、疲劳或伤痕已经压不住时使用。",
+        title: "稳妥撤回"
+      },
+      {
+        id: "complete",
+        label: "完整撤离",
+        objectiveCurrent,
+        objectiveProjectedMax: Math.min(requiredParts, routedProgress + 2),
+        objectiveProjectedMin: routedProgress,
+        objectiveRouteBonus,
+        objectiveSiteBonusMax: 2,
+        objectiveSiteBonusMin: 0,
+        rewardScalePercent: 100,
+        rewardSummary: `随身补给：${fieldSupplySummary}。地点主体奖励完整结算。`,
+        riskSummary: `${riskSummary} / 还剩 ${pace.remainingStops} 站`,
+        summary: "继续推进到出口，地点主体进度 +0-2，并获得完整地点奖励；剩余路段仍可能追加伤病和消耗。",
+        title: "压到出口"
+      }
+    ],
+    pressure,
+    remainingStops: pace.remainingStops
   };
 }
 

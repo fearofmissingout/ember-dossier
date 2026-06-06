@@ -51,6 +51,7 @@ import {
   createJourney,
   enemyTraitPulse,
   forecastNextSegment,
+  journeyExtractionPreview,
   journeyObjectivePreview,
   resolveCampAction,
   resolveBaseCommand,
@@ -1778,6 +1779,7 @@ function JourneyPanel({
   const segmentMitigation = segmentThreatMitigationFor(segmentThreat, journey.support);
   const baseCommands = baseCommandOptions(journey);
   const objectivePreview = journeyObjectivePreview(journey, objective);
+  const extractionPreview = journeyExtractionPreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
@@ -1886,6 +1888,36 @@ function JourneyPanel({
             <b style={{ width: `${Math.max(6, objectivePreview.projectedPercent)}%` }} />
           </i>
           <small>{objectivePreview.hint}</small>
+        </div>
+      </div>
+      <div className="extraction-preview" aria-label="撤离预案">
+        <div className="extraction-preview-heading">
+          <div>
+            <span>撤离预案</span>
+            <strong>{extractionPreview.canExtractNow ? "可以返程" : "先处理当前阻碍"}</strong>
+          </div>
+          <small>
+            压力 {extractionPreview.pressure}% / 疲劳 {extractionPreview.fatigue} / 还剩 {extractionPreview.remainingStops} 站 / 随身{" "}
+            {extractionPreview.fieldSupplySummary}
+          </small>
+        </div>
+        <div className="extraction-preview-options">
+          {extractionPreview.options.map((option) => (
+            <div className={`extraction-preview-option ${option.id}`} key={option.id}>
+              <div>
+                <span>{option.label}</span>
+                <strong>{option.title}</strong>
+              </div>
+              <b>地点奖励 {option.rewardScalePercent}%</b>
+              <small>
+                目标 {option.objectiveProjectedMin}
+                {option.objectiveProjectedMax === option.objectiveProjectedMin ? "" : `-${option.objectiveProjectedMax}`}/{objectivePreview.requiredParts}
+              </small>
+              <p>{option.summary}</p>
+              <em>{option.rewardSummary}</em>
+              <em>{option.riskSummary}</em>
+            </div>
+          ))}
         </div>
       </div>
       <div className="base-command-strip" aria-label="基地指令">
@@ -2637,7 +2669,7 @@ function applyJourneyBonus(session: PlaytestSession, report: { logs: string[]; r
     report.reward[key] += bonusReward[key];
   }
 
-  const bonusLine = `Field salvage secured: ${formatResourceDelta(bonusReward)}.`;
+  const bonusLine = `野外战利入库：${formatResourceDelta(bonusReward)}。`;
   report.logs.unshift(bonusLine);
   if (session.room.feed[0]) {
     session.room.feed[0] = {

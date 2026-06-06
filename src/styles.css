@@ -1430,6 +1430,128 @@ button:disabled {
   background: #53795b;
 }
 
+.extraction-preview {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #b6c6cf;
+  border-radius: 8px;
+  background: #f2f8fa;
+}
+
+.extraction-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.extraction-preview-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.extraction-preview-heading span,
+.extraction-preview-option span {
+  color: #58717d;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.extraction-preview-heading strong {
+  color: #244c58;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.extraction-preview-heading small {
+  max-width: 64ch;
+  color: #5f7178;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.extraction-preview-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.extraction-preview-option {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid #c8d4d8;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.extraction-preview-option.complete {
+  border-color: #afbf9e;
+  background: #fbfff4;
+}
+
+.extraction-preview-option div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.extraction-preview-option strong,
+.extraction-preview-option b,
+.extraction-preview-option small,
+.extraction-preview-option p,
+.extraction-preview-option em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.extraction-preview-option strong {
+  color: #254a56;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.extraction-preview-option b {
+  justify-self: start;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #d8e7eb;
+  color: #2b5360;
+  font-size: 11px;
+}
+
+.extraction-preview-option.complete b {
+  background: #e0ecd1;
+  color: #3f6135;
+}
+
+.extraction-preview-option small {
+  color: #2f5c68;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.extraction-preview-option p {
+  margin: 0;
+  color: #52656b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.extraction-preview-option em {
+  color: #6b6b5d;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.3;
+}
+
 .base-command-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2667,6 +2789,7 @@ button:disabled {
   .journey-status-grid,
   .route-pacing,
   .journey-objective-card,
+  .extraction-preview-options,
   .base-command-strip,
   .march-forecast,
   .travel-record-strip,
@@ -2756,6 +2879,7 @@ button:disabled {
   .journey-status-grid,
   .route-pacing,
   .journey-objective-card,
+  .extraction-preview-options,
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,
