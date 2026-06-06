@@ -2757,6 +2757,21 @@ button:disabled {
   border-color: #a34d32;
 }
 
+.combat-loot-grid button.road-choice-option.safe {
+  border-color: #9bb39f;
+  background: #f5fbef;
+}
+
+.combat-loot-grid button.road-choice-option.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.combat-loot-grid button.road-choice-option.danger {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
 .combat-loot-grid small {
   color: #8a6f4e;
   font-size: 11px;
@@ -2766,6 +2781,18 @@ button:disabled {
 
 .combat-loot-grid small.facility-support-note {
   color: #2f5f43;
+}
+
+.combat-loot-grid small.road-choice-risk.safe {
+  color: #2f5f43;
+}
+
+.combat-loot-grid small.road-choice-risk.warning {
+  color: #7b5a13;
+}
+
+.combat-loot-grid small.road-choice-risk.danger {
+  color: #8a3524;
 }
 
 .frontline-grid {

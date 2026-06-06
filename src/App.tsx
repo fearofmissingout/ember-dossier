@@ -62,6 +62,7 @@ import {
   resolveBaseCommand,
   resolveCombatLootChoice,
   resolveRoadEncounterChoice,
+  roadEncounterChoicePreview,
   resolveJourneyExtraction,
   resolveShopAction,
   routePaceFor,
@@ -2295,18 +2296,22 @@ function JourneyPanel({
               <span>路段 {pendingRoad.segment} 挡住了下一站。必须先处理，队伍才能继续推进。</span>
             </div>
             <div className="combat-loot-grid">
-              {pendingRoad.choices.map((choice) => (
-                <button key={choice.id} type="button" onClick={() => onJourneyAction(`road-${choice.id}` as JourneyAction)}>
-                  <strong>{choice.label}</strong>
-                  <span>{choice.text}</span>
-                  <small>
-                    {choice.supplyPriority.length > 0 ? `消耗 ${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}; ` : ""}
-                    {formatResourceDelta(choice.reward)} | 疲{formatSignedNumber(choice.fatigue)} 饥{formatSignedNumber(choice.hunger)} 渴
-                    {formatSignedNumber(choice.thirst)} 压{formatSignedPercent(choice.pressure)}
-                  </small>
-                  {choice.supportText && <small className="facility-support-note">{choice.supportText}</small>}
-                </button>
-              ))}
+              {pendingRoad.choices.map((choice) => {
+                const preview = roadEncounterChoicePreview(journey, choice);
+                return (
+                  <button className={`road-choice-option ${preview.tone}`} key={choice.id} type="button" onClick={() => onJourneyAction(`road-${choice.id}` as JourneyAction)}>
+                    <strong>{choice.label}</strong>
+                    <span>{choice.text}</span>
+                    <small>
+                      {preview.costText} | {preview.rewardText} | {preview.conditionText}
+                    </small>
+                    <small className={`road-choice-risk ${preview.tone}`}>
+                      {preview.outcomeLabel}：{preview.riskText}
+                    </small>
+                    {choice.supportText && <small className="facility-support-note">{choice.supportText}</small>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : journey.pendingCombatLoot ? (

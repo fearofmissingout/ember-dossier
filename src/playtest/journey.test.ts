@@ -13,6 +13,7 @@ import {
   journeyObjectivePreview,
   journeyRouteBriefing,
   resolveJourneyExtraction,
+  roadEncounterChoicePreview,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -859,6 +860,44 @@ describe("journey route generation", () => {
     expect(secured.fieldSupplies.materials).toBe(0);
     expect(secured.roadEvents[0].outcome).toContain("材料 -1");
     expect(secured.logs.join("\n")).toContain("路上事件：坍塌楼梯间");
+  });
+
+  test("road choice previews reveal missing gear and ambush risk before choosing", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "road-choice-preview-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 0, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      55
+    );
+
+    const advanced = advanceJourneyTravel(journey, squad, 55);
+    const secure = advanced.pendingRoadEvent?.choices.find((choice) => choice.id === "secure");
+    const push = advanced.pendingRoadEvent?.choices.find((choice) => choice.id === "push");
+
+    expect(advanced.pendingRoadEvent).toMatchObject({
+      title: "坍塌楼梯间",
+      tone: "hazard"
+    });
+    expect(roadEncounterChoicePreview(advanced, secure!)).toMatchObject({
+      canPayCost: false,
+      costText: "缺少材料/燃料",
+      outcomeLabel: "装备不足",
+      riskText: "缺少对应装备会硬吃险情，并可能在下一站前引发路上伏击。",
+      tone: "danger"
+    });
+    expect(roadEncounterChoicePreview(advanced, secure!).conditionText).toContain("疲劳 +");
+    expect(roadEncounterChoicePreview(advanced, push!)).toMatchObject({
+      outcomeLabel: "强行穿越",
+      riskText: "险情中继续推进会把动静带到下一站，可能直接触发路上伏击。",
+      tone: "danger"
+    });
   });
 
   test("facility route support adds a road tactic that preserves field supplies", () => {

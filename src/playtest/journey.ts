@@ -278,6 +278,18 @@ export type JourneyPendingRoadEncounter = {
   tone: JourneyRoadEventTone;
 };
 
+export type JourneyRoadEncounterChoicePreviewTone = "safe" | "warning" | "danger";
+
+export type JourneyRoadEncounterChoicePreview = {
+  canPayCost: boolean;
+  conditionText: string;
+  costText: string;
+  outcomeLabel: string;
+  rewardText: string;
+  riskText: string;
+  tone: JourneyRoadEncounterChoicePreviewTone;
+};
+
 export type JourneyCombatant = {
   guard: number;
   lastAction: string | null;
@@ -3949,6 +3961,64 @@ function createRoadSupportChoice(
   };
 }
 
+export function roadEncounterChoicePreview(
+  journey: Pick<JourneyState, "fieldSupplies" | "pendingRoadEvent">,
+  choice: JourneyRoadEncounterChoice
+): JourneyRoadEncounterChoicePreview {
+  const hasCost = choice.supplyPriority.length > 0;
+  const spentKey = hasCost ? firstAvailableFieldSupply(journey.fieldSupplies, choice.supplyPriority) : null;
+  const canPayCost = !hasCost || Boolean(spentKey);
+  const pendingTone = journey.pendingRoadEvent?.tone ?? "road";
+
+  if (!canPayCost) {
+    const fallbackPressure = Math.max(4, choice.pressure + 6);
+    const fallbackFatigue = choice.fatigue + 2;
+    return {
+      canPayCost: false,
+      conditionText: `疲劳 +${fallbackFatigue} / 压力 ${formatSignedPercent(fallbackPressure)}`,
+      costText: `缺少${choice.supplyPriority.map((key) => resourceLabels[key]).join("/")}`,
+      outcomeLabel: "装备不足",
+      rewardText: "无战利品",
+      riskText: "缺少对应装备会硬吃险情，并可能在下一站前引发路上伏击。",
+      tone: "danger"
+    };
+  }
+
+  const ambushRisk = pendingTone === "hazard" && choice.id === "push";
+  const supportChoice = choice.id === "support";
+  const rewardText = formatBundle(choice.reward);
+  const costText = spentKey ? `消耗${resourceLabels[spentKey]}` : hasCost ? "装备足够" : "无消耗";
+  const outcomeLabel = supportChoice
+    ? "基地支援"
+    : ambushRisk
+      ? "强行穿越"
+      : rewardText !== "无战利品"
+        ? "可带回收获"
+        : choice.pressure < 0
+          ? "降低压力"
+          : "可控代价";
+
+  return {
+    canPayCost: true,
+    conditionText: `疲劳 ${formatSignedNumber(choice.fatigue)} / 饥饿 ${formatSignedNumber(choice.hunger)} / 口渴 ${formatSignedNumber(
+      choice.thirst
+    )} / 压力 ${formatSignedPercent(choice.pressure)}`,
+    costText,
+    outcomeLabel,
+    rewardText,
+    riskText: supportChoice
+      ? "调用基地路线预案，不消耗随身装备。"
+      : ambushRisk
+        ? "险情中继续推进会把动静带到下一站，可能直接触发路上伏击。"
+        : choice.rollShift < 0
+          ? "这会降低后续接触风险。"
+          : choice.pressure > 0
+            ? "会推高路线压力，之后更容易失控。"
+            : "风险变化较小，适合保守处理。",
+    tone: supportChoice || choice.pressure < 0 ? "safe" : ambushRisk || choice.pressure >= 8 ? "danger" : "warning"
+  };
+}
+
 export function resolveRoadEncounterChoice(journey: JourneyState, action: JourneyRoadEncounterAction, squad: Survivor[] = [], readiness = 50): JourneyState {
   const next = structuredClone(journey) as JourneyState;
   const pending = next.pendingRoadEvent;
@@ -3991,6 +4061,10 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     next.currentNodeIndex = pending.nextNodeIndex;
   }
   return next;
+}
+
+function firstAvailableFieldSupply(resources: ResourceBundle, priority: ResourceKey[]) {
+  return priority.find((key) => resources[key] > 0) ?? null;
 }
 
 function queueRoadAmbush(next: JourneyState, pending: JourneyPendingRoadEncounter, squad: Survivor[], readiness: number) {
