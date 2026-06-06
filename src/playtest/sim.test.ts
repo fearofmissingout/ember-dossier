@@ -489,6 +489,9 @@ describe("playtest room loop", () => {
     expect(result.session.account.survivors.some((survivor) => survivor.injuries.includes("肩部撕裂"))).toBe(true);
     expect(result.report.reward.materials).toBeGreaterThan(0);
     expect(result.report.logs.join("\n")).toContain("战斗战利");
+    expect(result.report.logs.join("\n")).toContain("恢复预案");
+    expect(result.report.logs.join("\n")).toContain("药品");
+    expect(result.session.room.feed[0]?.body).toContain("恢复预案");
   });
 
   test("complete expeditions settle account spoils for personal base growth", () => {

@@ -332,13 +332,18 @@ export function resolvePlaytestExpedition(
     next.room.base.objective.status = "won";
   }
   applyCombatAftermath(next, request, result.report);
+  const recoveryLogs = postExpeditionRecoveryLogs(next, request.survivorIds);
+  if (recoveryLogs.length) {
+    const insertIndex = result.report.logs.findIndex((line) => !line.startsWith("成长：") && !line.startsWith("战斗战利品"));
+    result.report.logs.splice(insertIndex === -1 ? result.report.logs.length : insertIndex, 0, ...recoveryLogs);
+  }
   const accountSpoilsLogs = applyAccountExpeditionSpoils(next, request, result.report);
 
   if (next.room.feed[0]) {
     const processLogs = selectFeedProcessLogs(process.logs);
     next.room.feed[0] = {
       ...next.room.feed[0],
-      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...processLogs, ...accountSpoilsLogs].join("\n")
+      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...processLogs, ...recoveryLogs, ...accountSpoilsLogs].join("\n")
     };
   }
 
@@ -996,6 +1001,36 @@ function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpedit
       report.logs.unshift(`${target.name} 加重了${injury}。疲劳 +10。`);
     }
   }
+}
+
+function postExpeditionRecoveryLogs(session: PlaytestSession, survivorIds: string[]): string[] {
+  const squadIds = new Set(survivorIds);
+  const patients = session.account.survivors
+    .filter((survivor) => squadIds.has(survivor.id) && (survivor.injuries.length > 0 || survivor.fatigue >= 35))
+    .sort((left, right) => right.injuries.length * 30 + right.fatigue - (left.injuries.length * 30 + left.fatigue));
+
+  if (patients.length === 0) {
+    return [];
+  }
+
+  const plan = baseRecoveryPlan(session);
+  const totalInjuries = patients.reduce((sum, survivor) => sum + survivor.injuries.length, 0);
+  const medicineText =
+    totalInjuries > 0
+      ? `药品 ${session.room.base.resources.medicine}/${totalInjuries}`
+      : `药品 ${session.room.base.resources.medicine}，暂无伤病消耗`;
+  const careText =
+    plan.careShifts > 0
+      ? `护理班 ${plan.careShifts} 个，预计清除 ${plan.likelyInjuryClears}/${plan.injuredCount} 个伤病`
+      : "暂无护理班，建议安排医疗高的幸存者护理";
+  const priorityText = patients
+    .slice(0, 3)
+    .map((survivor) => `${survivor.name} 疲${survivor.fatigue}/伤${survivor.injuries.length}`)
+    .join("；");
+
+  return [
+    `恢复预案：医务室 Lv.${plan.clinicLevel} / 宿舍 Lv.${plan.dormLevel}；${medicineText}；${careText}；每日疲劳恢复 -${plan.dailyRecovery}。优先恢复：${priorityText}。`
+  ];
 }
 
 function applyAccountExpeditionSpoils(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport): string[] {
