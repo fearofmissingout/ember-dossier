@@ -22,7 +22,7 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { facilityActionCost, facilityActionLabel, facilityUpgradePreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
-import type { GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
+import type { FeedItem, GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
 import {
   advanceRoomDay,
   applyContribution,
@@ -91,6 +91,7 @@ import {
   type ExpeditionDoctrineId
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
+import { summarizeFeedReportTimeline } from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
@@ -2390,11 +2391,37 @@ function Reports({ state, latestReportId }: { state: GameState; latestReportId: 
             <div>
               <strong>{item.title}</strong>
               <p>{item.body}</p>
+              <ReportTimeline item={item} />
             </div>
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function ReportTimeline({ item }: { item: FeedItem }) {
+  const timeline = summarizeFeedReportTimeline(item);
+  if (!timeline.hasProcess) {
+    return null;
+  }
+
+  return (
+    <div className="report-timeline" aria-label="远征过程回放">
+      <div className="report-timeline-heading">
+        <span>过程回放</span>
+        <strong>{timeline.summary}</strong>
+      </div>
+      <div className="report-timeline-grid">
+        {timeline.steps.slice(0, 6).map((step, index) => (
+          <article className={`report-timeline-step ${step.category}`} key={`${item.id}-timeline-${index}-${step.title}`}>
+            <span>{step.label}</span>
+            <strong>{step.title}</strong>
+            <small>{step.body}</small>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 

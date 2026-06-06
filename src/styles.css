@@ -556,6 +556,11 @@ button:disabled {
   justify-content: flex-start;
 }
 
+.feed-item > div {
+  flex: 1;
+  min-width: 0;
+}
+
 .feed-item > span {
   flex: 0 0 74px;
   color: #8c6d45;
@@ -565,6 +570,92 @@ button:disabled {
 
 .feed-list.large .feed-item {
   padding: 16px;
+}
+
+.report-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eadbc0;
+}
+
+.report-timeline-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-timeline-heading span {
+  color: #8c523c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.report-timeline-heading strong {
+  color: #28352e;
+  font-size: 13px;
+}
+
+.report-timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-timeline-step {
+  display: grid;
+  min-height: 112px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d8c8aa;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.report-timeline-step span {
+  color: #8a6348;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-timeline-step strong {
+  color: #27312c;
+  font-size: 14px;
+}
+
+.report-timeline-step small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #657168;
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.report-timeline-step.combat {
+  border-color: #cf8d69;
+  background: #fff3eb;
+}
+
+.report-timeline-step.trade,
+.report-timeline-step.camp {
+  border-color: #c9bd78;
+  background: #fffbe8;
+}
+
+.report-timeline-step.extraction,
+.report-timeline-step.reward {
+  border-color: #9fc09b;
+  background: #f7fbef;
+}
+
+.report-timeline-step.risk {
+  border-color: #c56b62;
+  background: #fff1ef;
 }
 
 .metric-pair strong {
@@ -2581,6 +2672,7 @@ button:disabled {
   .travel-record-strip,
   .road-event-strip,
   .development-project-strip,
+  .report-timeline-grid,
   .hardship-strip {
     grid-template-columns: 1fr 1fr;
   }
@@ -2667,6 +2759,7 @@ button:disabled {
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,
+  .report-timeline-grid,
   .hardship-strip,
   .development-project-strip,
   .resource-grid {
