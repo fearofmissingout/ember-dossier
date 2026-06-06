@@ -89,6 +89,7 @@ import {
   type JourneyTravelPlan
 } from "./playtest/journey";
 import {
+  accountBaseSupportBriefing,
   basePrepSupportFromAssignments,
   expeditionDoctrineOptions,
   expeditionSupportPlan,
@@ -1608,6 +1609,7 @@ function ExpeditionPrep({
   const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
   const support = mergeExpeditionSupport(mergeExpeditionSupport(facilitySupport, accountSupport), basePrepSupport);
   const supportPlan = expeditionSupportPlan(support);
+  const accountSupportBriefing = accountBaseSupportBriefing(accountBase);
   const routeBriefing = journeyRouteBriefing(session, { ...draft, support }, selectedLocation.id, readiness);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
   const previewFieldSupplies: ResourceBundle = {
@@ -1875,6 +1877,28 @@ function ExpeditionPrep({
             ))
           ) : (
             <strong>暂无空闲人员准备</strong>
+          )}
+        </div>
+        <div className="support-plan-card account-support-card" aria-label="个人基地出征支援">
+          <div className="support-plan-heading">
+            <div>
+              <span>个人基地出征支援</span>
+              <strong>{accountSupportBriefing.summary}</strong>
+            </div>
+            <small>个人基地只影响准备空间，不会替房间基地承担全部风险。</small>
+          </div>
+          {accountSupportBriefing.lines.length > 0 ? (
+            <div className="support-plan-grid account-support-grid">
+              {accountSupportBriefing.lines.map((line) => (
+                <article className="support-plan-stage account-support-stage" key={line.title}>
+                  <span>{line.title}</span>
+                  <strong>{line.effect}</strong>
+                  <small>{line.detail}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted-copy">完成一次完整撤离或返程回收后，把个人仓库材料投进升级，就能逐步打开这条成长线。</p>
           )}
         </div>
         <div className="support-plan-card" aria-label="后勤预案">

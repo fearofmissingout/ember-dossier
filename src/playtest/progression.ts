@@ -77,6 +77,17 @@ export type ExpeditionSupportPlan = {
   totalEffects: number;
 };
 
+export type AccountBaseSupportLine = {
+  detail: string;
+  effect: string;
+  title: string;
+};
+
+export type AccountBaseSupportBriefing = {
+  lines: AccountBaseSupportLine[];
+  summary: string;
+};
+
 export const survivorLevelCap = 5;
 export const survivorMaxXp = survivorLevelCap * 20;
 
@@ -358,6 +369,55 @@ export function supportFromAccountBase(base: AccountBase): ExpeditionSupport {
   support.campScout += radioBonus;
 
   return support;
+}
+
+export function accountBaseSupportBriefing(base: AccountBase): AccountBaseSupportBriefing {
+  const trainingBonus = Math.max(0, base.trainingRoomLevel - 1);
+  const medicalBonus = Math.max(0, base.medicalRoomLevel - 1);
+  const warehouseBonus = Math.max(0, base.warehouseLevel - 1);
+  const radioBonus = Math.max(0, base.radioBenchLevel);
+  const lines: AccountBaseSupportLine[] = [];
+
+  if (trainingBonus > 0) {
+    lines.push({
+      detail: `Lv.${base.trainingRoomLevel} 让出征队伍带着训练节奏离开基地。`,
+      effect: `生命上限 +${trainingBonus * 2} / 出征经验 +${trainingBonus * 2}`,
+      title: "训练室"
+    });
+  }
+
+  if (medicalBonus > 0) {
+    const medicineText = Math.floor(medicalBonus / 2) > 0 ? ` / 医疗战利 +${Math.floor(medicalBonus / 2)}` : "";
+    lines.push({
+      detail: `Lv.${base.medicalRoomLevel} 提前整理外伤流程和野外药包。`,
+      effect: `包扎 +${medicalBonus * 2}${medicineText}`,
+      title: "医务室"
+    });
+  }
+
+  if (warehouseBonus > 0) {
+    lines.push({
+      detail: `Lv.${base.warehouseLevel} 提高个人装备整理和搬运上限。`,
+      effect: `背包容量 +${warehouseBonus * 2}`,
+      title: "仓库"
+    });
+  }
+
+  if (radioBonus > 0) {
+    lines.push({
+      detail: `Lv.${base.radioBenchLevel} 在出发前提供路线频段和交易暗号。`,
+      effect: `压力 -${radioBonus * 2} / 路线情报 +${radioBonus} / 商店情报 +${radioBonus}`,
+      title: "电台工作台"
+    });
+  }
+
+  return {
+    lines,
+    summary:
+      lines.length > 0
+        ? `个人基地提供 ${lines.length} 条出征支援，升级越高越能稳定路线和战后回收。`
+        : "个人基地尚未提供额外出征支援。优先升级训练室、医务室、仓库或电台工作台。"
+  };
 }
 
 export function mergeExpeditionSupport(left: ExpeditionSupport, right: ExpeditionSupport): ExpeditionSupport {

@@ -3,6 +3,7 @@ import { completeFacilities } from "../game/facilities";
 import { starterRoomFacilities } from "./content";
 import type { AccountSurvivor } from "./types";
 import {
+  accountBaseSupportBriefing,
   advanceSurvivorExperience,
   basePrepSupportFromAssignments,
   expeditionDoctrineOptions,
@@ -152,6 +153,24 @@ describe("expedition doctrines", () => {
     expect(support.pressureRelief).toBe(2);
     expect(support.lootIntel).toBe(1);
     expect(support.shopIntel).toBe(1);
+  });
+
+  test("account base support briefing explains current expedition benefits in Chinese", () => {
+    const briefing = accountBaseSupportBriefing({
+      level: 3,
+      medicalRoomLevel: 2,
+      radioBenchLevel: 2,
+      trainingRoomLevel: 3,
+      userId: "user-a",
+      warehouseLevel: 2
+    });
+
+    expect(briefing.summary).toContain("个人基地提供 4 条出征支援");
+    expect(briefing.lines.map((line) => line.title)).toEqual(["训练室", "医务室", "仓库", "电台工作台"]);
+    expect(briefing.lines.map((line) => line.effect).join("\n")).toContain("出征经验 +4");
+    expect(briefing.lines.map((line) => line.effect).join("\n")).toContain("包扎 +2");
+    expect(briefing.lines.map((line) => line.effect).join("\n")).toContain("背包容量 +2");
+    expect(briefing.lines.map((line) => line.effect).join("\n")).toContain("压力 -4");
   });
 });
 
