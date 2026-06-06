@@ -95,6 +95,7 @@ async function checkProductionBundle() {
     "成长：",
     "个人基地升级",
     "训练生命",
+    "账号战利",
     "捐入"
   ];
   const missingStrings = requiredStrings.filter((text) => !asset.includes(text));

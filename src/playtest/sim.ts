@@ -318,12 +318,6 @@ export function resolvePlaytestExpedition(
   if (progressionLogs.length) {
     result.report.logs.unshift(...progressionLogs);
   }
-  if (next.room.feed[0]) {
-    next.room.feed[0] = {
-      ...next.room.feed[0],
-      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...process.logs.slice(0, 8)].join("\n")
-    };
-  }
   applyProcessEffects(next, request, process);
 
   next.room.assignedSurvivors = next.room.assignedSurvivors.filter(
@@ -338,6 +332,14 @@ export function resolvePlaytestExpedition(
     next.room.base.objective.status = "won";
   }
   applyCombatAftermath(next, request, result.report);
+  const accountSpoilsLogs = applyAccountExpeditionSpoils(next, request, result.report);
+
+  if (next.room.feed[0]) {
+    next.room.feed[0] = {
+      ...next.room.feed[0],
+      body: [summarizePlaytestReport(result.report, request), ...progressionLogs, ...process.logs.slice(0, 8), ...accountSpoilsLogs].join("\n")
+    };
+  }
 
   refreshUiState(next);
   return { report: result.report, session: next };
@@ -983,6 +985,37 @@ function applyCombatAftermath(session: PlaytestSession, request: PlaytestExpedit
       report.logs.unshift(`${target.name} 加重了${injury}。疲劳 +10。`);
     }
   }
+}
+
+function applyAccountExpeditionSpoils(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport): string[] {
+  if (request.extractionStatus === "early") {
+    return [];
+  }
+
+  const trophyCount = request.trophies?.length ?? 0;
+  const routeIntel =
+    (request.routeObjectiveBonus ?? 0) +
+    (request.journeyLogs ?? []).filter((line) => /情报|线索|地图|目标 \+/.test(line)).length;
+  const materials = Math.min(4, Math.max(1, Math.floor(report.reward.materials / 2) + trophyCount));
+  const rareParts = trophyCount > 0 || (report.outcome === "clean" && request.risk === "greedy") ? 1 : 0;
+  const intel = Math.min(2, (routeIntel > 0 ? 1 : 0) + (report.outcome === "clean" ? 1 : 0));
+  const spoils = [
+    materials > 0 ? `材料 +${materials}` : "",
+    rareParts > 0 ? `稀有零件 +${rareParts}` : "",
+    intel > 0 ? `情报 +${intel}` : ""
+  ].filter(Boolean);
+
+  if (spoils.length === 0) {
+    return [];
+  }
+
+  session.account.resources.materials += materials;
+  session.account.resources.rareParts += rareParts;
+  session.account.resources.intel += intel;
+  const log = `账号战利：个人仓库回收${spoils.join("，")}。`;
+  const insertIndex = report.logs.findIndex((line) => !line.startsWith("成长："));
+  report.logs.splice(insertIndex === -1 ? report.logs.length : insertIndex, 0, log);
+  return [log];
 }
 
 function spendWithShortage(resources: ResourceBundle, key: ResourceKey, amount: number): number {

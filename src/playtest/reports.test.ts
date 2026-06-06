@@ -13,6 +13,7 @@ describe("playtest report timeline", () => {
         "路线：遭遇战：第 1 回合，林发起攻击，造成 8 伤害，弹药 -1。",
         "路线：遭遇战：走廊群 被击退。材料 +1，战利标记：破甲碎片，压力 -12%。",
         "路线：路边交易点：购买路线情报。目标 +1，压力 -5%。",
+        "账号战利：个人仓库回收材料 +2，稀有零件 +1，情报 +2。",
         "路线：撤离窗口：完成信号确认。队伍打开接应通道。",
         "撤离：队伍带回足够细节，下一队能做出更好的路线选择。"
       ].join("\n"),
@@ -31,6 +32,7 @@ describe("playtest report timeline", () => {
       "combat",
       "combat",
       "trade",
+      "reward",
       "extraction",
       "extraction"
     ]);
@@ -50,10 +52,15 @@ describe("playtest report timeline", () => {
       label: "交易",
       title: "路边交易点"
     });
+    expect(timeline.steps[5]).toMatchObject({
+      label: "收获",
+      title: "账号战利"
+    });
     expect(timeline.summary).toContain("成长 1");
     expect(timeline.summary).toContain("路线 1");
     expect(timeline.summary).toContain("战斗 2");
     expect(timeline.summary).toContain("交易 1");
+    expect(timeline.summary).toContain("收获 1");
     expect(timeline.summary).toContain("撤离 2");
   });
 

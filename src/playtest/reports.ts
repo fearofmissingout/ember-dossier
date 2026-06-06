@@ -109,7 +109,7 @@ function classifyTimelineLine(line: string): FeedReportTimelineCategory | null {
     return "route";
   }
 
-  if (/收获|战利品|材料 \+|食物 \+|水 \+|药品 \+|燃料 \+|弹药 \+|目标 \+/.test(line)) {
+  if (/收获|战利品|账号战利|材料 \+|食物 \+|水 \+|药品 \+|燃料 \+|弹药 \+|稀有零件 \+|情报 \+|目标 \+/.test(line)) {
     return "reward";
   }
 
