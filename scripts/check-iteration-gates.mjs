@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 
 const args = new Set(process.argv.slice(2));
 const releaseMode = args.has("--release");
@@ -23,6 +24,7 @@ if (releaseMode) {
   assertBasedOnProduction();
 }
 
+assertCloudflarePagesConfig();
 run("npm", ["test"], "Unit and smoke tests");
 run("npm", ["run", "build"], "Typecheck and production build");
 
@@ -78,6 +80,28 @@ function ensureProductionRefIsCurrent() {
     console.error(`GitHub master:       ${remoteSha}`);
   }
   process.exit(1);
+}
+
+function assertCloudflarePagesConfig() {
+  const path = "wrangler.toml";
+  if (!existsSync(path)) {
+    console.error("Missing wrangler.toml. Cloudflare Pages deploys must keep Pages configuration in the repo.");
+    process.exit(1);
+  }
+
+  const config = readFileSync(path, "utf8");
+  const outputDir = config.match(/^\s*pages_build_output_dir\s*=\s*"([^"]+)"\s*$/m)?.[1];
+  const assetsDir = config.match(/^\s*directory\s*=\s*"([^"]+)"\s*$/m)?.[1];
+
+  if (outputDir !== "dist") {
+    console.error('wrangler.toml must set pages_build_output_dir = "dist" so Cloudflare Pages uses the built Vite output.');
+    process.exit(1);
+  }
+
+  if (assetsDir && assetsDir.replace(/^\.\//, "") !== "dist") {
+    console.error('wrangler.toml [assets] directory must point at "./dist" when present.');
+    process.exit(1);
+  }
 }
 
 function capture(command, commandArgs) {

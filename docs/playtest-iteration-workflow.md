@@ -54,6 +54,7 @@ npm run iteration:check
 
 这个命令会执行：
 
+- Cloudflare Pages 输出目录配置检查。
 - `npm test`
 - `npm run build`
 
@@ -105,6 +106,7 @@ npm run release:preflight
 
 - 工作区必须干净。
 - 当前分支必须基于最新 `origin/master`。
+- `wrangler.toml` 必须声明 `pages_build_output_dir = "dist"`，避免线上部署忽略 Pages 配置。
 - `npm test` 必须通过。
 - `npm run build` 必须通过。
 

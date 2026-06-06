@@ -134,6 +134,8 @@ Build output directory: dist
 Root directory: /
 ```
 
+仓库里的 `wrangler.toml` 也固定声明了 `pages_build_output_dir = "dist"`。如果以后调整构建输出目录，需要同时更新 Cloudflare Dashboard、`wrangler.toml` 和本地迭代检查。
+
 环境变量：
 
 ```text
