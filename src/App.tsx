@@ -3312,6 +3312,7 @@ function Reports({
 }) {
   const latestReport = latestReportId ? feed.find((item) => item.id === latestReportId) : null;
   const baseReturnPlan = latestReport ? summarizeFeedBaseReturnPlan(latestReport) : null;
+  const primaryReturnAction = baseReturnPlan?.primaryAction ?? null;
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -3325,13 +3326,16 @@ function Reports({
         <div className="report-next-actions" aria-label="战报下一步">
           <div>
             <span>下一步</span>
-            <strong>远征已经归队，继续处理基地循环。</strong>
+            <strong>{primaryReturnAction ? `优先：${primaryReturnAction.label}` : "远征已经归队，继续处理基地循环。"}</strong>
+            {primaryReturnAction && <small>{primaryReturnAction.text}</small>}
           </div>
+          {primaryReturnAction && (
+            <button className={primaryReturnAction.tone} type="button" onClick={() => onNavigate(primaryReturnAction.targetView)}>
+              {primaryReturnAction.label}
+            </button>
+          )}
           <button type="button" onClick={() => onNavigate("overview")}>
             回基地总览
-          </button>
-          <button type="button" onClick={() => onNavigate("survivors")}>
-            处理伤病
           </button>
           <button type="button" onClick={() => onNavigate("expedition")}>
             准备下一次远征

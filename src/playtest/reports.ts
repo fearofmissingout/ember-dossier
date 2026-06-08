@@ -62,6 +62,7 @@ export type FeedBaseReturnPlan = {
   actions: FeedBaseReturnPlanAction[];
   hasPlan: boolean;
   headline: string;
+  primaryAction: FeedBaseReturnPlanAction | null;
   summary: string;
 };
 
@@ -206,39 +207,46 @@ export function summarizeFeedBaseReturnPlan(item: FeedItem): FeedBaseReturnPlan 
   const storageText = ledger.base || (settlement.resources.length ? settlement.resources.slice(0, 3).join("，") : "整理本轮带回资源。");
   const growthText = growth.hasGrowth ? growth.summary : ledger.account || settlement.growth[0] || "本轮没有新的幸存者成长。";
 
+  const actions: FeedBaseReturnPlanAction[] = [
+    {
+      id: "storage",
+      label: "整理入库",
+      targetView: "overview",
+      text: storageText,
+      tone: "safe"
+    },
+    {
+      id: "objective",
+      label: "检查目标",
+      targetView: "overview",
+      text: objectiveText,
+      tone: objectiveText.includes("+0") ? "warning" : "safe"
+    },
+    {
+      id: "recovery",
+      label: hasInjuryRisk ? "处理伤病" : "确认队伍",
+      targetView: "survivors",
+      text: injuryText || "没有明确伤病，仍建议确认疲劳和班次。",
+      tone: hasInjuryRisk ? "warning" : "safe"
+    },
+    {
+      id: "growth",
+      label: "分配成长",
+      targetView: growth.hasGrowth ? "survivors" : "facilities",
+      text: growthText,
+      tone: growth.hasGrowth ? "safe" : "warning"
+    }
+  ];
+
   return {
-    actions: [
-      {
-        id: "storage",
-        label: "整理入库",
-        targetView: "overview",
-        text: storageText,
-        tone: "safe"
-      },
-      {
-        id: "objective",
-        label: "检查目标",
-        targetView: "overview",
-        text: objectiveText,
-        tone: objectiveText.includes("+0") ? "warning" : "safe"
-      },
-      {
-        id: "recovery",
-        label: hasInjuryRisk ? "处理伤病" : "确认队伍",
-        targetView: "survivors",
-        text: injuryText || "没有明确伤病，仍建议确认疲劳和班次。",
-        tone: hasInjuryRisk ? "warning" : "safe"
-      },
-      {
-        id: "growth",
-        label: "分配成长",
-        targetView: growth.hasGrowth ? "survivors" : "facilities",
-        text: growthText,
-        tone: growth.hasGrowth ? "safe" : "warning"
-      }
-    ],
+    actions,
     hasPlan: true,
     headline: ledger.extraction ? `${ledger.extraction}，回基地处理下一轮循环。` : "远征已归队，回基地处理下一轮循环。",
+    primaryAction:
+      actions.find((action) => action.id === "recovery" && action.tone === "warning") ??
+      actions.find((action) => action.id === "objective" && action.tone === "warning") ??
+      actions.find((action) => action.id === "growth" && action.tone === "safe") ??
+      actions[0],
     summary: [storageText, objectiveText, injuryText || "队伍状态待确认", growthText].filter(Boolean).slice(0, 3).join(" / ")
   };
 }
@@ -260,6 +268,7 @@ function emptyBaseReturnPlan(): FeedBaseReturnPlan {
     actions: [],
     hasPlan: false,
     headline: "暂无回基地计划",
+    primaryAction: null,
     summary: "暂无回基地计划"
   };
 }

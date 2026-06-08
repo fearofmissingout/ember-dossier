@@ -1032,12 +1032,23 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.report-next-actions strong {
+.report-next-actions strong,
+.report-next-actions small {
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-next-actions strong {
   color: #3d3024;
   font-size: 13px;
   font-weight: 900;
-  overflow-wrap: anywhere;
+}
+
+.report-next-actions small {
+  color: #695845;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .report-next-actions button {
@@ -1049,6 +1060,18 @@ button:disabled {
   color: #5b3d22;
   font-size: 12px;
   font-weight: 900;
+}
+
+.report-next-actions button.warning {
+  border-color: #d1a64e;
+  background: #fff4d2;
+  color: #63431c;
+}
+
+.report-next-actions button.blocked {
+  border-color: #bd725e;
+  background: #fff0ea;
+  color: #6b2f21;
 }
 
 .base-return-plan {

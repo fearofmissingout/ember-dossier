@@ -140,6 +140,7 @@ describe("playtest report timeline", () => {
 
     expect(plan.hasPlan).toBe(true);
     expect(plan.headline).toBe("完整撤离，回基地处理下一轮循环。");
+    expect(plan.primaryAction).toEqual(expect.objectContaining({ id: "recovery", label: "处理伤病", targetView: "survivors" }));
     expect(plan.actions).toEqual([
       expect.objectContaining({ id: "storage", label: "整理入库", targetView: "overview", tone: "safe" }),
       expect.objectContaining({ id: "objective", label: "检查目标", targetView: "overview", tone: "safe" }),
@@ -148,6 +149,23 @@ describe("playtest report timeline", () => {
     ]);
     expect(plan.summary).toContain("水 +4, 材料 +2");
     expect(plan.summary).toContain("目标推进 +2");
+  });
+
+  test("prioritizes checking the objective when an expedition returns without progress", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在旧城医院提前折返。结果：勉强完成。主要收获：药品 +1。",
+        "归队清单：基地入库 药品 +1；目标推进 +0；账号回收 个人仓库带回情报 +1；伤病 0；提前返程。"
+      ].join("\n"),
+      id: "feed-report-objective-priority",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "旧城医院远征完成"
+    };
+
+    const plan = summarizeFeedBaseReturnPlan(report);
+
+    expect(plan.primaryAction).toEqual(expect.objectContaining({ id: "objective", label: "检查目标", targetView: "overview", tone: "warning" }));
   });
 
   test("extracts survivor growth roadmap entries from expedition reports", () => {
