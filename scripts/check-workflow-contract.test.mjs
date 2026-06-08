@@ -20,9 +20,10 @@ npm run release:preflight
 npm run release:verify
 ### 2.7 Rollback
 git revert
-### 2.8 Release cadence
+### 2.8 发布节奏
 默认不要频繁发布
 不要用线上部署当测试工具
+fallback 脚本会
 Cloudflare Token
 Supabase
 ## 4. Copy
@@ -61,6 +62,12 @@ if (productionMode) {
 - name: Deploy to Cloudflare Pages
 - name: Production playtest smoke
   run: npm run playtest:check
+`,
+    publish: `
+if (options.runChecks) {
+  run("npm", ["run", "release:preflight"], "Release preflight");
+}
+--skip-checks
 `,
     ...overrides
   };
@@ -133,5 +140,21 @@ if (productionMode) {
 
     expect(report.ok).toBe(false);
     expect(report.missing).toEqual(expect.arrayContaining(["package script: playable:check", "release gate: playable loop smoke"]));
+  });
+
+  test("reports drift when the GitHub API fallback bypasses release preflight", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        publish: `
+if (options.runChecks) {
+  run("npm", ["run", "iteration:check"], "Local release gates");
+}
+--skip-checks
+`
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(expect.arrayContaining(["release fallback: release preflight"]));
   });
 });

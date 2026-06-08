@@ -139,21 +139,21 @@ git push origin HEAD:master
 如果当前网络环境下 `git fetch` 或 `git push` 无法连接 GitHub，但 `gh api` 可用，允许使用固定 fallback 脚本发布当前已提交切片：
 
 ```bash
-npm run iteration:check
+npm run release:preflight
 git status --short
 npm run release:publish:api -- --files <本次切片文件列表>
 ```
 
 fallback 脚本会：
 
-- 先运行本地门禁，除非显式传入 `--skip-checks`。
+- 先运行 `npm run release:preflight`，除非显式传入 `--skip-checks`。
 - 要求工作区干净。
 - 读取 GitHub `master` 当前父提交。
 - 用当前本地 commit 的文件内容创建远端提交。
 - 非 force 更新 `master`。
 - 校验远端 tree 中的文件 blob 与本地 commit 完全一致。
 
-fallback 只用于 git 传输不可用的情况。禁止把聊天里临时复制的 Node 片段当作发布方式。
+`--skip-checks` 只允许在同一个 commit 已经刚刚通过 `release:preflight`，并且只是重试 GitHub API 写入时使用。fallback 只用于 git 传输不可用的情况。禁止把聊天里临时复制的 Node 片段当作发布方式。
 
 发布后必须等待 GitHub Actions：
 

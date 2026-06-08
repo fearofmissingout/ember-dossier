@@ -5,6 +5,7 @@ const defaultFiles = {
   docs: "docs/playtest-iteration-workflow.md",
   gates: "scripts/check-iteration-gates.mjs",
   packageJson: "package.json",
+  publish: "scripts/publish-github-api.mjs",
   workflow: ".github/workflows/deploy-cloudflare-pages.yml"
 };
 
@@ -116,6 +117,15 @@ const requiredChecks = [
   {
     id: "release gate: production playtest smoke",
     test: ({ gates }) => gates.includes("productionMode") && gates.includes('["run", "playtest:check"]')
+  },
+  {
+    id: "release fallback: release preflight",
+    test: ({ docs, publish }) =>
+      docs.includes("npm run release:preflight") &&
+      docs.includes("fallback 脚本会") &&
+      publish.includes('["run", "release:preflight"]') &&
+      publish.includes("Release preflight") &&
+      publish.includes("--skip-checks")
   },
   {
     id: "GitHub Actions: local iteration gates",

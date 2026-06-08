@@ -79,7 +79,7 @@ async function main(argv) {
   }
 
   if (options.runChecks) {
-    run("npm", ["run", "iteration:check"], "Local release gates");
+    run("npm", ["run", "release:preflight"], "Release preflight");
   }
 
   assertCleanGitTree();
@@ -268,7 +268,7 @@ Options:
   --branch <branch>         Target branch. Default: ${defaultBranch}
   --commit <ref>            Local commit to publish. Default: HEAD
   --files <paths...>        Explicit files to publish. Default: files changed by the commit
-  --skip-checks             Do not run npm run iteration:check first
+  --skip-checks             Do not run npm run release:preflight first
   --dry-run                 Print the plan without updating GitHub
 
 Use this only when normal git fetch/push cannot reach GitHub but gh api works.`);
