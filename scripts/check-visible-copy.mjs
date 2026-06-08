@@ -33,7 +33,9 @@ const requiredChineseAnchors = [
   "本回合建议",
   "回合威胁预告",
   "战后复盘",
-  "试玩登录"
+  "试玩登录",
+  "试玩设置",
+  "英文包待接入"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -41,7 +43,8 @@ const additionalRequiredChineseAnchors = [
   "设施推荐原因",
   "房间协作缺口",
   "试玩完整性检查",
-  "核心试玩闭环已通过"
+  "核心试玩闭环已通过",
+  "单页模式"
 ];
 
 const bannedVisibleEnglish = [

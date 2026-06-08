@@ -212,6 +212,15 @@ const campActionList: JourneyCampAction[] = ["rest", "cook", "scout"];
 const combatActionList: CombatAction[] = ["strike", "guard", "patch", "tactic", "retreat"];
 const shopActionList: JourneyShopAction[] = ["resupply", "intel", "service"];
 
+const playtestSettings = {
+  languageMode: "中文",
+  languageStatus: "当前启用完整中文文案，英文包待接入后再开放切换。",
+  pageMode: "单页模式",
+  pageStatus: "基地、编队、远征、设施和成员都在同一页面内切换。",
+  releaseMode: "本地验证",
+  releaseStatus: "大功能先跑本地门禁，通过后再发布试玩。"
+};
+
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "休息" },
   { key: "forage", label: "搜寻" },
@@ -1075,6 +1084,22 @@ export default function App() {
               <Link size={15} aria-hidden="true" />
               新房
             </button>
+          </div>
+        </div>
+
+        <div className="playtest-settings-card" aria-label="试玩设置">
+          <span>试玩设置</span>
+          <strong>{playtestSettings.languageMode}</strong>
+          <small>{playtestSettings.languageStatus}</small>
+          <div className="playtest-settings-grid">
+            <span>
+              {playtestSettings.pageMode}
+              <b>{playtestSettings.pageStatus}</b>
+            </span>
+            <span>
+              {playtestSettings.releaseMode}
+              <b>{playtestSettings.releaseStatus}</b>
+            </span>
           </div>
         </div>
 

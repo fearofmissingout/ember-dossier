@@ -176,6 +176,21 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("padding-bottom: calc(76px + env(safe-area-inset-bottom))");
   });
 
+  test("surfaces playtest language and release settings inside the single-page shell", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("const playtestSettings = {");
+    expect(source).toContain("languageMode: \"中文\"");
+    expect(source).toContain("英文包待接入后再开放切换");
+    expect(source).toContain("aria-label=\"试玩设置\"");
+    expect(source).toContain("playtest-settings-card");
+    expect(source).toContain("playtestSettings.pageStatus");
+    expect(source).toContain("playtestSettings.releaseStatus");
+    expect(styles).toContain(".playtest-settings-card");
+    expect(styles).toContain(".playtest-settings-grid");
+  });
+
   test("keeps expedition actions reachable as a mobile single-page command dock", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

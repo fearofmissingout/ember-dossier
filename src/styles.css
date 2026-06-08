@@ -215,6 +215,59 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.playtest-settings-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #b9c19b;
+  border-radius: 8px;
+  background: #f4f8e9;
+}
+
+.playtest-settings-card > span {
+  color: #60723a;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.playtest-settings-card strong {
+  color: #26312c;
+  font-size: 16px;
+}
+
+.playtest-settings-card small {
+  color: #5f6b50;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.playtest-settings-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.playtest-settings-grid span {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid #d1d9bb;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #415030;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.playtest-settings-grid b {
+  color: #626d55;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .room-actions {
   display: flex;
   gap: 8px;
