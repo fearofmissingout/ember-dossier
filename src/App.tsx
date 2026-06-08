@@ -4018,6 +4018,28 @@ function Facilities({
               : "所有设施已经完全发展"}
           </small>
         </div>
+        <div className="development-queue-board" aria-label="建设队列总览">
+          {developmentPlan.recommended.length ? (
+            developmentPlan.recommended.map((project, index) => (
+              <article className={project.canAfford ? "ready" : "blocked"} key={`queue-${project.id}`}>
+                <span>第 {index + 1} 项</span>
+                <strong>{project.name}</strong>
+                <small>{project.canAfford ? "材料已备齐，可以立即推进。" : `材料缺口 ${project.materialDeficit}，先补材料再推进。`}</small>
+                <div>
+                  <b>{facilityProjectActionLabel(project.action)}到 Lv.{project.nextLevel}</b>
+                  <em>{project.expeditionStage}</em>
+                </div>
+                <p>{project.nextStep}</p>
+              </article>
+            ))
+          ) : (
+            <article className="ready">
+              <span>队列完成</span>
+              <strong>设施已到当前上限</strong>
+              <small>可以把资源转向远征、恢复和个人基地成长。</small>
+            </article>
+          )}
+        </div>
         <div className="development-project-strip">
           {developmentPlan.recommended.map((project) => (
             <article

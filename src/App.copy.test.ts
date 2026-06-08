@@ -254,6 +254,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("facilityImpactPreview");
     expect(source).toContain("aria-label=\"设施升级收益预览\"");
     expect(source).toContain("aria-label=\"设施推荐原因\"");
+    expect(source).toContain("aria-label=\"建设队列总览\"");
+    expect(source).toContain("development-queue-board");
+    expect(source).toContain("材料缺口");
+    expect(source).toContain("队列完成");
     expect(source).toContain("development-project-why");
     expect(source).toContain("project.reason");
     expect(source).toContain("project.nextStep");
@@ -266,6 +270,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("已解锁出征方针");
     expect(source).toContain("建造后解锁");
     expect(styles).toContain(".development-project-why");
+    expect(styles).toContain(".development-queue-board");
     expect(styles).toContain(".facility-impact-grid");
     expect(styles).toContain(".facility-doctrine-unlock");
   });

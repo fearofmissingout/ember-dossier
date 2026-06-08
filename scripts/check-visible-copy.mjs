@@ -38,6 +38,7 @@ const requiredChineseAnchors = [
   "英文包待接入",
   "语言包覆盖范围",
   "账号成长边界",
+  "建设队列总览",
   "多人试玩开局检查",
   "下一轮远征建议",
   "发布准入检查",
@@ -58,7 +59,8 @@ const additionalRequiredChineseAnchors = [
   "默认不要频繁发布",
   "本地先走完整路径",
   "撤离收益",
-  "英文包待完整"
+  "英文包待完整",
+  "材料缺口"
 ];
 
 const bannedVisibleEnglish = [
