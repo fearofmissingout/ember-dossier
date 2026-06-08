@@ -29,7 +29,14 @@ Supabase
 ## 4. Copy
 HP
 XP
+未允许的中英混排
 https://ember-dossier.pages.dev/?room=playtest-smoke
+`,
+    copy: `
+function hasDisallowedVisibleLatin(text) {
+  return text.includes("English");
+}
+const failure = "mixed Chinese/English";
 `,
     gates: `
 assertCloudflarePagesConfig();
@@ -140,6 +147,17 @@ if (productionMode) {
 
     expect(report.ok).toBe(false);
     expect(report.missing).toEqual(expect.arrayContaining(["package script: playable:check", "release gate: playable loop smoke"]));
+  });
+
+  test("reports drift when mixed language copy checks are removed", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        copy: "const failure = 'Visible copy check';"
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(expect.arrayContaining(["copy gate: mixed language"]));
   });
 
   test("reports drift when the GitHub API fallback bypasses release preflight", () => {

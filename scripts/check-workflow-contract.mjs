@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const defaultFiles = {
+  copy: "scripts/check-visible-copy.mjs",
   docs: "docs/playtest-iteration-workflow.md",
   gates: "scripts/check-iteration-gates.mjs",
   packageJson: "package.json",
@@ -52,7 +53,11 @@ const requiredChecks = [
   },
   {
     id: "doc safety: language",
-    test: ({ docs }) => docs.includes("## 4.") && docs.includes("HP") && docs.includes("XP")
+    test: ({ docs }) => docs.includes("## 4.") && docs.includes("HP") && docs.includes("XP") && docs.includes("未允许的中英混排")
+  },
+  {
+    id: "copy gate: mixed language",
+    test: ({ copy }) => copy.includes("hasDisallowedVisibleLatin") && copy.includes("mixed Chinese/English")
   },
   {
     id: "doc qa: browser smoke",
