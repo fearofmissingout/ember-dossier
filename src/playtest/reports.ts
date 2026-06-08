@@ -35,6 +35,21 @@ export type FeedReturnLedger = {
   objective: string;
 };
 
+export type FeedGrowthRoadmapEntry = {
+  levelText: string;
+  name: string;
+  nextText: string;
+  perkText: string;
+  raw: string;
+  xpText: string;
+};
+
+export type FeedGrowthRoadmap = {
+  entries: FeedGrowthRoadmapEntry[];
+  hasGrowth: boolean;
+  summary: string;
+};
+
 const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
@@ -131,6 +146,33 @@ export function summarizeFeedReturnLedger(item: FeedItem): FeedReturnLedger {
   };
 }
 
+export function summarizeFeedGrowthRoadmap(item: FeedItem): FeedGrowthRoadmap {
+  if (item.kind !== "report") {
+    return emptyGrowthRoadmap();
+  }
+
+  const entries = parseGrowth(reportLines(item)).flatMap(parseGrowthEntry);
+  if (!entries.length) {
+    return emptyGrowthRoadmap();
+  }
+
+  const levelUps = entries.filter((entry) => entry.levelText).length;
+  const unlocks = entries.filter((entry) => entry.perkText).length;
+  const nextTargets = entries.filter((entry) => entry.nextText).length;
+  const summaryParts = [
+    `${entries.length} 名幸存者获得经验`,
+    levelUps ? `${levelUps} 人升级` : "",
+    unlocks ? `${unlocks} 个专长解锁` : "",
+    nextTargets ? `${nextTargets} 条下级目标` : ""
+  ].filter(Boolean);
+
+  return {
+    entries,
+    hasGrowth: true,
+    summary: summaryParts.join(" / ")
+  };
+}
+
 function emptySettlement(): FeedReportSettlement {
   return {
     growth: [],
@@ -151,6 +193,14 @@ function emptyReturnLedger(): FeedReturnLedger {
     hasLedger: false,
     injuries: "",
     objective: ""
+  };
+}
+
+function emptyGrowthRoadmap(): FeedGrowthRoadmap {
+  return {
+    entries: [],
+    hasGrowth: false,
+    summary: "暂无成长记录"
   };
 }
 
@@ -239,6 +289,29 @@ function parseGrowth(lines: string[]): string[] {
     .filter((line) => /^成长：/.test(line))
     .map((line) => line.replace(/^成长：/, "").replace(/。$/, "").trim())
     .filter(Boolean);
+}
+
+function parseGrowthEntry(line: string): FeedGrowthRoadmapEntry[] {
+  return line
+    .split("；")
+    .map((part) => part.replace(/。$/, "").trim())
+    .filter(Boolean)
+    .map((part) => {
+      const name = part.match(/^([^+\s]+)\s*\+/)?.[1] ?? "幸存者";
+      const xpText = part.match(/\+\d+\s*经验/)?.[0] ?? "";
+      const levelText = part.match(/升到\s*Lv\.\d+|Lv\.\d+\s*已达上限/)?.[0] ?? "";
+      const perkText = part.match(/解锁\s*.+$/)?.[0] ?? "";
+      const nextText = part.match(/距\s*Lv\.\d+\s*还差\s*\d+/)?.[0] ?? "";
+
+      return {
+        levelText,
+        name,
+        nextText,
+        perkText,
+        raw: part,
+        xpText
+      };
+    });
 }
 
 function parseRisk(lines: string[]): string[] {

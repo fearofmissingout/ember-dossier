@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { FeedItem } from "../game/types";
-import { summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./reports";
+import { summarizeFeedGrowthRoadmap, summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./reports";
 
 describe("playtest report timeline", () => {
   test("extracts a readable post-expedition settlement from report logs", () => {
@@ -114,6 +114,43 @@ describe("playtest report timeline", () => {
     expect(ledger.account).toBe("个人仓库回收材料 +2，情报 +1");
     expect(ledger.injuries).toBe("伤病 1 名待恢复");
     expect(ledger.extraction).toBe("完整撤离");
+  });
+
+  test("extracts survivor growth roadmap entries from expedition reports", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在北区水处理厂完成路线。结果：艰难完成。主要收获：水 +4，材料 +2。",
+        "成长：林岚 +10 经验，升到 Lv.2，解锁 野外跑手；玛拉 +8 经验，距 Lv.2 还差 12；奥托 +4 经验，Lv.5 已达上限。",
+        "撤离：队伍带回足够细节，下一队能做出更好的路线选择。"
+      ].join("\n"),
+      id: "feed-report-growth-roadmap",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "北区水处理厂远征完成"
+    };
+
+    const roadmap = summarizeFeedGrowthRoadmap(report);
+
+    expect(roadmap.hasGrowth).toBe(true);
+    expect(roadmap.summary).toBe("3 名幸存者获得经验 / 2 人升级 / 1 个专长解锁 / 1 条下级目标");
+    expect(roadmap.entries).toEqual([
+      expect.objectContaining({
+        levelText: "升到 Lv.2",
+        name: "林岚",
+        perkText: "解锁 野外跑手",
+        xpText: "+10 经验"
+      }),
+      expect.objectContaining({
+        name: "玛拉",
+        nextText: "距 Lv.2 还差 12",
+        xpText: "+8 经验"
+      }),
+      expect.objectContaining({
+        levelText: "Lv.5 已达上限",
+        name: "奥托",
+        xpText: "+4 经验"
+      })
+    ]);
   });
 
   test("keeps early return account notes separate from the extraction status", () => {

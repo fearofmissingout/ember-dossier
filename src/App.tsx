@@ -113,7 +113,12 @@ import {
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import { expeditionLaunchChecklist } from "./playtest/launchChecklist";
-import { summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./playtest/reports";
+import {
+  summarizeFeedGrowthRoadmap,
+  summarizeFeedReportSettlement,
+  summarizeFeedReportTimeline,
+  summarizeFeedReturnLedger
+} from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
   fetchAuthUser,
@@ -3110,6 +3115,7 @@ function Reports({
               <strong>{item.title}</strong>
               <p>{item.body}</p>
               <ReportSettlement item={item} />
+              <ReportGrowthRoadmap item={item} />
               <ReportReturnLedger item={item} />
               <ReportActionDigest item={item} />
               <ReportTimeline item={item} />
@@ -3150,6 +3156,32 @@ function ReportSettlement({ item }: { item: FeedItem }) {
                 <li key={entry}>{entry}</li>
               ))}
             </ul>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportGrowthRoadmap({ item }: { item: FeedItem }) {
+  const roadmap = summarizeFeedGrowthRoadmap(item);
+  if (!roadmap.hasGrowth) {
+    return null;
+  }
+
+  return (
+    <div className="report-growth-roadmap" aria-label="幸存者成长路线">
+      <div className="report-growth-heading">
+        <span>成长路线</span>
+        <strong>{roadmap.summary}</strong>
+      </div>
+      <div className="report-growth-grid">
+        {roadmap.entries.slice(0, 4).map((entry) => (
+          <article className="report-growth-card" key={`${item.id}-growth-${entry.raw}`}>
+            <span>{entry.name}</span>
+            <strong>{entry.xpText || "获得经验"}</strong>
+            <small>{entry.levelText || entry.nextText || "继续远征会推进下一级"}</small>
+            {entry.perkText && <em>{entry.perkText}</em>}
           </article>
         ))}
       </div>
