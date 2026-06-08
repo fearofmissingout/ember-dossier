@@ -1180,8 +1180,10 @@ export default function App() {
             roomSlug={roomSlug}
             summary={roomCooperationSummary(session)}
             copyStatus={copyStatus}
+            currentUserId={session.account.profile.userId}
             onCopyRoomLink={copyRoomLink}
             onCreateRoom={createNewRoom}
+            onNavigate={setView}
             onRenamePlayer={updatePlayerName}
           />
         )}
@@ -3643,6 +3645,7 @@ function Facilities({
 }
 
 function RoomMembers({
+  currentUserId,
   player,
   players,
   memberSummaries,
@@ -3651,8 +3654,10 @@ function RoomMembers({
   copyStatus,
   onCopyRoomLink,
   onCreateRoom,
+  onNavigate,
   onRenamePlayer
 }: {
+  currentUserId: string;
   player: RoomPlayer;
   players: RoomPlayer[];
   memberSummaries: RoomMemberSummary[];
@@ -3661,8 +3666,12 @@ function RoomMembers({
   copyStatus: "idle" | "copied" | "failed";
   onCopyRoomLink: () => void;
   onCreateRoom: () => void;
+  onNavigate: (view: ViewKey) => void;
   onRenamePlayer: (name: string) => void;
 }) {
+  const currentMember = memberSummaries.find((member) => member.userId === currentUserId);
+  const currentAction = currentMember ? roomMemberPrimaryAction(currentMember) : null;
+
   return (
     <section className="panel">
       <p className="eyebrow">房间</p>
@@ -3705,6 +3714,19 @@ function RoomMembers({
           ))}
         </div>
       </div>
+
+      {currentMember && currentAction && (
+        <div className={`your-room-task ${currentMember.collaborationStatus}`} aria-label="你的协作任务">
+          <div>
+            <span>你的协作任务</span>
+            <strong>{currentAction.title}</strong>
+            <small>{currentMember.collaborationHint}</small>
+          </div>
+          <button type="button" onClick={() => onNavigate(currentAction.view)}>
+            {currentAction.label}
+          </button>
+        </div>
+      )}
 
       <div className="room-settings">
         <label>
@@ -3760,6 +3782,22 @@ function RoomMembers({
       </div>
     </section>
   );
+}
+
+function roomMemberPrimaryAction(member: RoomMemberSummary): { label: string; title: string; view: ViewKey } {
+  if (member.collaborationStatus === "urgent") {
+    return { label: "去捐入", title: "先补共享基地库存", view: "overview" };
+  }
+
+  if (member.assignedCount === 0) {
+    return { label: "去编队", title: "派一名幸存者加入远征", view: "survivors" };
+  }
+
+  if (member.baseShiftText === "未安排") {
+    return { label: "安排班次", title: "让留守幸存者处理基地工作", view: "survivors" };
+  }
+
+  return { label: "准备远征", title: "你的协作项已覆盖", view: "expedition" };
 }
 
 function ArchiveView({ state }: { state: GameState }) {

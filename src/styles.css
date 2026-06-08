@@ -5190,6 +5190,72 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.your-room-task {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #d5bd80;
+  border-radius: 8px;
+  background: #fff7df;
+}
+
+.your-room-task.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.your-room-task.urgent {
+  border-color: #d29a83;
+  background: #fff0ea;
+}
+
+.your-room-task div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.your-room-task span {
+  color: #8c4b32;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.your-room-task strong,
+.your-room-task small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.your-room-task strong {
+  color: #2d342f;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.your-room-task small {
+  color: #655846;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.your-room-task button {
+  min-width: 92px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #b8945f;
+  border-radius: 8px;
+  background: #3b2a1b;
+  color: #fff7e9;
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .room-settings {
   display: grid;
   gap: 12px;
@@ -5697,6 +5763,7 @@ button:disabled {
     .playtest-checkpoint-grid,
     .room-cooperation-board,
     .room-cooperation-gaps,
+    .your-room-task,
     .resource-grid {
     grid-template-columns: 1fr;
   }
@@ -5785,6 +5852,11 @@ button:disabled {
 
   .room-cooperation-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .your-room-task button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .journey-action-guide {
