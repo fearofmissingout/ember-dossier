@@ -36,6 +36,7 @@ const requiredChineseAnchors = [
   "回合威胁预告",
   "战后复盘",
   "试玩登录",
+  "试玩路线导航",
   "试玩设置",
   "英文包待接入",
   "语言包覆盖范围",
@@ -66,7 +67,8 @@ const additionalRequiredChineseAnchors = [
   "材料缺口",
   "等待认领",
   "补给容错",
-  "反制动作"
+  "反制动作",
+  "完整基地到出征闭环"
 ];
 
 const bannedVisibleEnglish = [

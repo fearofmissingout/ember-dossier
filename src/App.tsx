@@ -1409,6 +1409,14 @@ function Overview({
     { icon: Users, label: "处理伤病", text: "治疗与班次", view: "survivors" as ViewKey },
     { icon: Wrench, label: "发展设施", text: "建造和升级", view: "facilities" as ViewKey }
   ];
+  const playtestRouteSteps = [
+    { label: "基地", text: "看资源、今日待办和明日预报。", view: "overview" as ViewKey },
+    { label: "协作", text: "邀请好友、认领捐入和留守职责。", view: "members" as ViewKey },
+    { label: "编队", text: "安排幸存者出征或治疗伤病。", view: "survivors" as ViewKey },
+    { label: "建设", text: "按建设队列升级房间设施。", view: "facilities" as ViewKey },
+    { label: "出征", text: "选择地点、补给、风险并进入回合战斗。", view: "expedition" as ViewKey },
+    { label: "复盘", text: "查看战报，回基地处理下一轮循环。", view: "reports" as ViewKey }
+  ];
 
   return (
     <div className="view-grid">
@@ -1512,6 +1520,21 @@ function Overview({
               <small>{step.body}</small>
             </article>
           ))}
+        </div>
+        <div className="playtest-route-guide" aria-label="试玩路线导航">
+          <div className="playtest-route-heading">
+            <span>试玩路线</span>
+            <strong>按这条路线走，可以体验完整基地到出征闭环。</strong>
+          </div>
+          <div className="playtest-route-grid">
+            {playtestRouteSteps.map((step, index) => (
+              <button key={step.label} type="button" onClick={() => onNavigate(step.view)}>
+                <span>第 {index + 1} 步</span>
+                <strong>{step.label}</strong>
+                <small>{step.text}</small>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="base-task-list" aria-label="今日基地待办">
           <div className="base-command-center" aria-label="基地行动中枢">

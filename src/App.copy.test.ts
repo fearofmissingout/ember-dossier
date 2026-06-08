@@ -301,6 +301,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("建设");
     expect(source).toContain("出征");
     expect(source).toContain("复盘");
+    expect(source).toContain("playtestRouteSteps");
+    expect(source).toContain("aria-label=\"试玩路线导航\"");
+    expect(source).toContain("试玩路线");
+    expect(source).toContain("按这条路线走，可以体验完整基地到出征闭环。");
+    expect(source).toContain("邀请好友、认领捐入和留守职责。");
     expect(source).toContain("aria-label=\"基地行动中枢\"");
     expect(source).toContain("base-command-center");
     expect(source).toContain("base-command-actions");
@@ -313,6 +318,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"今日待办操作\"");
     expect(source).toContain("base-task-actions");
     expect(styles).toContain(".base-cycle-compass");
+    expect(styles).toContain(".playtest-route-guide");
+    expect(styles).toContain(".playtest-route-grid");
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-actions");
     expect(styles).toContain(".overview-return-card");
