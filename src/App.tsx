@@ -2473,13 +2473,13 @@ function JourneyPanel({
         </div>
         <div className={`journey-mobile-command-card ${actionGuide.tone}`} aria-label="手机端单页行动摘要">
           <div>
-            <span>单页行动</span>
+            <span>当前回合</span>
             <strong>{actionGuide.primaryAction}</strong>
             <small>{nextCommandHint}</small>
           </div>
           <div>
             <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
-              去操作
+              处理当前
             </button>
             <button type="button" onClick={() => scrollToJourneySection("journey-process")}>
               看过程
@@ -2538,7 +2538,7 @@ function JourneyPanel({
         </div>
         <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
           <div className="journey-command-dock-heading" aria-label="当前行动栏说明">
-            <span>当前可执行操作</span>
+            <span>本回合可选</span>
             <strong>{actionGuide.primaryAction}</strong>
             <small>{nextCommandHint}</small>
           </div>

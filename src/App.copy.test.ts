@@ -89,6 +89,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-command-result");
     expect(source).toContain("journey-mobile-flow");
     expect(source).toContain("aria-label=\"手机端远征页内导航\"");
+    expect(source).toContain("aria-label=\"手机端单页行动摘要\"");
+    expect(source).toContain("当前回合");
+    expect(source).toContain("处理当前");
     expect(source).toContain("scrollToJourneySection");
     expect(source).toContain("id=\"journey-action-options\"");
     expect(source).toContain("id=\"journey-vitals\"");
@@ -108,6 +111,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-section-nav");
     expect(styles).toContain(".journey-vitals-strip");
     expect(styles).toContain(".journey-primary-actions");
+    expect(styles).toContain("position: sticky");
+    expect(styles).toContain("padding-bottom: 28px");
+    expect(styles).not.toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("@media (max-width: 720px)");
   });
 
@@ -155,7 +161,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("padding-bottom: calc(76px + env(safe-area-inset-bottom))");
   });
 
-  test("keeps expedition actions reachable as a mobile bottom command dock", () => {
+  test("keeps expedition actions reachable as a mobile single-page command dock", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");
 
@@ -184,9 +190,10 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".support-diagnosis-card");
     expect(styles).toContain(".support-source-grid");
     expect(styles).toContain(".facility-support-note");
-    expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
-    expect(styles).toContain("max-height: 42vh");
+    expect(styles).toContain("top: 48px");
+    expect(styles).toContain("max-height: none");
     expect(styles).toContain("overscroll-behavior: contain");
+    expect(styles).not.toContain("max-height: 42vh");
   });
 
   test("shows facility upgrade value as base and expedition impact", () => {
