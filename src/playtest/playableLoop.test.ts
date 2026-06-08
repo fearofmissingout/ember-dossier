@@ -1,0 +1,21 @@
+import { describe, expect, test } from "vitest";
+import { runPlayableLoopSmoke } from "./playableLoop";
+
+describe("playable loop smoke", () => {
+  test("runs the local base expedition report base loop with actionable checkpoints", () => {
+    const smoke = runPlayableLoopSmoke();
+
+    expect(smoke.ok).toBe(true);
+    expect(smoke.checkpoints.map((checkpoint) => checkpoint.id)).toEqual([
+      "base-command",
+      "squad-assigned",
+      "expedition-settled",
+      "report-readable",
+      "next-base-action"
+    ]);
+    expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
+    expect(smoke.reportDigest.settlement.hasSettlement).toBe(true);
+    expect(smoke.reportDigest.ledger.hasLedger).toBe(true);
+    expect(smoke.nextBaseTasks.items.length).toBeGreaterThan(0);
+  });
+});
