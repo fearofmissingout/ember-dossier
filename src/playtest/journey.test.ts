@@ -65,10 +65,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "resources", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "urban", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "weird", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "wilds", roadBeats: 5, shops: 2 })
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 2 })
       ])
     );
   });
@@ -125,10 +125,10 @@ describe("journey route generation", () => {
     const urbanRoute = createJourney(session, draft, "hospital", 60);
     const wildRoute = createJourney(session, draft, "farm", 60);
 
-    expect(urbanRoute.nodes[1].enemy?.name).toBe("拖把车残响");
-    expect(urbanRoute.nodes[1].enemy?.trait).toBe("bleeder");
-    expect(wildRoute.nodes[1].enemy?.name).toBe("风铃稻草人");
-    expect(wildRoute.nodes[1].enemy?.trait).toBe("dread");
+    expect(urbanRoute.nodes[1].enemy?.name).toBe("电梯井群响");
+    expect(urbanRoute.nodes[1].enemy?.trait).toBe("dread");
+    expect(wildRoute.nodes[1].enemy?.name).toBe("铁丝犁兽");
+    expect(wildRoute.nodes[1].enemy?.trait).toBe("armored");
   });
 
   test("summarizes route pace and upcoming journey beats", () => {
@@ -1990,7 +1990,7 @@ describe("journey route generation", () => {
   });
 
   test("bleeder enemies add persistent bleed until patched", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    vi.spyOn(Math, "random").mockReturnValue(0.25);
     const session = createStarterSession("user-a", "Alice", "bleed-room");
     const squad = session.account.survivors.slice(0, 3);
     const journey = createJourney(

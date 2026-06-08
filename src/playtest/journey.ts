@@ -1399,6 +1399,28 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "dread",
       traitLabel: "惊惧",
       traitText: "若没有防守，每次命中都会增加压力。"
+    },
+    {
+      armor: 1,
+      attackBonus: 2,
+      hpBonus: 6,
+      intro: "维护井里爬出一团穿着反光背心的东西，背后拖着半截湿梯。",
+      name: "井梯拖行者",
+      rewardKeys: ["materials", "fuel"],
+      trait: "armored",
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
+    },
+    {
+      armor: 0,
+      attackBonus: 2,
+      hpBonus: 5,
+      intro: "水泵叶轮里卡着的残肢突然分散成一圈急促刮响。",
+      name: "叶轮碎群",
+      rewardKeys: ["ammo", "materials"],
+      trait: "swarm",
+      traitLabel: "成群",
+      traitText: "压力越高，反击越凶。"
     }
   ],
   urban: [
@@ -1434,6 +1456,28 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "bleeder",
       traitLabel: "锯齿",
       traitText: "命中会留下持续流血，直到包扎处理。"
+    },
+    {
+      armor: 2,
+      attackBonus: 1,
+      hpBonus: 6,
+      intro: "防爆门后传来缓慢敲击，一个仍穿着旧护甲的巡逻影子走了出来。",
+      name: "防爆巡逻影",
+      rewardKeys: ["ammo", "materials"],
+      trait: "armored",
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
+    },
+    {
+      armor: 0,
+      attackBonus: 3,
+      hpBonus: 4,
+      intro: "电梯井里响起许多层同时按键的声音，黑影从缆绳间一截截落下。",
+      name: "电梯井群响",
+      rewardKeys: ["fuel", "medicine"],
+      trait: "dread",
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     }
   ],
   weird: [
@@ -1469,6 +1513,28 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "swarm",
       traitLabel: "成群",
       traitText: "压力越高，反击越凶。"
+    },
+    {
+      armor: 1,
+      attackBonus: 3,
+      hpBonus: 5,
+      intro: "一张空病床推着自己的影子冲来，床轮没有接触地面。",
+      name: "无床号病床",
+      rewardKeys: ["medicine", "fuel"],
+      trait: "bleeder",
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
+    },
+    {
+      armor: 2,
+      attackBonus: 1,
+      hpBonus: 9,
+      intro: "墙上那扇画出来的门终于打开，门框里伸出一副锁链般的手。",
+      name: "门框守卫",
+      rewardKeys: ["materials", "medicine"],
+      trait: "armored",
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
     }
   ],
   wilds: [
@@ -1504,6 +1570,28 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "dread",
       traitLabel: "惊惧",
       traitText: "若没有防守，每次命中都会增加压力。"
+    },
+    {
+      armor: 1,
+      attackBonus: 2,
+      hpBonus: 7,
+      intro: "旧蜂箱裂开，里面不是蜂，而是一团用麦秆扎成的小手。",
+      name: "蜂箱草手",
+      rewardKeys: ["medicine", "food"],
+      trait: "swarm",
+      traitLabel: "成群",
+      traitText: "压力越高，反击越凶。"
+    },
+    {
+      armor: 2,
+      attackBonus: 2,
+      hpBonus: 6,
+      intro: "田埂下翻出一头裹满铁丝的东西，身上还挂着旧收割机齿片。",
+      name: "铁丝犁兽",
+      rewardKeys: ["materials", "ammo"],
+      trait: "armored",
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
     }
   ]
 };
