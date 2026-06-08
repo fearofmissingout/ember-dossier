@@ -21,10 +21,14 @@ describe("hosted playtest copy", () => {
 
   test("shows a Chinese expedition launch checklist in the prep UI", () => {
     const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("expeditionLaunchChecklist");
     expect(source).toContain("aria-label=\"出征检查\"");
+    expect(source).toContain("aria-label=\"出征开局预案\"");
+    expect(source).toContain("dispatch-briefing");
     expect(source).toContain("出征检查");
+    expect(styles).toContain(".dispatch-briefing");
   });
 
   test("shows a Chinese action guide during expeditions", () => {

@@ -1734,6 +1734,31 @@ function ExpeditionPrep({
     selectedLocationName: selectedLocation.name,
     squadCount: draft.squadIds.length
   });
+  const readinessLabel = readiness >= 70 ? "优势开局" : readiness >= 45 ? "可以行动" : "风险偏高";
+  const burdenLabel =
+    carryBurden.tier === "overloaded" ? "超载" : carryBurden.tier === "heavy" ? "偏重" : "轻装";
+  const dispatchBriefingItems = [
+    {
+      detail: `${draft.squadIds.length} 人 / ${Math.round(readiness)} 适配`,
+      label: "队伍",
+      value: readinessLabel
+    },
+    {
+      detail: `${locationFamilyLabels[selectedLocation.family]} / ${riskLabels[draft.risk]}`,
+      label: "路线",
+      value: selectedLocation.name
+    },
+    {
+      detail: burdenSummary(carryBurden),
+      label: "负重",
+      value: `${carryBurden.load}/${carryBurden.capacity} ${burdenLabel}`
+    },
+    {
+      detail: launchChecklist.canDispatch ? "准备完成后会进入回合制远征流程" : launchChecklist.summary,
+      label: "结论",
+      value: launchChecklist.canDispatch ? "可以派遣" : "先处理阻塞项"
+    }
+  ];
   return (
     <div className="expedition-layout">
       <section className="panel">
@@ -2001,6 +2026,21 @@ function ExpeditionPrep({
             squad={selectedSquad}
           />
         )}
+        <div className="dispatch-briefing" aria-label="出征开局预案">
+          <div className="dispatch-briefing-heading">
+            <span>出征开局预案</span>
+            <strong>{launchChecklist.canDispatch ? "确认队伍、路线与补给后即可派遣。" : "还有派遣前置条件需要处理。"}</strong>
+          </div>
+          <div className="dispatch-briefing-grid">
+            {dispatchBriefingItems.map((item) => (
+              <article className="dispatch-briefing-card" key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </article>
+            ))}
+          </div>
+        </div>
         <div className="launch-checklist" aria-label="出征检查">
           <div className="launch-checklist-heading">
             <span>出征检查</span>
