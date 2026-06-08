@@ -832,9 +832,16 @@ export type RoomMemberSummary = {
 };
 
 export type RoomCooperationSummary = {
+  actionHint: string;
   assignedSurvivors: number;
   baseShifts: number;
   contributionCount: number;
+  gaps: Array<{
+    id: BaseTaskItem["id"];
+    label: string;
+    status: BaseTaskStatus;
+    text: string;
+  }>;
   headline: string;
   memberCount: number;
   nextNeed: string;
@@ -902,13 +909,33 @@ export function roomCooperationSummary(session: PlaytestSession): RoomCooperatio
   const tasks = baseTaskList(session);
   const primaryTask = tasks.items[0];
   const urgentCount = tasks.items.filter((task) => task.status === "urgent").length;
+  const gaps = tasks.items.slice(0, 3).map((task) => ({
+    id: task.id,
+    label: task.title,
+    status: task.status,
+    text: task.body
+  }));
   const readiness: RoomCooperationSummary["readiness"] =
     primaryTask.id === "expedition" ? "ready" : urgentCount > 0 ? "blocked" : "building";
+  const actionHint =
+    primaryTask.id === "supplies"
+      ? "请队友优先捐入口粮和饮水，或安排搜寻班。"
+      : primaryTask.id === "recovery"
+        ? "请有空的幸存者转护理班，先处理战后伤病。"
+        : primaryTask.id === "shifts"
+          ? "每名成员至少安排一个基地班次，避免日结空转。"
+          : primaryTask.id === "development"
+            ? "材料足够时先推进推荐设施，让下一次出征更稳。"
+            : primaryTask.id === "objective"
+              ? "房间目标已结算，创建新房间开始下一局。"
+              : "房间已经可以准备出征，确认编队和补给。";
 
   return {
+    actionHint,
     assignedSurvivors,
     baseShifts,
     contributionCount,
+    gaps,
     headline:
       readiness === "ready"
         ? "房间已经可以准备下一次远征。"

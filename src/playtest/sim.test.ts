@@ -162,13 +162,39 @@ describe("playtest room loop", () => {
 
     const cooperation = roomCooperationSummary(session);
     expect(cooperation).toMatchObject({
+      actionHint: expect.any(String),
       assignedSurvivors: 1,
       baseShifts: 1,
       contributionCount: 2,
+      gaps: expect.arrayContaining([
+        expect.objectContaining({
+          id: expect.any(String),
+          label: expect.any(String),
+          status: expect.any(String),
+          text: expect.any(String)
+        })
+      ]),
       memberCount: 2,
       nextNeed: expect.any(String)
     });
     expect(["blocked", "building", "ready"]).toContain(cooperation.readiness);
+  });
+
+  test("room cooperation summary points players at urgent shared gaps", () => {
+    const session = createStarterSession("user-a", "Alice", "cooperation-gap-room");
+    session.room.base.resources.food = 0;
+    session.room.base.resources.water = 0;
+    session.room.baseAssignments = [];
+
+    const cooperation = roomCooperationSummary(session);
+
+    expect(cooperation.readiness).toBe("blocked");
+    expect(cooperation.actionHint).toContain("捐入口粮和饮水");
+    expect(cooperation.gaps[0]).toMatchObject({
+      id: "supplies",
+      status: "urgent"
+    });
+    expect(cooperation.gaps.map((gap) => gap.id)).toContain("shifts");
   });
 
   test("upgrades account base rooms with account resources and readable planning", () => {

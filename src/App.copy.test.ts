@@ -215,9 +215,16 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"房间协作总览\"");
     expect(source).toContain("协作状态");
     expect(source).toContain("下一步：");
+    expect(source).toContain("summary.actionHint");
+    expect(source).toContain("summary.gaps.map");
+    expect(source).toContain("aria-label=\"房间协作缺口\"");
     expect(source).toContain("room-cooperation-board");
     expect(source).toContain("room-cooperation-metrics");
+    expect(source).toContain("room-cooperation-gaps");
+    expect(source).toContain("room-gap-card");
     expect(styles).toContain(".room-cooperation-board");
     expect(styles).toContain(".room-cooperation-metrics");
+    expect(styles).toContain(".room-cooperation-gaps");
+    expect(styles).toContain(".room-gap-card");
   });
 });

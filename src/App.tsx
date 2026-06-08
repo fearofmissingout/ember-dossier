@@ -3614,6 +3614,7 @@ function RoomMembers({
           <span>协作状态</span>
           <strong>{summary.headline}</strong>
           <small>下一步：{summary.nextNeed}</small>
+          <small>{summary.actionHint}</small>
         </div>
         <div className="room-cooperation-metrics">
           <span>
@@ -3628,6 +3629,15 @@ function RoomMembers({
           <span>
             班次 <b>{summary.baseShifts}</b>
           </span>
+        </div>
+        <div className="room-cooperation-gaps" aria-label="房间协作缺口">
+          {summary.gaps.map((gap) => (
+            <article className={`room-gap-card ${gap.status}`} key={gap.id}>
+              <span>{gap.status === "urgent" ? "紧急" : gap.status === "ready" ? "就绪" : "待办"}</span>
+              <strong>{gap.label}</strong>
+              <small>{gap.text}</small>
+            </article>
+          ))}
         </div>
       </div>
 
