@@ -80,9 +80,12 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("aria-label=\"战报下一步\"");
+    expect(source).toContain("aria-label=\"战后复盘\"");
+    expect(source).toContain("report-action-digest");
     expect(source).toContain("report-next-actions");
     expect(source).toContain("处理伤病");
     expect(source).toContain("准备下一次远征");
+    expect(styles).toContain(".report-action-digest");
     expect(styles).toContain(".report-next-actions");
   });
 });

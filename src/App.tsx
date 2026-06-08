@@ -3026,6 +3026,7 @@ function Reports({
               <p>{item.body}</p>
               <ReportSettlement item={item} />
               <ReportReturnLedger item={item} />
+              <ReportActionDigest item={item} />
               <ReportTimeline item={item} />
             </div>
           </article>
@@ -3096,6 +3097,50 @@ function ReportReturnLedger({ item }: { item: FeedItem }) {
           <article className="return-ledger-row" key={`${item.id}-ledger-${row.label}`}>
             <span>{row.label}</span>
             <strong>{row.value}</strong>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportActionDigest({ item }: { item: FeedItem }) {
+  const ledger = summarizeFeedReturnLedger(item);
+  const settlement = summarizeFeedReportSettlement(item);
+  if (!ledger.hasLedger && !settlement.hasSettlement) {
+    return null;
+  }
+
+  const rows = [
+    {
+      label: "基地",
+      text: ledger.base ? `入库 ${ledger.base}` : settlement.resources.length ? `带回 ${settlement.resources.length} 项资源` : "回基地整理库存"
+    },
+    {
+      label: "目标",
+      text: ledger.objective || settlement.objective[0] || "确认房间目标进度"
+    },
+    {
+      label: "伤病",
+      text: ledger.injuries || settlement.risk.find((entry) => entry.includes("伤") || entry.includes("疲劳")) || "队伍状态可继续观察"
+    },
+    {
+      label: "成长",
+      text: ledger.account || settlement.growth[0] || "本轮没有新的个人回收"
+    }
+  ];
+
+  return (
+    <div className="report-action-digest" aria-label="战后复盘">
+      <div className="report-action-digest-heading">
+        <span>战后复盘</span>
+        <strong>{settlement.hasSettlement ? settlement.summary : "远征已经归队，先处理基地循环。"}</strong>
+      </div>
+      <div className="report-action-digest-grid">
+        {rows.map((row) => (
+          <article className="report-action-digest-row" key={`${item.id}-digest-${row.label}`}>
+            <span>{row.label}</span>
+            <strong>{row.text}</strong>
           </article>
         ))}
       </div>

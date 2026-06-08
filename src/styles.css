@@ -1041,6 +1041,65 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.report-action-digest {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #c8b38b;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.report-action-digest-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.report-action-digest-heading span,
+.report-action-digest-row span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-action-digest-heading strong {
+  min-width: 0;
+  color: #3d3024;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.report-action-digest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-action-digest-row {
+  display: grid;
+  min-width: 0;
+  min-height: 68px;
+  gap: 5px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #d8c6a6;
+  border-radius: 7px;
+  background: #fffdf7;
+}
+
+.report-action-digest-row strong {
+  min-width: 0;
+  color: #2f3b35;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .report-timeline {
   display: grid;
   gap: 10px;
@@ -4277,6 +4336,7 @@ button:disabled {
   .road-event-strip,
   .development-project-strip,
   .report-settlement-grid,
+  .report-action-digest-grid,
   .report-timeline-grid,
   .hardship-strip {
     grid-template-columns: 1fr 1fr;
@@ -4379,6 +4439,7 @@ button:disabled {
   .travel-record-strip,
   .road-event-strip,
   .report-settlement-grid,
+  .report-action-digest-grid,
   .report-timeline-grid,
   .hardship-strip,
   .development-project-strip,
