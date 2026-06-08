@@ -6395,6 +6395,69 @@ button:disabled {
   font-size: 12px;
 }
 
+.browser-smoke-card {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #b8c3ad;
+  border-radius: 8px;
+  background: #f4faef;
+}
+
+.browser-smoke-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.browser-smoke-heading span,
+.browser-smoke-grid span {
+  color: #3f684a;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.browser-smoke-heading strong,
+.browser-smoke-grid strong {
+  min-width: 0;
+  color: #25352c;
+  overflow-wrap: anywhere;
+}
+
+.browser-smoke-heading strong {
+  font-size: 17px;
+}
+
+.browser-smoke-heading small,
+.browser-smoke-grid small {
+  color: #5f6b62;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.browser-smoke-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.browser-smoke-grid article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #cad6bf;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.78);
+}
+
+.browser-smoke-grid strong {
+  font-size: 12px;
+}
+
 .archive-grid div {
   display: grid;
   gap: 8px;
@@ -6697,6 +6760,7 @@ button:disabled {
     .member-summary-row,
     .playtest-checkpoint-grid,
     .release-readiness-grid,
+    .browser-smoke-grid,
     .room-playtest-check-grid,
     .location-choice-grid,
     .room-cooperation-board,

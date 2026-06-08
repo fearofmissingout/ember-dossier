@@ -247,6 +247,39 @@ const releaseReadinessSteps = [
   }
 ];
 
+const browserSmokeChecklist = [
+  {
+    detail: "打开后能看到试玩登录或基地总览。",
+    label: "本地入口",
+    target: "http://localhost:5173/?room=playtest-smoke"
+  },
+  {
+    detail: "底部导航、手机端行动栏和当前操作不互相遮挡。",
+    label: "手机单页",
+    target: "窄屏视口"
+  },
+  {
+    detail: "至少触发一项资源、设施、治疗或协作操作。",
+    label: "基地经营",
+    target: "基地、设施、治疗、编队、协作"
+  },
+  {
+    detail: "能看到收益预览、路线预告、当前行动和结算战报。",
+    label: "出征流程",
+    target: "准备、路线、战斗或事件、撤离"
+  },
+  {
+    detail: "中文提示原因，并能继续本地试玩或重试。",
+    label: "同步降级",
+    target: "数据库不可用时"
+  },
+  {
+    detail: "发布后确认生产页面、注册接口和游客房间快照。",
+    label: "线上验收",
+    target: "https://ember-dossier.pages.dev/?room=playtest-smoke"
+  }
+];
+
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "休息" },
   { key: "forage", label: "搜寻" },
@@ -4271,6 +4304,22 @@ function ArchiveView({ state }: { state: GameState }) {
               <span>{step.label}</span>
               <strong>{step.command}</strong>
               <small>{step.detail}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="browser-smoke-card" aria-label="浏览器冒烟清单">
+        <div className="browser-smoke-heading">
+          <span>浏览器冒烟</span>
+          <strong>本地先走完整路径，线上只做验收。</strong>
+          <small>覆盖桌面、手机、出征、战斗、结算和数据库降级。</small>
+        </div>
+        <div className="browser-smoke-grid">
+          {browserSmokeChecklist.map((item) => (
+            <article key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.target}</strong>
+              <small>{item.detail}</small>
             </article>
           ))}
         </div>
