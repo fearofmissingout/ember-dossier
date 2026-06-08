@@ -30,6 +30,7 @@ const requiredChineseAnchors = [
   "当前可执行操作",
   "你的协作任务",
   "出征接入",
+  "出发决策摘要",
   "本回合建议",
   "回合威胁预告",
   "战后复盘",
@@ -62,7 +63,8 @@ const additionalRequiredChineseAnchors = [
   "撤离收益",
   "英文包待完整",
   "材料缺口",
-  "等待认领"
+  "等待认领",
+  "补给容错"
 ];
 
 const bannedVisibleEnglish = [

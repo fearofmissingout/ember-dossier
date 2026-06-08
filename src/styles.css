@@ -2969,6 +2969,84 @@ button:disabled {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
+.departure-decision-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #a9bd90;
+  border-radius: 8px;
+  background: #f5faef;
+}
+
+.departure-decision-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.departure-decision-heading span,
+.departure-decision-grid span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.departure-decision-heading strong {
+  color: #2d3b25;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.departure-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.departure-decision-grid article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  align-content: start;
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid #c3d1ad;
+  border-radius: 7px;
+  background: rgba(255, 252, 243, 0.88);
+}
+
+.departure-decision-grid article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.departure-decision-grid article.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.departure-decision-grid strong,
+.departure-decision-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.departure-decision-grid strong {
+  color: #2f4129;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.departure-decision-grid small {
+  color: #665b48;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .dispatch-briefing-heading {
   display: grid;
   gap: 4px;
@@ -6738,6 +6816,7 @@ button:disabled {
   .extraction-preview-options,
     .support-plan-grid,
     .dispatch-briefing-grid,
+    .departure-decision-grid,
     .yield-preview-grid,
     .launch-checklist-grid,
     .base-task-grid,
@@ -6976,6 +7055,7 @@ button:disabled {
   .extraction-preview-options,
     .support-plan-grid,
     .dispatch-briefing-grid,
+    .departure-decision-grid,
     .yield-preview-grid,
     .launch-checklist-grid,
     .base-command-strip,

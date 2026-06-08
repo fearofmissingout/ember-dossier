@@ -2118,6 +2118,32 @@ function ExpeditionPrep({
       value: launchChecklist.canDispatch ? "可以派遣" : "先处理阻塞项"
     }
   ];
+  const departureDecisionItems = [
+    {
+      detail: launchChecklist.canDispatch ? "队伍、路线、补给和目标都已满足派遣条件。" : launchChecklist.summary,
+      label: "出发判断",
+      tone: launchChecklist.canDispatch ? "ready" : "blocked",
+      value: launchChecklist.canDispatch ? "可以出发" : "暂缓出发"
+    },
+    {
+      detail: `${routeBriefing.familyLabel} / 预计 ${routeBriefing.estimatedHours} 小时到撤离窗口`,
+      label: "路线压力",
+      tone: routeBriefing.pressureLabel === "高压" ? "blocked" : routeBriefing.pressureLabel === "紧张" ? "warning" : "ready",
+      value: `${routeBriefing.pressureLabel} ${routeBriefing.pressure}%`
+    },
+    {
+      detail: burdenSummary(carryBurden),
+      label: "补给容错",
+      tone: carryBurden.tier === "overloaded" ? "blocked" : carryBurden.tier === "heavy" ? "warning" : "ready",
+      value: `${carryBurden.load}/${carryBurden.capacity} ${burdenLabel}`
+    },
+    {
+      detail: yieldPreview.headline,
+      label: "预期收益",
+      tone: yieldPreview.items.some((item) => item.tone === "warning") ? "warning" : "ready",
+      value: yieldPreview.items.find((item) => item.label === "基地目标")?.value ?? "待确认"
+    }
+  ];
   const prepCommandItems = [
     {
       detail: draft.squadIds.length > 0 ? `${draft.squadIds.length} 名幸存者已入队` : "先选择 3-5 名幸存者",
@@ -2485,6 +2511,21 @@ function ExpeditionPrep({
             squad={selectedSquad}
           />
         )}
+        <div className="departure-decision-card" aria-label="出发决策摘要">
+          <div className="departure-decision-heading">
+            <span>出发决策</span>
+            <strong>{launchChecklist.canDispatch ? "这次远征已经具备开局条件。" : "先处理阻塞项，再让队伍出发。"}</strong>
+          </div>
+          <div className="departure-decision-grid">
+            {departureDecisionItems.map((item) => (
+              <article className={item.tone} key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </article>
+            ))}
+          </div>
+        </div>
         <div className="dispatch-briefing" aria-label="出征开局预案">
           <div className="dispatch-briefing-heading">
             <span>出征开局预案</span>
