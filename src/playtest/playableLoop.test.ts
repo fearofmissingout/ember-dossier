@@ -12,6 +12,7 @@ describe("playable loop smoke", () => {
       "facility-upgraded",
       "facility-doctrine",
       "facility-stage",
+      "logistics-diagnosis",
       "survivor-treated",
       "squad-assigned",
       "multiplayer-cooperation",
@@ -28,6 +29,7 @@ describe("playable loop smoke", () => {
     expect(smoke.facilityFeedTitle).toContain("设施");
     expect(smoke.doctrineDetail).toContain("搜刮套件");
     expect(smoke.facilityStageDetail).toContain("战斗医疗");
+    expect(smoke.logisticsDiagnosisDetail).toContain("后勤诊断");
     expect(smoke.treatmentFeedTitle).toContain("治疗");
     expect(smoke.cooperation.memberCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.contributionCount).toBeGreaterThanOrEqual(2);

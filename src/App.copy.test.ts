@@ -149,6 +149,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journeyRouteIntel");
     expect(source).toContain("journey-route-intel");
     expect(source).toContain("journey-mobile-intel");
+    expect(source).toContain("aria-label=\"出征后勤诊断\"");
+    expect(source).toContain("supportDiagnosis.sources.map");
+    expect(source).toContain("房间设施");
+    expect(source).toContain("个人基地");
+    expect(source).toContain("留守班次");
     expect(source).toContain("前方仍有战斗，优先保留弹药、医疗和队伍体力。");
     expect(source).toContain("outcome.supportText && <small className=\"facility-support-note\"");
     expect(source).toContain("formatSignedPercent(outcome.pressure)");
@@ -157,6 +162,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-command-dock-heading");
     expect(styles).toContain(".journey-route-intel");
     expect(styles).toContain(".journey-mobile-intel");
+    expect(styles).toContain(".support-diagnosis-card");
+    expect(styles).toContain(".support-source-grid");
     expect(styles).toContain(".facility-support-note");
     expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("max-height: 42vh");

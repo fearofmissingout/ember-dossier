@@ -77,6 +77,22 @@ export type ExpeditionSupportPlan = {
   totalEffects: number;
 };
 
+export type ExpeditionSupportSourceLine = {
+  detail: string;
+  id: "facility" | "account" | "prep";
+  label: string;
+  total: number;
+};
+
+export type ExpeditionSupportDiagnosis = {
+  focusHint: string;
+  readinessLabel: string;
+  sources: ExpeditionSupportSourceLine[];
+  summary: string;
+  weakestStage: ExpeditionSupportPlanStage["id"] | "none";
+  weakestStageLabel: string;
+};
+
 export type AccountBaseSupportLine = {
   detail: string;
   effect: string;
@@ -520,6 +536,49 @@ export function expeditionSupportPlan(support: ExpeditionSupport): ExpeditionSup
   };
 }
 
+export function expeditionSupportDiagnosis(input: {
+  account: ExpeditionSupport;
+  facility: ExpeditionSupport;
+  prep: ExpeditionSupport;
+}): ExpeditionSupportDiagnosis {
+  const sources: ExpeditionSupportSourceLine[] = [
+    {
+      detail: "房间设施和已选出征纪律提供稳定的长期后勤。",
+      id: "facility",
+      label: "房间设施",
+      total: supportTotal(input.facility)
+    },
+    {
+      detail: "个人基地提供账号绑定的准备空间和路线稳定性。",
+      id: "account",
+      label: "个人基地",
+      total: supportTotal(input.account)
+    },
+    {
+      detail: "留守幸存者把当日班次转成一次性的出发支援。",
+      id: "prep",
+      label: "留守班次",
+      total: supportTotal(input.prep)
+    }
+  ];
+  const combined = mergeExpeditionSupport(mergeExpeditionSupport(input.facility, input.account), input.prep);
+  const stageScores = supportStageScores(combined);
+  const weakestStage = weakestSupportStage(stageScores);
+  const total = sources.reduce((sum, source) => sum + source.total, 0);
+
+  return {
+    focusHint: supportFocusHint(weakestStage),
+    readinessLabel: supportReadinessLabel(total, sources),
+    sources,
+    summary:
+      total > 0
+        ? `后勤诊断：${sources.filter((source) => source.total > 0).length} 条来源，合计 ${total} 点支援。`
+        : "后勤诊断：暂无有效来源，出征主要依赖队伍自身。",
+    weakestStage,
+    weakestStageLabel: supportStageLabel(weakestStage)
+  };
+}
+
 const numericSupportKeys = [
   "ammoDamage",
   "campCook",
@@ -552,6 +611,68 @@ function supportTotal(support: ExpeditionSupport) {
   const numericTotal = numericSupportKeys.reduce((sum, key) => sum + Math.max(0, support[key] ?? 0), 0);
   const supplyTotal = resourceKeys.reduce((sum, key) => sum + Math.max(0, support.startingSupplies[key] ?? 0), 0);
   return numericTotal + supplyTotal;
+}
+
+function supportStageScores(support: ExpeditionSupport): Record<ExpeditionSupportPlanStage["id"], number> {
+  return {
+    camp: support.campCook + support.campRest + support.campScout + support.shopIntel + support.shopRations + support.shopService,
+    combat:
+      support.ammoDamage +
+      support.guardBlock +
+      support.lootIntel +
+      support.lootMedicine +
+      support.lootSalvage +
+      support.patchHeal,
+    departure:
+      support.maxHp +
+      support.openingExpose +
+      support.openingGuard +
+      (support.carryCapacity ?? 0) +
+      resourceKeys.reduce((sum, key) => sum + Math.max(0, support.startingSupplies[key] ?? 0), 0),
+    road: support.lootEvade + support.pressureRelief + support.roadPush + support.roadSearch + support.roadSecure
+  };
+}
+
+function weakestSupportStage(stageScores: Record<ExpeditionSupportPlanStage["id"], number>): ExpeditionSupportDiagnosis["weakestStage"] {
+  const entries = Object.entries(stageScores) as Array<[ExpeditionSupportPlanStage["id"], number]>;
+  const weakest = entries.sort((left, right) => left[1] - right[1])[0];
+  return weakest && weakest[1] <= 0 ? weakest[0] : "none";
+}
+
+function supportStageLabel(stage: ExpeditionSupportDiagnosis["weakestStage"]) {
+  const labels: Record<ExpeditionSupportDiagnosis["weakestStage"], string> = {
+    camp: "营地交易",
+    combat: "战斗医疗",
+    departure: "出门准备",
+    none: "后勤均衡",
+    road: "路上控制"
+  };
+  return labels[stage];
+}
+
+function supportFocusHint(stage: ExpeditionSupportDiagnosis["weakestStage"]) {
+  const hints: Record<ExpeditionSupportDiagnosis["weakestStage"], string> = {
+    camp: "补厨房、电台或工坊，或安排搜寻班，能改善营地和商店选择。",
+    combat: "补训练室、医务室、工坊或护理班，能让回合战斗更稳。",
+    departure: "补训练室、仓库或出发物资，能提高队伍开局容错。",
+    none: "当前后勤覆盖较均衡，可以按地点风险选择出征纪律。",
+    road: "补哨塔、路障、电台或守卫班，能降低路上险情压力。"
+  };
+  return hints[stage];
+}
+
+function supportReadinessLabel(total: number, sources: ExpeditionSupportSourceLine[]) {
+  const activeSources = sources.filter((source) => source.total > 0).length;
+  if (total >= 24 && activeSources >= 3) {
+    return "后勤完整";
+  }
+  if (total >= 10 && activeSources >= 2) {
+    return "后勤可用";
+  }
+  if (total > 0) {
+    return "后勤偏薄";
+  }
+  return "缺少后勤";
 }
 
 function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: ExpeditionDoctrineId): ExpeditionSupport {

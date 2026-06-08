@@ -8,6 +8,7 @@ import {
   basePrepSupportFromAssignments,
   expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
+  expeditionSupportDiagnosis,
   expeditionSupportPlan,
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
@@ -149,6 +150,31 @@ describe("expedition doctrines", () => {
     expect(plan.summary).toBe("暂无后勤支援");
     expect(plan.totalEffects).toBe(0);
     expect(plan.stages).toHaveLength(0);
+  });
+
+  test("expedition support diagnosis identifies source totals and weak logistics stages", () => {
+    const facility = supportFromFacilities(completeFacilities(starterRoomFacilities()), "hold-formation");
+    const account = supportFromAccountBase({
+      level: 2,
+      medicalRoomLevel: 1,
+      radioBenchLevel: 0,
+      trainingRoomLevel: 2,
+      userId: "user-a",
+      warehouseLevel: 1
+    });
+    const prep = {
+      ...supportFromFacilities([]),
+      startingSupplies: { food: 1, water: 1 }
+    };
+
+    const diagnosis = expeditionSupportDiagnosis({ account, facility, prep });
+
+    expect(diagnosis.summary).toContain("后勤诊断");
+    expect(diagnosis.sources.map((source) => source.label)).toEqual(["房间设施", "个人基地", "留守班次"]);
+    expect(diagnosis.sources.every((source) => source.total >= 0)).toBe(true);
+    expect(diagnosis.readinessLabel).not.toBe("缺少后勤");
+    expect(diagnosis.weakestStageLabel).toBeTruthy();
+    expect(diagnosis.focusHint).toContain("补");
   });
 
   test("account base support adds personal preparation without replacing room facilities", () => {

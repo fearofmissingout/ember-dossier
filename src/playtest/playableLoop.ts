@@ -9,7 +9,7 @@ import {
   type JourneyCombatRoundPlan,
   type JourneyCombatRoundRecord
 } from "./journey";
-import { expeditionDoctrineForFacility, supportFromFacilities } from "./progression";
+import { expeditionDoctrineForFacility, expeditionSupportDiagnosis, supportFromAccountBase, supportFromFacilities } from "./progression";
 import {
   applyContribution,
   assignSurvivorToRoom,
@@ -32,6 +32,7 @@ export type PlayableLoopCheckpointId =
   | "facility-upgraded"
   | "facility-doctrine"
   | "facility-stage"
+  | "logistics-diagnosis"
   | "survivor-treated"
   | "squad-assigned"
   | "multiplayer-cooperation"
@@ -60,6 +61,7 @@ export type PlayableLoopSmoke = {
   doctrineDetail: string;
   facilityStageDetail: string;
   facilityFeedTitle: string;
+  logisticsDiagnosisDetail: string;
   journeyChoiceDetail: string;
   memberGuidanceDetail: string;
   reportDigest: {
@@ -85,6 +87,12 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   const workshopDoctrine = expeditionDoctrineForFacility("workshop");
   const doctrineDetail = workshopDoctrine ? `${workshopDoctrine.label}：${workshopDoctrine.effect}` : "工坊没有出征方针";
   const facilityFeedTitle = session.room.feed[0]?.title ?? "";
+  const logisticsDiagnosis = expeditionSupportDiagnosis({
+    account: supportFromAccountBase(session.account.base),
+    facility: supportFromFacilities(session.room.base.facilities, "salvage-rig"),
+    prep: supportFromFacilities([])
+  });
+  const logisticsDiagnosisDetail = `${logisticsDiagnosis.readinessLabel}：${logisticsDiagnosis.summary} / ${logisticsDiagnosis.weakestStageLabel}`;
 
   const treatmentTargetId = session.account.survivors[4].id;
   session.account.survivors[4].injuries = ["烟尘擦伤"];
@@ -237,6 +245,16 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
         facilityStageDetail.includes("战斗医疗")
     },
     {
+      detail: logisticsDiagnosisDetail,
+      id: "logistics-diagnosis",
+      ok:
+        logisticsDiagnosis.sources.length === 3 &&
+        logisticsDiagnosis.summary.includes("后勤诊断") &&
+        logisticsDiagnosis.sources.some((source) => source.label === "房间设施") &&
+        logisticsDiagnosis.sources.some((source) => source.label === "个人基地") &&
+        logisticsDiagnosis.focusHint.length > 0
+    },
+    {
       detail: treatmentFeedTitle,
       id: "survivor-treated",
       ok: Boolean(treatedSurvivor && treatedSurvivor.injuries.length === 0 && treatedSurvivor.fatigue < 48)
@@ -307,6 +325,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     facilityStageDetail,
     facilityFeedTitle,
     journeyChoiceDetail,
+    logisticsDiagnosisDetail,
     memberGuidanceDetail,
     nextBaseTasks,
     ok: checkpoints.every((checkpoint) => checkpoint.ok),

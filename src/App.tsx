@@ -106,6 +106,7 @@ import {
   basePrepSupportFromAssignments,
   expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
+  expeditionSupportDiagnosis,
   expeditionSupportPlan,
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
@@ -1831,6 +1832,11 @@ function ExpeditionPrep({
   const basePrepSupport = basePrepSupportFromAssignments(baseAssignments, accountSurvivors, userId, draft.squadIds);
   const support = mergeExpeditionSupport(mergeExpeditionSupport(facilitySupport, accountSupport), basePrepSupport);
   const supportPlan = expeditionSupportPlan(support);
+  const supportDiagnosis = expeditionSupportDiagnosis({
+    account: accountSupport,
+    facility: facilitySupport,
+    prep: basePrepSupport
+  });
   const accountSupportBriefing = accountBaseSupportBriefing(accountBase);
   const routeBriefing = journeyRouteBriefing(session, { ...draft, support }, selectedLocation.id, readiness);
   const selectedSquad = state.survivors.filter((survivor) => draft.squadIds.includes(survivor.id));
@@ -2204,6 +2210,26 @@ function ExpeditionPrep({
           ) : (
             <strong>暂无空闲人员准备</strong>
           )}
+        </div>
+        <div className="support-diagnosis-card" aria-label="出征后勤诊断">
+          <div className="support-diagnosis-heading">
+            <div>
+              <span>出征后勤诊断</span>
+              <strong>{supportDiagnosis.readinessLabel}</strong>
+              <small>{supportDiagnosis.summary}</small>
+            </div>
+            <b>{supportDiagnosis.weakestStageLabel}</b>
+          </div>
+          <div className="support-source-grid">
+            {supportDiagnosis.sources.map((source) => (
+              <article className={source.total > 0 ? "active" : "empty"} key={source.id}>
+                <span>{source.label}</span>
+                <strong>{source.total} 点</strong>
+                <small>{source.detail}</small>
+              </article>
+            ))}
+          </div>
+          <p>{supportDiagnosis.focusHint}</p>
         </div>
         <div className="support-plan-card account-support-card" aria-label="个人基地出征支援">
           <div className="support-plan-heading">
@@ -4041,6 +4067,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "facility-doctrine": "设施方针",
     "facility-stage": "出征接入",
     "facility-upgraded": "设施升级",
+    "logistics-diagnosis": "后勤诊断",
     "journey-choice-preview": "路途选择",
     "member-guidance": "成员建议",
     "player-cooperation-task": "个人协作",
