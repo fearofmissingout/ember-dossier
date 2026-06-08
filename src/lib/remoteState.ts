@@ -234,7 +234,7 @@ function pruneInactivePlayers(players: Record<string, RoomPlayer>) {
 
 function createDemoSnapshotsUrl() {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error("Supabase 尚未配置。请检查环境变量。");
   }
 
   return new URL("/rest/v1/demo_snapshots", supabaseConfig.url);
@@ -242,7 +242,7 @@ function createDemoSnapshotsUrl() {
 
 function createSupabaseHeaders(extraHeaders: Record<string, string> = {}) {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error("Supabase 尚未配置。请检查环境变量。");
   }
 
   const headers = {
@@ -264,7 +264,7 @@ function assertHeaderValue(name: string, value: string) {
     const codePoint = char.codePointAt(0) ?? 0;
 
     if (codePoint > 255 || codePoint < 32) {
-      throw new Error(`${name} contains a non-Latin-1 header character.`);
+      throw new Error(`${name} 包含无法写入请求头的字符。`);
     }
   }
 }

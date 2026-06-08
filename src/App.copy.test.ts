@@ -122,9 +122,14 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("onClick={() => setView(item.key)}");
     expect(source).toContain("className={view === item.key ? \"nav-item active\" : \"nav-item\"}");
     expect(source).toContain("aria-label=\"手机端单页行动栏\"");
+    expect(source).toContain("aria-label=\"数据库同步提示\"");
+    expect(source).toContain("可以继续本地试玩；重试会重新读取房间并上传当前进度。");
+    expect(source).toContain("账号进度会先保留在本机；稍后刷新页面或重新登录后再同步。");
     expect(source).toContain("mobile-command-strip");
+    expect(source).toContain("sync-health-card");
     expect(source).not.toMatch(/<a\s+href=|window\.location\.href/);
     expect(styles).toContain(".mobile-command-strip");
+    expect(styles).toContain(".sync-health-card");
     expect(styles).toContain("bottom: max(10px, env(safe-area-inset-bottom))");
     expect(styles).toContain("grid-auto-flow: column");
     expect(styles).toContain("overscroll-behavior-x: contain");

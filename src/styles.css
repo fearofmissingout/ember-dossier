@@ -317,6 +317,46 @@ button:disabled {
   background: #713221;
 }
 
+.sync-health-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #b95a3d;
+  border-radius: 8px;
+  background: #fff1e5;
+  color: #503226;
+}
+
+.sync-health-card div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.sync-health-card span,
+.sync-health-card small {
+  color: #7d4735;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sync-health-card strong {
+  color: #642d1f;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.sync-health-card p {
+  margin: 0;
+  color: #4f4035;
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
 .view-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.8fr);
@@ -5732,6 +5772,17 @@ button:disabled {
     border-color: #9b3f2a;
     background: #ead7b8;
     color: #4d2419;
+  }
+
+  .sync-health-card {
+    align-items: stretch;
+    margin: 0 0 10px;
+    padding: 10px;
+  }
+
+  .sync-health-card .sync-retry {
+    min-width: 68px;
+    justify-content: center;
   }
 
   .nav-list {

@@ -90,4 +90,24 @@ describe("playtest remote client", () => {
       warehouse_level: session.account.base.warehouseLevel
     });
   });
+
+  test("turns REST failures into readable Chinese sync errors", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.resetModules();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => JSON.stringify({ message: "房间数据表暂时不可用" })
+      })
+    );
+
+    const { bootstrapAccount } = await import("./playtestRemote");
+    await expect(bootstrapAccount("token-123", "user-a", "Alice")).rejects.toThrow(
+      "Supabase 请求失败（HTTP 400）：房间数据表暂时不可用"
+    );
+  });
 });

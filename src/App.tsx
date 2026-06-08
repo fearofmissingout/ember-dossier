@@ -967,6 +967,13 @@ export default function App() {
     }
   }
 
+  const syncCanRetry = hasSupabaseConfig && guestMode && !authSession;
+  const syncTroubleHint = syncCanRetry
+    ? "可以继续本地试玩；重试会重新读取房间并上传当前进度。"
+    : authSession
+      ? "账号进度会先保留在本机；稍后刷新页面或重新登录后再同步。"
+      : "当前会继续使用本地试玩数据。";
+
   if (hasSupabaseConfig && !authSession && !guestMode) {
     return (
       <main className="auth-shell">
@@ -1082,7 +1089,7 @@ export default function App() {
             <span className={syncStatus === "error" ? "sync-pill error" : "sync-pill"} title={syncError ?? undefined}>
               {syncStatusLabels[syncStatus]}
             </span>
-            {syncStatus === "error" && hasSupabaseConfig && (
+            {syncStatus === "error" && syncCanRetry && (
               <button className="sync-retry" type="button" onClick={retryRemoteSync}>
                 重试
               </button>
@@ -1109,6 +1116,22 @@ export default function App() {
             建设
           </button>
         </div>
+
+        {syncStatus === "error" && (
+          <section className="sync-health-card" aria-label="数据库同步提示">
+            <div>
+              <span>同步状态</span>
+              <strong>数据库未连接</strong>
+              <p>{syncError ?? "暂时无法连接数据库。"}</p>
+              <small>{syncTroubleHint}</small>
+            </div>
+            {syncCanRetry && (
+              <button className="sync-retry" type="button" onClick={retryRemoteSync}>
+                重试
+              </button>
+            )}
+          </section>
+        )}
 
         {view === "overview" && (
           <Overview

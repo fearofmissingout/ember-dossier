@@ -202,7 +202,7 @@ export async function saveSettlement(accessToken: string, session: PlaytestSessi
       penalties: report.penalties,
       reward: report.reward,
       room_id: session.room.id,
-      title: `${report.locationName} expedition complete`
+      title: `${report.locationName}出征完成`
     })
   ]);
 }
@@ -277,7 +277,7 @@ function serializeAccountSurvivor(survivor: AccountSurvivor) {
 
 async function upsert(accessToken: string, table: string, body: Record<string, unknown>, onConflict?: string) {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw createMissingSupabaseConfigError();
   }
 
   const endpoint = new URL(`/rest/v1/${table}`, supabaseConfig.url);
@@ -291,13 +291,13 @@ async function upsert(accessToken: string, table: string, body: Record<string, u
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw await createPlaytestRemoteError(response);
   }
 }
 
 async function insertReturning<T>(accessToken: string, table: string, body: Record<string, unknown>): Promise<T> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw createMissingSupabaseConfigError();
   }
 
   const endpoint = new URL(`/rest/v1/${table}`, supabaseConfig.url);
@@ -308,7 +308,7 @@ async function insertReturning<T>(accessToken: string, table: string, body: Reco
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw await createPlaytestRemoteError(response);
   }
 
   const rows = (await response.json()) as T[];
@@ -317,7 +317,7 @@ async function insertReturning<T>(accessToken: string, table: string, body: Reco
 
 async function selectRows<T>(accessToken: string, table: string, filters: Record<string, string>): Promise<T[]> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw createMissingSupabaseConfigError();
   }
 
   const endpoint = new URL(`/rest/v1/${table}`, supabaseConfig.url);
@@ -331,7 +331,7 @@ async function selectRows<T>(accessToken: string, table: string, filters: Record
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw await createPlaytestRemoteError(response);
   }
 
   return (await response.json()) as T[];
@@ -344,7 +344,7 @@ async function patchRows(
   body: Record<string, unknown>
 ) {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw createMissingSupabaseConfigError();
   }
 
   const endpoint = new URL(`/rest/v1/${table}`, supabaseConfig.url);
@@ -359,13 +359,13 @@ async function patchRows(
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw await createPlaytestRemoteError(response);
   }
 }
 
 function createRestHeaders(accessToken: string, prefer = "resolution=merge-duplicates,return=minimal") {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw createMissingSupabaseConfigError();
   }
 
   return {
@@ -374,6 +374,34 @@ function createRestHeaders(accessToken: string, prefer = "resolution=merge-dupli
     Prefer: prefer,
     apikey: supabaseConfig.publishableKey
   };
+}
+
+function createMissingSupabaseConfigError() {
+  return new Error("Supabase 尚未配置。请检查环境变量。");
+}
+
+async function createPlaytestRemoteError(response: Response) {
+  const text = await response.text();
+  const detail = readSupabaseErrorMessage(text);
+  return new Error(`Supabase 请求失败（HTTP ${response.status}）${detail ? `：${detail}` : ""}`);
+}
+
+function readSupabaseErrorMessage(text: string) {
+  if (!text.trim()) {
+    return "";
+  }
+
+  try {
+    const payload = JSON.parse(text) as {
+      error?: string;
+      error_description?: string;
+      message?: string;
+      msg?: string;
+    };
+    return payload.message ?? payload.msg ?? payload.error_description ?? payload.error ?? text;
+  } catch {
+    return text;
+  }
 }
 
 function serializeStarterRoomBase(roomId: string): PlaytestRoomBaseRow {

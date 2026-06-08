@@ -21,12 +21,13 @@ export function usernameToPlaytestEmail(username: string): string {
 
 const emailConfirmationRequiredMessage =
   "账号已创建，但 Supabase 仍要求邮箱确认。请去邮箱点击确认链接，或先用游客模式试玩；如果想注册后立刻进入，请在 Supabase Auth 里关闭邮箱确认。";
+const missingSupabaseConfigMessage = "Supabase 尚未配置。请检查环境变量。";
 
 type EmailOtpType = "email" | "magiclink" | "signup" | "recovery" | "invite" | "email_change";
 
 export async function requestMagicLink(email: string) {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   const endpoint = new URL("/auth/v1/otp", supabaseConfig.url);
@@ -48,7 +49,7 @@ export async function requestMagicLink(email: string) {
 
 export async function signUpWithPassword(email: string, password: string): Promise<AuthSession> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   const endpoint = new URL("/auth/v1/signup", supabaseConfig.url);
@@ -85,7 +86,7 @@ export async function signUpWithUsername(username: string, password: string): Pr
 
 export async function signInWithPassword(email: string, password: string): Promise<AuthSession> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   const endpoint = new URL("/auth/v1/token", supabaseConfig.url);
@@ -147,7 +148,7 @@ export function readTokenHashFromUrl(): { tokenHash: string; type: EmailOtpType 
 
 export async function verifyTokenHash(tokenHash: string, type: EmailOtpType): Promise<AuthSession> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   const response = await fetch(new URL("/auth/v1/verify", supabaseConfig.url), {
@@ -164,7 +165,7 @@ export async function verifyTokenHash(tokenHash: string, type: EmailOtpType): Pr
 
 export async function fetchAuthUser(accessToken: string): Promise<AuthSession> {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   const response = await fetch(new URL("/auth/v1/user", supabaseConfig.url), {
@@ -188,7 +189,7 @@ export async function fetchAuthUser(accessToken: string): Promise<AuthSession> {
 
 function authHeaders() {
   if (!supabaseConfig) {
-    throw new Error("Supabase is not configured.");
+    throw new Error(missingSupabaseConfigMessage);
   }
 
   return {

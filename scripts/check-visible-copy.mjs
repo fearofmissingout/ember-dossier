@@ -13,6 +13,7 @@ const filesToScan = [
   "src/playtest/reports.ts",
   "src/playtest/sim.ts",
   "src/lib/auth.ts",
+  "src/lib/playtestRemote.ts",
   "src/lib/remoteState.ts",
   "functions/api/auth/register.js"
 ];
@@ -55,6 +56,7 @@ const bannedVisibleEnglish = [
   "Room base initialized",
   "Shared base online",
   "Supabase did not return a session",
+  "Supabase is not configured",
   "Supabase request failed with HTTP",
   "Username must be",
   "Username signup did not return a session"
