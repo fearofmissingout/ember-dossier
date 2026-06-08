@@ -2768,6 +2768,10 @@ button:disabled {
   gap: 8px;
 }
 
+.journey-command-dock-heading {
+  display: none;
+}
+
 .journey-command-button {
   display: grid;
   min-width: 0;
@@ -5649,6 +5653,38 @@ button:disabled {
     border-radius: 8px;
     background: rgba(255, 250, 239, 0.98);
     box-shadow: 0 18px 36px rgba(52, 36, 19, 0.26);
+  }
+
+  .journey-command-dock-heading {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+    padding: 2px 2px 6px;
+  }
+
+  .journey-command-dock-heading span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .journey-command-dock-heading strong,
+  .journey-command-dock-heading small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .journey-command-dock-heading strong {
+    color: #30251b;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .journey-command-dock-heading small {
+    color: #675747;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
   }
 
   .journey-command-button {

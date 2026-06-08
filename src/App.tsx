@@ -2399,6 +2399,11 @@ function JourneyPanel({
           </div>
         </div>
         <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
+          <div className="journey-command-dock-heading" aria-label="当前行动栏说明">
+            <span>当前可执行操作</span>
+            <strong>{actionGuide.primaryAction}</strong>
+            <small>{nextCommandHint}</small>
+          </div>
           {pendingRoad ? (
             pendingRoad.choices.map((choice) => {
               const preview = roadEncounterChoicePreview(journey, choice);

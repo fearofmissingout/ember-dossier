@@ -136,8 +136,11 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("aria-label=\"当前可执行操作\"");
+    expect(source).toContain("aria-label=\"当前行动栏说明\"");
     expect(source).toContain("journey-command-actions");
+    expect(source).toContain("journey-command-dock-heading");
     expect(styles).toContain(".journey-command-actions");
+    expect(styles).toContain(".journey-command-dock-heading");
     expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("max-height: 42vh");
     expect(styles).toContain("overscroll-behavior: contain");
