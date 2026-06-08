@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { facilityActionLabel, facilityUpgradePreview, isFacilityMaxed } from "../game/facilities";
+import { facilityActionLabel, facilityImpactPreview, facilityUpgradePreview, isFacilityMaxed } from "../game/facilities";
 import {
   clearPlaytestSession,
   createStarterAccount,
@@ -1005,6 +1005,20 @@ describe("playtest room loop", () => {
       "升级到 Lv.2",
       "基地：目标每日 +1，修理班次 +1。出征：压力缓解 +2，情报 +2，营地侦察 +2。"
     ]);
+  });
+
+  test("facility impact preview separates base and expedition value", () => {
+    const session = createStarterSession("user-a", "Alice", "facility-impact-room");
+    const training = session.room.base.facilities.find((facility) => facility.id === "training");
+    if (!training) {
+      throw new Error("Missing training facility");
+    }
+
+    expect(facilityImpactPreview(training)).toEqual({
+      action: "建造到 Lv.1",
+      baseText: "不改变每日消耗。",
+      expeditionText: "战斗耐力 +2，背包容量 +0。"
+    });
   });
 
   test("kitchen and barricade change daily upkeep and danger", () => {

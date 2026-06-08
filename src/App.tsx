@@ -20,7 +20,7 @@ import {
   Wrench
 } from "lucide-react";
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
-import { facilityActionCost, facilityActionLabel, facilityUpgradePreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
+import { facilityActionCost, facilityActionLabel, facilityImpactPreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
 import type { FeedItem, GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
 import {
@@ -1089,6 +1089,22 @@ export default function App() {
             <span>危险 {state.resources.danger}</span>
           </div>
         </header>
+
+        <div className="mobile-command-strip" aria-label="手机端单页行动栏">
+          <div>
+            <span>{roomSlug}</span>
+            <strong>{syncStatusLabels[syncStatus]}</strong>
+          </div>
+          <button className={view === "expedition" ? "active" : ""} type="button" onClick={() => setView("expedition")}>
+            出征
+          </button>
+          <button className={view === "survivors" ? "active" : ""} type="button" onClick={() => setView("survivors")}>
+            编队
+          </button>
+          <button className={view === "facilities" ? "active" : ""} type="button" onClick={() => setView("facilities")}>
+            建设
+          </button>
+        </div>
 
         {view === "overview" && (
           <Overview
@@ -3371,7 +3387,7 @@ function Facilities({
           const actionLabel = facilityActionLabel(facility);
           const built = isFacilityBuilt(facility);
           const maxed = isFacilityMaxed(facility);
-          const preview = facilityUpgradePreview(facility);
+          const preview = facilityImpactPreview(facility);
           return (
             <article className={`facility-card ${facility.status} ${built ? "" : "unbuilt"}`} key={facility.id}>
               <div className="facility-title-row">
@@ -3380,9 +3396,18 @@ function Facilities({
               </div>
               <span>{built ? `Lv.${facility.level}` : "蓝图"}</span>
               <p>{facility.effect}</p>
-              <div className="facility-upgrade-preview">
-                <strong>{preview[0]}</strong>
-                <span>{preview[1]}</span>
+              <div className="facility-upgrade-preview" aria-label="设施升级收益预览">
+                <strong>{preview.action}</strong>
+                <div className="facility-impact-grid">
+                  <span>
+                    <b>基地</b>
+                    <small>{preview.baseText}</small>
+                  </span>
+                  <span>
+                    <b>出征</b>
+                    <small>{preview.expeditionText}</small>
+                  </span>
+                </div>
               </div>
               <button
                 className="ghost-button compact-action"

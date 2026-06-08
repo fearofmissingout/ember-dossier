@@ -59,6 +59,23 @@ export function facilityUpgradePreview(facility: Facility): string[] {
   return [`${isFacilityBuilt(facility) ? "升级" : "建造"}到 Lv.${nextLevel}`, facilityGrowthSummary(facility.id, nextLevel)];
 }
 
+export type FacilityImpactPreview = {
+  action: string;
+  baseText: string;
+  expeditionText: string;
+};
+
+export function facilityImpactPreview(facility: Facility): FacilityImpactPreview {
+  const [action, summary] = facilityUpgradePreview(facility);
+  const [baseText, expeditionText] = splitFacilityGrowthSummary(summary);
+
+  return {
+    action,
+    baseText,
+    expeditionText
+  };
+}
+
 export function facilityBaseEffect(facilityId: string): string {
   return facilityBlueprints.find((facility) => facility.id === facilityId)?.effect ?? "改善基地运转。";
 }
@@ -106,4 +123,17 @@ function facilityGrowthSummary(facilityId: string, level: number): string {
     return summarize(level);
   }
   return "改善基地与出征运转。";
+}
+
+function splitFacilityGrowthSummary(summary: string): [string, string] {
+  const normalized = summary.trim();
+  const expeditionMarker = "出征：";
+  const expeditionIndex = normalized.indexOf(expeditionMarker);
+  if (expeditionIndex < 0) {
+    return [normalized.replace(/^基地：/, ""), "暂无直接出征加成。"];
+  }
+
+  const baseText = normalized.slice(0, expeditionIndex).replace(/^基地：/, "").trim();
+  const expeditionText = normalized.slice(expeditionIndex + expeditionMarker.length).trim();
+  return [baseText || "暂无基地数值变化。", expeditionText || "暂无直接出征加成。"];
 }

@@ -77,11 +77,26 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("onClick={() => setView(item.key)}");
     expect(source).toContain("className={view === item.key ? \"nav-item active\" : \"nav-item\"}");
+    expect(source).toContain("aria-label=\"手机端单页行动栏\"");
+    expect(source).toContain("mobile-command-strip");
     expect(source).not.toMatch(/<a\s+href=|window\.location\.href/);
+    expect(styles).toContain(".mobile-command-strip");
     expect(styles).toContain("bottom: max(10px, env(safe-area-inset-bottom))");
     expect(styles).toContain("grid-auto-flow: column");
     expect(styles).toContain("overscroll-behavior-x: contain");
     expect(styles).toContain("padding-bottom: calc(76px + env(safe-area-inset-bottom))");
+  });
+
+  test("shows facility upgrade value as base and expedition impact", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("facilityImpactPreview");
+    expect(source).toContain("aria-label=\"设施升级收益预览\"");
+    expect(source).toContain("facility-impact-grid");
+    expect(source).toContain("preview.baseText");
+    expect(source).toContain("preview.expeditionText");
+    expect(styles).toContain(".facility-impact-grid");
   });
 
   test("shows a Chinese base task list on the overview", () => {

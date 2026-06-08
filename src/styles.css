@@ -182,6 +182,10 @@ button:disabled {
   font-weight: 800;
 }
 
+.mobile-command-strip {
+  display: none;
+}
+
 .ghost-button {
   margin-top: 20px;
   color: #7b3a2c;
@@ -4474,8 +4478,29 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.facility-upgrade-preview span {
+.facility-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.facility-impact-grid span {
+  display: grid;
+  gap: 4px;
   margin: 0;
+  padding: 8px;
+  border: 1px solid #e5d9c2;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.facility-impact-grid b {
+  color: #8b4b31;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.facility-impact-grid small {
   color: #627066;
   font-size: 12px;
   font-weight: 800;
@@ -4810,6 +4835,67 @@ button:disabled {
     text-align: center;
   }
 
+  .mobile-command-strip {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(58px, 0.7fr));
+    gap: 7px;
+    align-items: stretch;
+    margin: 0 0 10px;
+    padding: 8px;
+    border: 1px solid #c4ad86;
+    border-radius: 8px;
+    background: rgba(255, 250, 239, 0.97);
+    box-shadow: 0 12px 24px rgba(52, 36, 19, 0.15);
+  }
+
+  .mobile-command-strip div,
+  .mobile-command-strip button {
+    min-width: 0;
+    min-height: 44px;
+    border-radius: 8px;
+  }
+
+  .mobile-command-strip div {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+    padding: 7px 9px;
+    border: 1px solid #ead9bd;
+    background: #f8f0df;
+  }
+
+  .mobile-command-strip span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 900;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-command-strip strong {
+    color: #26312c;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-command-strip button {
+    border: 1px solid #d1b98f;
+    background: #fff8e9;
+    color: #603624;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .mobile-command-strip button.active {
+    border-color: #9b3f2a;
+    background: #ead7b8;
+    color: #4d2419;
+  }
+
   .nav-list {
     position: fixed;
     right: 10px;
@@ -4881,6 +4967,7 @@ button:disabled {
     .report-action-digest-grid,
   .report-timeline-grid,
     .hardship-strip,
+    .facility-impact-grid,
     .development-project-strip,
     .member-summary-row,
     .room-cooperation-board,
