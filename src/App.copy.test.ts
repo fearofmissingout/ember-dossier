@@ -74,6 +74,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-command-result");
     expect(source).toContain("journey-mobile-flow");
+    expect(source).toContain("aria-label=\"手机端远征页内导航\"");
+    expect(source).toContain("scrollToJourneySection");
+    expect(source).toContain("id=\"journey-action-options\"");
+    expect(source).toContain("id=\"journey-vitals\"");
+    expect(source).toContain("id=\"journey-process\"");
+    expect(source).toContain("id=\"journey-extraction\"");
     expect(source).toContain("aria-label=\"手机端出征路线摘要\"");
     expect(source).toContain("aria-label=\"当前路线步骤\"");
     expect(source).toContain("aria-label=\"关键状态\"");
@@ -85,6 +91,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-mobile-flow");
     expect(styles).toContain(".journey-mobile-route");
     expect(styles).toContain(".journey-mobile-meters");
+    expect(styles).toContain(".journey-section-nav");
     expect(styles).toContain(".journey-vitals-strip");
     expect(styles).toContain(".journey-primary-actions");
     expect(styles).toContain("@media (max-width: 720px)");

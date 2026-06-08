@@ -2662,6 +2662,29 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.journey-section-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.journey-section-nav button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 6px;
+  border: 1px solid #d5bd94;
+  border-radius: 999px;
+  background: #f8ecd2;
+  color: #564021;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.journey-section-nav button:hover {
+  border-color: #9f7846;
+  background: #fff7e8;
+}
+
 .journey-command-snapshot {
   display: grid;
   grid-template-columns: 1.2fr 0.7fr 1fr;
@@ -5315,6 +5338,21 @@ button:disabled {
   .journey-mobile-meters span {
     grid-template-columns: 72px minmax(0, 1fr);
     align-items: baseline;
+  }
+
+  .journey-section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: 0 -2px;
+    padding: 2px 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .journey-section-nav button {
+    min-height: 38px;
+    white-space: nowrap;
   }
 
   .report-next-actions {

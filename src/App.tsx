@@ -2315,6 +2315,9 @@ function JourneyPanel({
     segmentMitigation.value > 0
       ? `设施减压 ${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / 疲劳 -${segmentMitigation.fatigue}` : ""}`
       : "暂无设施掩护";
+  const scrollToJourneySection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="journey-panel">
@@ -2353,6 +2356,20 @@ function JourneyPanel({
             </span>
           </div>
         </div>
+        <div className="journey-section-nav" aria-label="手机端远征页内导航">
+          <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
+            操作
+          </button>
+          <button type="button" onClick={() => scrollToJourneySection("journey-vitals")}>
+            状态
+          </button>
+          <button type="button" onClick={() => scrollToJourneySection("journey-process")}>
+            过程
+          </button>
+          <button type="button" onClick={() => scrollToJourneySection("journey-extraction")}>
+            撤离
+          </button>
+        </div>
         <div className="journey-command-snapshot">
           <div>
             <span>当前位置</span>
@@ -2372,7 +2389,7 @@ function JourneyPanel({
             <small>{routePace.nextTitle}</small>
           </div>
         </div>
-        <div className="journey-command-actions" aria-label="当前可执行操作">
+        <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
           {pendingRoad ? (
             pendingRoad.choices.map((choice) => {
               const preview = roadEncounterChoicePreview(journey, choice);
@@ -2488,7 +2505,7 @@ function JourneyPanel({
           <small>{latestActionResult}</small>
         </div>
       </section>
-      <div className="journey-detail-grid" aria-label="远征详情">
+      <div className="journey-detail-grid" id="journey-process" aria-label="远征详情">
       <div className="route-pacing" aria-label="路线节奏">
         <div>
           <span>路线进度</span>
@@ -2559,7 +2576,7 @@ function JourneyPanel({
         </div>
       )}
       </div>
-      <div className="journey-status-grid journey-vitals-strip" aria-label="远征状态栏">
+      <div className="journey-status-grid journey-vitals-strip" id="journey-vitals" aria-label="远征状态栏">
         <div className="journey-pressure">
           <span>压力</span>
           <strong>{journey.pressure}%</strong>
@@ -2624,7 +2641,7 @@ function JourneyPanel({
           <small>{objectivePreview.hint}</small>
         </div>
       </div>
-      <div className="extraction-preview" aria-label="撤离预案">
+      <div className="extraction-preview" id="journey-extraction" aria-label="撤离预案">
         <div className="extraction-preview-heading">
           <div>
             <span>撤离预案</span>
