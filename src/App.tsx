@@ -2024,6 +2024,7 @@ function JourneyPanel({
   const routePace = routePaceFor(journey);
   const processDigest = journeyProcessDigest(journey);
   const actionGuide = journeyActionGuide(journey);
+  const latestActionResult = journey.logs[journey.logs.length - 1] ?? nodeBody;
   const segmentForecast =
     !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
@@ -2179,6 +2180,11 @@ function JourneyPanel({
               <small>地点奖励 {extractionPreview.options[0]?.rewardScalePercent ?? 0}%</small>
             </button>
           )}
+        </div>
+        <div className="journey-command-result" aria-label="最近行动结果">
+          <span>{journey.logs.length > 0 ? "最近结果" : "当前情况"}</span>
+          <strong>{journey.logs.length > 0 ? latestActionResult.split("：")[0] : nodeTitle}</strong>
+          <small>{latestActionResult}</small>
         </div>
       </section>
       <div className="journey-detail-grid" aria-label="远征详情">

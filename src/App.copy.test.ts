@@ -41,12 +41,15 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("aria-label=\"远征行动台\"");
     expect(source).toContain("aria-label=\"当前可执行操作\"");
+    expect(source).toContain("aria-label=\"最近行动结果\"");
     expect(source).toContain("journey-command-center");
     expect(source).toContain("journey-command-actions");
+    expect(source).toContain("journey-command-result");
     expect(source).toContain("journey-vitals-strip");
     expect(source).toContain("journey-detail-grid");
     expect(styles).toContain(".journey-command-center");
     expect(styles).toContain(".journey-command-actions");
+    expect(styles).toContain(".journey-command-result");
     expect(styles).toContain(".journey-vitals-strip");
     expect(styles).toContain(".journey-primary-actions");
     expect(styles).toContain("@media (max-width: 720px)");
