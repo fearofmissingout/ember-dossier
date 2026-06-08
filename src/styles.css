@@ -1695,6 +1695,77 @@ button:disabled {
   background: #fff8e7;
 }
 
+.journey-action-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #d2bf98;
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.journey-action-guide.warning {
+  border-color: #d6b071;
+  background: #fff8e7;
+}
+
+.journey-action-guide.danger {
+  border-color: #d79883;
+  background: #fff0eb;
+}
+
+.journey-action-guide div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.journey-action-guide span {
+  color: #7b6942;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-action-guide strong,
+.journey-action-guide small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-action-guide strong {
+  color: #3f3321;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.journey-action-guide small {
+  color: #695d4a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.journey-action-guide b {
+  min-width: 96px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #2f6b5d;
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.journey-action-guide.warning b {
+  background: #9a6a2b;
+}
+
+.journey-action-guide.danger b {
+  background: #9c3d27;
+}
+
 .route-pacing {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3816,6 +3887,14 @@ button:disabled {
 
   .recovery-plan-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .journey-action-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-action-guide b {
+    width: 100%;
   }
 
   .combat-loot-grid,

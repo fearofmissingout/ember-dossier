@@ -11,6 +11,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyDecisionSummaryLines,
+  journeyActionGuide,
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
@@ -259,6 +260,51 @@ describe("journey route generation", () => {
     expect(roadDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["最近行军", "待处理路口"]));
     expect(combatDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["当前战斗", "最近战斗"]));
     expect(combatDigest.steps.find((step) => step.label === "最近战斗")?.body).toContain("第 1 回合");
+  });
+
+  test("guides the next expedition action for event road and combat states", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "action-guide-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const eventGuide = journeyActionGuide(journey);
+    const road = advanceJourneyTravel(journey, squad, 60);
+    const roadGuide = journeyActionGuide(road);
+    const combatGuide = journeyActionGuide({
+      ...journey,
+      combat: createCombatForNode(journey.nodes[1], squad, 60),
+      currentNodeIndex: 1
+    });
+
+    expect(eventGuide).toMatchObject({
+      label: "行动指引",
+      primaryAction: "选择事件行动",
+      tone: "warning",
+      title: "处理当前事件"
+    });
+    expect(eventGuide.body).toContain("等待选择");
+    expect(roadGuide).toMatchObject({
+      primaryAction: "处理路口",
+      tone: "warning",
+      title: "先处理路上事件"
+    });
+    expect(roadGuide.body).toContain("选择一个路口处理方式");
+    expect(combatGuide).toMatchObject({
+      primaryAction: "选择战斗行动",
+      tone: "danger",
+      title: "先处理战斗回合"
+    });
+    expect(combatGuide.body).toContain("攻击、防守、包扎或战术");
   });
 
   test("records player route choices as a decision ledger and exposes the latest decision in the process digest", () => {

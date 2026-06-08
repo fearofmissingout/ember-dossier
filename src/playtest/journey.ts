@@ -190,6 +190,16 @@ export type JourneyProcessDigest = {
   summary: string;
 };
 
+export type JourneyActionGuideTone = "safe" | "warning" | "danger";
+
+export type JourneyActionGuide = {
+  body: string;
+  label: string;
+  primaryAction: string;
+  title: string;
+  tone: JourneyActionGuideTone;
+};
+
 export type JourneyDecisionCategory = "event" | "road" | "shop" | "camp" | "combat-loot" | "base-command";
 export type JourneyDecisionTone = "safe" | "warning" | "danger";
 
@@ -877,6 +887,88 @@ export function journeyProcessDigest(journey: JourneyState): JourneyProcessDiges
     headline: `第 ${pace.currentStop}/${pace.totalStops} 站：${pace.currentLabel}`,
     steps,
     summary: `${pace.currentTitle}。${blockers.length > 0 ? blockers.join("，") : "可以推进下一段或提前返程"}。${pace.clockLabel}，${pace.etaLabel}。`
+  };
+}
+
+export function journeyActionGuide(journey: JourneyState): JourneyActionGuide {
+  const activeNode = journey.nodes[Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, journey.nodes.length - 1)))] ?? null;
+
+  if (journey.combat) {
+    return {
+      body: `${journey.combat.enemyName} 正在准备${journey.combat.intentLabel}。先根据威胁预告选择攻击、防守、包扎或战术，打完本回合再推进路线。`,
+      label: "行动指引",
+      primaryAction: "选择战斗行动",
+      title: "先处理战斗回合",
+      tone: "danger"
+    };
+  }
+
+  if (journey.pendingCombatLoot) {
+    return {
+      body: `已击退 ${journey.pendingCombatLoot.enemyName}，先决定如何处理${journey.pendingCombatLoot.trophy}，再继续行军或撤离。`,
+      label: "行动指引",
+      primaryAction: "处理战利品",
+      title: "先分配战斗战利",
+      tone: "safe"
+    };
+  }
+
+  if (journey.pendingRoadEvent) {
+    return {
+      body: `${journey.pendingRoadEvent.title} 正挡在路上。选择一个路口处理方式，结算风险、补给和路线收益后才能继续推进。`,
+      label: "行动指引",
+      primaryAction: "处理路口",
+      title: "先处理路上事件",
+      tone: "warning"
+    };
+  }
+
+  if (activeNode?.type === "camp") {
+    return {
+      body: "营地适合修整、做饭或侦察。先处理状态和路线线索，再决定继续推进还是提前返程。",
+      label: "行动指引",
+      primaryAction: "选择营地行动",
+      title: "利用营地调整状态",
+      tone: "safe"
+    };
+  }
+
+  if (activeNode?.type === "shop") {
+    return {
+      body: "交易点可以补给、买情报或换服务。先看随身补给和压力，再决定花哪类资源。",
+      label: "行动指引",
+      primaryAction: "选择交易",
+      title: "处理路边交易",
+      tone: "safe"
+    };
+  }
+
+  if (activeNode?.type === "extraction") {
+    return {
+      body: "已经抵达撤离窗口。完整撤离能带回地点主体奖励和更多目标进度，也可以先确认归队清单。",
+      label: "行动指引",
+      primaryAction: "完成撤离",
+      title: "准备归队结算",
+      tone: "safe"
+    };
+  }
+
+  if (activeNode?.type === "event") {
+    return {
+      body: `${activeNode.title} 等待选择。谨慎处理更稳，强行处理更快但压力更高。`,
+      label: "行动指引",
+      primaryAction: "选择事件行动",
+      title: "处理当前事件",
+      tone: "warning"
+    };
+  }
+
+  return {
+    body: "确认行军计划、下一段战术和随身补给后，推进下一段路线；状态吃紧时可以提前返程。",
+    label: "行动指引",
+    primaryAction: "继续行军",
+    title: "推进下一段路线",
+    tone: "safe"
   };
 }
 

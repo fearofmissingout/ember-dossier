@@ -59,6 +59,7 @@ import {
   forecastNextSegment,
   journeyExtractionPreview,
   journeyDecisionSummaryLines,
+  journeyActionGuide,
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
@@ -2005,6 +2006,7 @@ function JourneyPanel({
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
   const processDigest = journeyProcessDigest(journey);
+  const actionGuide = journeyActionGuide(journey);
   const segmentForecast =
     !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
@@ -2023,6 +2025,14 @@ function JourneyPanel({
 
   return (
     <div className="journey-panel">
+      <div className={`journey-action-guide ${actionGuide.tone}`} aria-label="出征行动指引">
+        <div>
+          <span>{actionGuide.label}</span>
+          <strong>{actionGuide.title}</strong>
+          <small>{actionGuide.body}</small>
+        </div>
+        <b>{actionGuide.primaryAction}</b>
+      </div>
       <div className="route-pacing" aria-label="路线节奏">
         <div>
           <span>路线进度</span>

@@ -26,4 +26,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"出征检查\"");
     expect(source).toContain("出征检查");
   });
+
+  test("shows a Chinese action guide during expeditions", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+
+    expect(source).toContain("journeyActionGuide");
+    expect(source).toContain("aria-label=\"出征行动指引\"");
+    expect(source).toContain("actionGuide.primaryAction");
+  });
 });
