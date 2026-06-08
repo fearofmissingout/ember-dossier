@@ -1142,7 +1142,7 @@ export default function App() {
             onJourneyAction={resolveJourneyAction}
           />
         )}
-        {view === "reports" && <Reports feed={session.room.feed} latestReportId={latestReportId} />}
+        {view === "reports" && <Reports feed={session.room.feed} latestReportId={latestReportId} onNavigate={setView} />}
         {view === "facilities" && (
           <Facilities state={state} developmentPlan={baseDevelopmentPlan(session)} onUpgrade={upgradeRoomFacility} />
         )}
@@ -2911,7 +2911,15 @@ function CombatBar({ label, max, tone, value }: { label: string; max: number; to
   );
 }
 
-function Reports({ feed, latestReportId }: { feed: FeedItem[]; latestReportId: string | null }) {
+function Reports({
+  feed,
+  latestReportId,
+  onNavigate
+}: {
+  feed: FeedItem[];
+  latestReportId: string | null;
+  onNavigate: (view: ViewKey) => void;
+}) {
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -2921,6 +2929,23 @@ function Reports({ feed, latestReportId }: { feed: FeedItem[]; latestReportId: s
         </div>
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
       </div>
+      {latestReportId && (
+        <div className="report-next-actions" aria-label="战报下一步">
+          <div>
+            <span>下一步</span>
+            <strong>远征已经归队，继续处理基地循环。</strong>
+          </div>
+          <button type="button" onClick={() => onNavigate("overview")}>
+            回基地总览
+          </button>
+          <button type="button" onClick={() => onNavigate("survivors")}>
+            处理伤病
+          </button>
+          <button type="button" onClick={() => onNavigate("expedition")}>
+            准备下一次远征
+          </button>
+        </div>
+      )}
       <div className="feed-list large">
         {feed.map((item) => (
           <article className="feed-item" key={item.id}>

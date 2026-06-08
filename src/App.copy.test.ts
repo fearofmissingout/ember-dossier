@@ -64,4 +64,15 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("base-task-actions");
     expect(source).toContain("今日待办");
   });
+
+  test("shows Chinese next-step actions after expedition reports", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("aria-label=\"战报下一步\"");
+    expect(source).toContain("report-next-actions");
+    expect(source).toContain("处理伤病");
+    expect(source).toContain("准备下一次远征");
+    expect(styles).toContain(".report-next-actions");
+  });
 });

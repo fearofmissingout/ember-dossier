@@ -787,6 +787,50 @@ button:disabled {
   padding: 16px;
 }
 
+.report-next-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #c9b08a;
+  border-radius: 8px;
+  background: #fff9ec;
+}
+
+.report-next-actions div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.report-next-actions span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-next-actions strong {
+  min-width: 0;
+  color: #3d3024;
+  font-size: 13px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.report-next-actions button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #cdbb9d;
+  border-radius: 7px;
+  background: #fffdf6;
+  color: #5b3d22;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .report-settlement {
   display: grid;
   gap: 10px;
@@ -4227,6 +4271,15 @@ button:disabled {
   .journey-command-button {
     min-height: 52px;
     padding: 9px;
+  }
+
+  .report-next-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .report-next-actions button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .base-task-actions button {
