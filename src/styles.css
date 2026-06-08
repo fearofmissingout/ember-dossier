@@ -6120,6 +6120,58 @@ button:disabled {
   color: #604733;
 }
 
+.room-duty-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.room-duty-board article {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: #f4faef;
+}
+
+.room-duty-board span {
+  color: #526c38;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.room-duty-board strong,
+.room-duty-board small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-duty-board strong {
+  color: #2f3d27;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.room-duty-board div {
+  display: grid;
+  gap: 5px;
+}
+
+.room-duty-board small {
+  padding: 6px 7px;
+  border: 1px solid rgba(184, 202, 158, 0.78);
+  border-radius: 7px;
+  background: rgba(255, 253, 245, 0.78);
+  color: #5b684c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .your-room-task {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -6946,6 +6998,7 @@ button:disabled {
     .release-readiness-grid,
     .browser-smoke-grid,
     .journey-turn-summary,
+    .room-duty-board,
     .room-playtest-check-grid,
     .location-choice-grid,
     .room-cooperation-board,

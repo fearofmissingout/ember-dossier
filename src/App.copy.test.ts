@@ -395,9 +395,15 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
     expect(source).toContain("aria-label=\"多人试玩开局检查\"");
+    expect(source).toContain("aria-label=\"房间协作分工板\"");
     expect(source).toContain("协作状态");
     expect(source).toContain("下一步：");
     expect(source).toContain("summary.actionHint");
+    expect(source).toContain("cooperationLanes.map");
+    expect(source).toContain("捐入补给");
+    expect(source).toContain("出征编队");
+    expect(source).toContain("留守班次");
+    expect(source).toContain("等待认领");
     expect(source).toContain("playtestReadiness.items.map");
     expect(source).toContain("roomReadinessTargetView(playtestReadiness)");
     expect(source).toContain("开局检查");
@@ -415,6 +421,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".room-cooperation-board");
     expect(styles).toContain(".room-cooperation-metrics");
     expect(styles).toContain(".room-cooperation-gaps");
+    expect(styles).toContain(".room-duty-board");
     expect(styles).toContain(".room-gap-card");
     expect(styles).toContain(".room-playtest-readiness");
     expect(styles).toContain(".room-playtest-check-grid");

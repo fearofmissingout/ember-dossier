@@ -40,6 +40,7 @@ const requiredChineseAnchors = [
   "账号成长边界",
   "建设队列总览",
   "多人试玩开局检查",
+  "房间协作分工板",
   "下一轮远征建议",
   "发布准入检查",
   "浏览器冒烟清单",
@@ -60,7 +61,8 @@ const additionalRequiredChineseAnchors = [
   "本地先走完整路径",
   "撤离收益",
   "英文包待完整",
-  "材料缺口"
+  "材料缺口",
+  "等待认领"
 ];
 
 const bannedVisibleEnglish = [

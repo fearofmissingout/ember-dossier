@@ -4152,6 +4152,29 @@ function RoomMembers({
 }) {
   const currentMember = memberSummaries.find((member) => member.userId === currentUserId);
   const currentAction = currentMember ? roomMemberPrimaryAction(currentMember) : null;
+  const membersWithContributions = memberSummaries.filter((member) => member.contributionCount > 0);
+  const membersWithSquad = memberSummaries.filter((member) => member.assignedCount > 0);
+  const membersWithShifts = memberSummaries.filter((member) => member.baseShiftText !== "未安排");
+  const cooperationLanes = [
+    {
+      empty: "还没人捐入资源，先补共享库存。",
+      members: membersWithContributions,
+      metric: (member: RoomMemberSummary) => member.contributionText,
+      title: "捐入补给"
+    },
+    {
+      empty: "还没人加入远征编队，先派 1 名幸存者。",
+      members: membersWithSquad,
+      metric: (member: RoomMemberSummary) => `${member.assignedCount} 名`,
+      title: "出征编队"
+    },
+    {
+      empty: "还没人安排基地班次，日结会空转。",
+      members: membersWithShifts,
+      metric: (member: RoomMemberSummary) => member.baseShiftText,
+      title: "留守班次"
+    }
+  ];
 
   return (
     <section className="panel">
@@ -4217,6 +4240,26 @@ function RoomMembers({
           ))}
         </div>
         <small className="room-playtest-next">{playtestReadiness.nextAction}</small>
+      </div>
+
+      <div className="room-duty-board" aria-label="房间协作分工板">
+        {cooperationLanes.map((lane) => (
+          <article key={lane.title}>
+            <span>{lane.title}</span>
+            <strong>{lane.members.length > 0 ? `已覆盖 ${lane.members.length} 人` : "等待认领"}</strong>
+            <div>
+              {lane.members.length > 0 ? (
+                lane.members.map((member) => (
+                  <small key={`${lane.title}-${member.userId}`}>
+                    {member.displayName}：{lane.metric(member)}
+                  </small>
+                ))
+              ) : (
+                <small>{lane.empty}</small>
+              )}
+            </div>
+          </article>
+        ))}
       </div>
 
       <div className="room-contribution-plan" aria-label="房间捐入优先级">
