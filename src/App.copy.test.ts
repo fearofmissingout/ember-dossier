@@ -61,11 +61,17 @@ describe("hosted playtest copy", () => {
 
   test("shows a Chinese base task list on the overview", () => {
     const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("baseTaskList");
+    expect(source).toContain("aria-label=\"基地行动中枢\"");
+    expect(source).toContain("base-command-center");
+    expect(source).toContain("base-command-actions");
     expect(source).toContain("aria-label=\"今日基地待办\"");
     expect(source).toContain("aria-label=\"今日待办操作\"");
     expect(source).toContain("base-task-actions");
+    expect(styles).toContain(".base-command-center");
+    expect(styles).toContain(".base-command-actions");
     expect(source).toContain("今日待办");
   });
 

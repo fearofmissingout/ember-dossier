@@ -1209,6 +1209,13 @@ function Overview({
       document.getElementById(action.sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
+  const primaryTask = tasks.items[0];
+  const primaryTaskAction = baseTaskNavigation(primaryTask.id);
+  const commandActions = [
+    { icon: Send, label: "准备远征", text: "编队、地点、补给", view: "expedition" as ViewKey },
+    { icon: Users, label: "处理伤病", text: "治疗与班次", view: "survivors" as ViewKey },
+    { icon: Wrench, label: "发展设施", text: "建造和升级", view: "facilities" as ViewKey }
+  ];
 
   return (
     <div className="view-grid">
@@ -1286,6 +1293,30 @@ function Overview({
           <strong>{daysRemaining} 天</strong>
         </div>
         <div className="base-task-list" aria-label="今日基地待办">
+          <div className="base-command-center" aria-label="基地行动中枢">
+            <div className="base-command-priority">
+              <span>基地行动中枢</span>
+              <strong>{primaryTask.title}</strong>
+              <small>{primaryTask.body}</small>
+            </div>
+            <div className="base-command-actions">
+              <button type="button" onClick={() => handleTaskAction(primaryTask.id)}>
+                <Activity size={16} aria-hidden="true" />
+                <strong>{primaryTaskAction.label}</strong>
+                <small>优先处理</small>
+              </button>
+              {commandActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <button type="button" key={action.label} onClick={() => onNavigate(action.view)}>
+                    <Icon size={16} aria-hidden="true" />
+                    <strong>{action.label}</strong>
+                    <small>{action.text}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="base-task-heading">
             <span>今日待办</span>
             <strong>{tasks.summary}</strong>

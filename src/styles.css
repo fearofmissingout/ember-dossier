@@ -539,6 +539,89 @@ button:disabled {
   background: #fff9ec;
 }
 
+.base-command-center {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #b59a68;
+  border-radius: 8px;
+  background: #f3ead4;
+}
+
+.base-command-priority {
+  display: grid;
+  gap: 4px;
+}
+
+.base-command-priority span {
+  color: #725f39;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.base-command-priority strong,
+.base-command-priority small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-command-priority strong {
+  color: #3f331e;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.base-command-priority small {
+  color: #665b48;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.base-command-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-command-actions button {
+  display: grid;
+  min-width: 0;
+  min-height: 68px;
+  gap: 4px;
+  align-content: center;
+  justify-items: start;
+  padding: 9px;
+  border: 1px solid #c9b08a;
+  border-radius: 7px;
+  background: #fffdf6;
+  color: #5b3d22;
+  text-align: left;
+}
+
+.base-command-actions button:hover {
+  border-color: #8d6a3c;
+  background: #fff7df;
+}
+
+.base-command-actions strong,
+.base-command-actions small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-command-actions strong {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.base-command-actions small {
+  color: #746a58;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
 .base-task-heading {
   display: grid;
   gap: 3px;
@@ -4187,6 +4270,7 @@ button:disabled {
   .dispatch-briefing-grid,
   .launch-checklist-grid,
   .base-task-grid,
+  .base-command-actions,
   .base-command-strip,
   .march-forecast,
   .travel-record-strip,
@@ -4291,6 +4375,7 @@ button:disabled {
   .dispatch-briefing-grid,
   .launch-checklist-grid,
   .base-command-strip,
+  .base-command-actions,
   .travel-record-strip,
   .road-event-strip,
   .report-settlement-grid,
