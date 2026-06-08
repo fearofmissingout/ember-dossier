@@ -3753,6 +3753,8 @@ function ArchiveView({ state }: { state: GameState }) {
 function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["checkpoints"][number]["id"]) {
   const labels: Record<ReturnType<typeof runPlayableLoopSmoke>["checkpoints"][number]["id"], string> = {
     "base-command": "基地待办",
+    "facility-upgraded": "设施升级",
+    "survivor-treated": "伤病治疗",
     "squad-assigned": "出征编队",
     "multiplayer-cooperation": "多人协作",
     "combat-round": "回合战斗",

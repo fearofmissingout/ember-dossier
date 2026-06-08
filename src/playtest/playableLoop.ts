@@ -7,6 +7,8 @@ import {
   resolvePlaytestExpedition,
   roomCooperationSummary,
   setBaseAssignment,
+  treatSurvivor,
+  upgradeFacility,
   type BaseTaskList,
   type RoomCooperationSummary
 } from "./sim";
@@ -15,6 +17,8 @@ import { summarizeFeedReportSettlement, summarizeFeedReturnLedger, type FeedRepo
 
 export type PlayableLoopCheckpointId =
   | "base-command"
+  | "facility-upgraded"
+  | "survivor-treated"
   | "squad-assigned"
   | "multiplayer-cooperation"
   | "combat-round"
@@ -34,10 +38,12 @@ export type PlayableLoopSmoke = {
   ok: boolean;
   combatRound: JourneyCombatRoundRecord | null;
   cooperation: RoomCooperationSummary;
+  facilityFeedTitle: string;
   reportDigest: {
     ledger: FeedReturnLedger;
     settlement: FeedReportSettlement;
   };
+  treatmentFeedTitle: string;
 };
 
 export function runPlayableLoopSmoke(): PlayableLoopSmoke {
@@ -46,6 +52,20 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   const guestUserId = "smoke-guest";
   const squad = session.account.survivors.slice(0, 3);
   const baseTasksBefore = baseTaskList(session);
+
+  session.room.base.resources.materials = Math.max(session.room.base.resources.materials, 20);
+  const beforeWorkshopLevel = session.room.base.facilities.find((facility) => facility.id === "workshop")?.level ?? 0;
+  session = upgradeFacility(session, userId, "workshop");
+  const afterWorkshopLevel = session.room.base.facilities.find((facility) => facility.id === "workshop")?.level ?? 0;
+  const facilityFeedTitle = session.room.feed[0]?.title ?? "";
+
+  const treatmentTargetId = session.account.survivors[4].id;
+  session.account.survivors[4].injuries = ["烟尘擦伤"];
+  session.account.survivors[4].fatigue = 48;
+  session.room.base.resources.medicine = Math.max(session.room.base.resources.medicine, 2);
+  session = treatSurvivor(session, userId, treatmentTargetId);
+  const treatedSurvivor = session.account.survivors.find((survivor) => survivor.id === treatmentTargetId);
+  const treatmentFeedTitle = session.room.feed[0]?.title ?? "";
 
   session.room.members.push({
     displayName: "Smoke Guest",
@@ -138,6 +158,16 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: baseTasksBefore.items.length > 0
     },
     {
+      detail: facilityFeedTitle,
+      id: "facility-upgraded",
+      ok: afterWorkshopLevel > beforeWorkshopLevel
+    },
+    {
+      detail: treatmentFeedTitle,
+      id: "survivor-treated",
+      ok: Boolean(treatedSurvivor && treatedSurvivor.injuries.length === 0 && treatedSurvivor.fatigue < 48)
+    },
+    {
       detail: `${squad.length} 名幸存者加入房间编队`,
       id: "squad-assigned",
       ok: session.room.assignedSurvivors.filter((assignment) => assignment.userId === userId).length === squad.length
@@ -178,12 +208,14 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     combatRound,
     cooperation,
     checkpoints,
+    facilityFeedTitle,
     nextBaseTasks,
     ok: checkpoints.every((checkpoint) => checkpoint.ok),
     reportDigest: {
       ledger,
       settlement
-    }
+    },
+    treatmentFeedTitle
   };
 }
 

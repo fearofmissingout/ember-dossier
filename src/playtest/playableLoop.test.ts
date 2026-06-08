@@ -8,6 +8,8 @@ describe("playable loop smoke", () => {
     expect(smoke.ok).toBe(true);
     expect(smoke.checkpoints.map((checkpoint) => checkpoint.id)).toEqual([
       "base-command",
+      "facility-upgraded",
+      "survivor-treated",
       "squad-assigned",
       "multiplayer-cooperation",
       "combat-round",
@@ -16,6 +18,8 @@ describe("playable loop smoke", () => {
       "next-base-action"
     ]);
     expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
+    expect(smoke.facilityFeedTitle).toContain("设施");
+    expect(smoke.treatmentFeedTitle).toContain("治疗");
     expect(smoke.cooperation.memberCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.contributionCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.gaps.length).toBeGreaterThan(0);
