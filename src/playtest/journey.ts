@@ -1619,6 +1619,28 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.04,
       rollShiftSuccess: -0.05,
       successLog: "换货人收下补给，递来一块还带着湿气的通行牌和燃料瓶。"
+    },
+    {
+      costPriority: ["fuel", "materials"],
+      failLog: "滤芯贩子把塑料箱扣紧，说空手的人只会把灰带进肺里。",
+      label: "向滤芯贩子买干净空气",
+      pressureFail: 4,
+      pressureSuccess: -7,
+      rewardKeys: ["medicine", "water"],
+      rollShiftFail: 0.04,
+      rollShiftSuccess: -0.07,
+      successLog: "滤芯贩子收下燃料和零件，换出一包滤芯与两瓶净水。"
+    },
+    {
+      costPriority: ["ammo", "water"],
+      failLog: "泵站调度员摇头，把手绘管线图压回防水袋。",
+      label: "买泵站调度图",
+      pressureFail: 5,
+      pressureSuccess: -8,
+      rewardKeys: ["fuel", "materials"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.08,
+      successLog: "调度员收下弹药，交出一张能避开两处死水的管线图。"
     }
   ],
   urban: [
@@ -1643,6 +1665,28 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.05,
       rollShiftSuccess: -0.08,
       successLog: "楼顶电台给出一条避开主街的撤离口令，还送下一包旧线圈。"
+    },
+    {
+      costPriority: ["materials", "medicine"],
+      failLog: "地下药柜的主人拉下卷帘门，表示坏账不会被赊给活人。",
+      label: "和地下药柜换急救包",
+      pressureFail: 4,
+      pressureSuccess: -6,
+      rewardKeys: ["medicine", "food"],
+      rollShiftFail: 0.04,
+      rollShiftSuccess: -0.06,
+      successLog: "地下药柜收下零件和药瓶，递来一套缝合包与压缩饼。"
+    },
+    {
+      costPriority: ["fuel", "food"],
+      failLog: "公交调度员把车票撕成两半，站台广播随即开始倒数。",
+      label: "向公交调度员买旧车票",
+      pressureFail: 6,
+      pressureSuccess: -9,
+      rewardKeys: ["ammo", "materials"],
+      rollShiftFail: 0.06,
+      rollShiftSuccess: -0.09,
+      successLog: "调度员收下燃料，把一叠还能开门的旧车票塞进队伍手里。"
     }
   ],
   weird: [
@@ -1667,6 +1711,28 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.07,
       rollShiftSuccess: -0.09,
       successLog: "镜中售货员把药品收进反光里，吐出一段不会重复的路线。"
+    },
+    {
+      costPriority: ["food", "water"],
+      failLog: "候诊区护士把号码牌递回来说：没轮到的人不能拿药。",
+      label: "向无脸护士换号码",
+      pressureFail: 6,
+      pressureSuccess: -8,
+      rewardKeys: ["medicine", "fuel"],
+      rollShiftFail: 0.06,
+      rollShiftSuccess: -0.08,
+      successLog: "无脸护士收下食物和水，把队伍的号码调到一个更安全的出口。"
+    },
+    {
+      costPriority: ["ammo", "medicine"],
+      failLog: "画框里的摊主把手缩回去，墙面只剩一层干掉的颜料。",
+      label: "买画框里的钥匙",
+      pressureFail: 8,
+      pressureSuccess: -10,
+      rewardKeys: ["materials", "ammo"],
+      rollShiftFail: 0.08,
+      rollShiftSuccess: -0.1,
+      successLog: "摊主从画框背后递来一把轻得不正常的钥匙和几枚子弹。"
     }
   ],
   wilds: [
@@ -1691,6 +1757,28 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.03,
       rollShiftSuccess: -0.06,
       successLog: "守夜人收下零件，交出一支短船桨和一袋压缩饼。"
+    },
+    {
+      costPriority: ["water", "medicine"],
+      failLog: "养蜂人把面罩扣下，蜂箱里的低语立刻靠近了一点。",
+      label: "和养蜂人换烟罐",
+      pressureFail: 4,
+      pressureSuccess: -7,
+      rewardKeys: ["food", "fuel"],
+      rollShiftFail: 0.04,
+      rollShiftSuccess: -0.07,
+      successLog: "养蜂人收下净水和药品，换来一只烟罐和包好的蜜饼。"
+    },
+    {
+      costPriority: ["ammo", "materials"],
+      failLog: "巡田老人把铁锹插回泥里，说不带响的人别走近道。",
+      label: "向巡田老人买近路",
+      pressureFail: 5,
+      pressureSuccess: -8,
+      rewardKeys: ["water", "medicine"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.08,
+      successLog: "巡田老人收下弹药和零件，指给队伍一条不会踩进沼气的田埂。"
     }
   ]
 };

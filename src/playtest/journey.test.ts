@@ -65,10 +65,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 2 })
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 4 })
       ])
     );
   });
@@ -108,9 +108,30 @@ describe("journey route generation", () => {
     const weirdRoute = createJourney(session, draft, "greenhouse", 60);
 
     expect(resourceRoute.nodes[0].title).toBe("沉降池吊桥");
-    expect(resourceRoute.nodes[3].shop?.label).toBe("换水渠通行牌");
+    expect(resourceRoute.nodes[3].shop?.label).toBe("买泵站调度图");
     expect(weirdRoute.nodes[0].title).toBe("倒置候诊区");
-    expect(weirdRoute.nodes[3].shop?.label).toBe("向镜中售货员买路");
+    expect(weirdRoute.nodes[3].shop?.label).toBe("买画框里的钥匙");
+  });
+
+  test("can roll into the expanded shop pools and preview their offers", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "expanded-shop-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const urbanRoute = createJourney(session, draft, "hospital", 60);
+    const wildRoute = createJourney(session, draft, "farm", 60);
+    const urbanShop = urbanRoute.nodes[3].shop;
+    const wildShop = wildRoute.nodes[3].shop;
+
+    expect(urbanShop?.label).toBe("向公交调度员买旧车票");
+    expect(wildShop?.label).toBe("向巡田老人买近路");
+    expect(urbanShop?.offers.resupply.label).toBe("购买路上口粮");
+    expect(shopOfferOutcome("intel", urbanShop!.offers.intel, urbanRoute.support).text).toContain("路线");
+    expect(Object.values(shopOfferOutcome("service", wildShop!.offers.service, wildRoute.support).reward).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(0);
   });
 
   test("can roll into the expanded combat enemy pools", () => {
