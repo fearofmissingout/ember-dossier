@@ -76,6 +76,19 @@ if (productionMode) {
 - name: Production playtest smoke
   run: npm run playtest:check
 `,
+    viteConfig: `
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks() {
+          return "react-vendor" || "icons-vendor" || "journey-runtime" || "game-runtime";
+        }
+      }
+    }
+  }
+});
+`,
     publish: `
 if (options.runChecks) {
   run("npm", ["run", "release:preflight"], "Release preflight");
@@ -180,5 +193,16 @@ if (options.runChecks) {
 
     expect(report.ok).toBe(false);
     expect(report.missing).toEqual(expect.arrayContaining(["release fallback: release preflight"]));
+  });
+
+  test("reports drift when the production build chunk split is removed", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        viteConfig: "export default defineConfig({ plugins: [react()] });"
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(expect.arrayContaining(["build config: playable chunks"]));
   });
 });

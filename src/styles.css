@@ -6267,6 +6267,10 @@ button:disabled {
     -webkit-overflow-scrolling: touch;
   }
 
+  .nav-item.mobile-secondary {
+    display: none;
+  }
+
   .nav-item {
     display: grid;
     min-width: 0;

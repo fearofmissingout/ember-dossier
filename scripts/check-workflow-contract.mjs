@@ -7,6 +7,7 @@ const defaultFiles = {
   gates: "scripts/check-iteration-gates.mjs",
   packageJson: "package.json",
   publish: "scripts/publish-github-api.mjs",
+  viteConfig: "vite.config.ts",
   workflow: ".github/workflows/deploy-cloudflare-pages.yml"
 };
 
@@ -124,6 +125,15 @@ const requiredChecks = [
   {
     id: "release gate: production build",
     test: ({ gates }) => gates.includes('["run", "build"]')
+  },
+  {
+    id: "build config: playable chunks",
+    test: ({ viteConfig }) =>
+      viteConfig.includes("manualChunks") &&
+      viteConfig.includes("react-vendor") &&
+      viteConfig.includes("icons-vendor") &&
+      viteConfig.includes("journey-runtime") &&
+      viteConfig.includes("game-runtime")
   },
   {
     id: "release gate: Cloudflare Pages config",

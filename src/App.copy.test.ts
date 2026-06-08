@@ -152,7 +152,9 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("data-app-mode=\"single-page\"");
     expect(source).toContain("onClick={() => setView(item.key)}");
-    expect(source).toContain("className={view === item.key ? \"nav-item active\" : \"nav-item\"}");
+    expect(source).toContain("mobilePrimary: true");
+    expect(source).toContain("const navClassName = [");
+    expect(source).toContain("item.mobilePrimary ? \"mobile-primary\" : \"mobile-secondary\"");
     expect(source).toContain("aria-label=\"手机端单页行动栏\"");
     expect(source).toContain("aria-label=\"数据库同步提示\"");
     expect(source).toContain("aria-label=\"房间捐入优先级\"");
@@ -164,6 +166,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("sync-health-card");
     expect(source).not.toMatch(/<a\s+href=|window\.location\.href/);
     expect(styles).toContain(".mobile-command-strip");
+    expect(styles).toContain(".nav-item.mobile-secondary");
     expect(styles).toContain(".sync-health-card");
     expect(styles).toContain(".room-contribution-plan");
     expect(styles).toContain(".room-contribution-grid");

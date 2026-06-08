@@ -178,6 +178,7 @@ type ExpeditionDraft = {
 };
 
 type SyncStatus = "local" | "loading" | "initialized" | "saving" | "synced" | "error";
+type ViewDefinition = { key: ViewKey; label: string; icon: typeof Home; mobilePrimary?: boolean };
 
 const syncStatusLabels: Record<SyncStatus, string> = {
   local: "本地模式",
@@ -188,13 +189,13 @@ const syncStatusLabels: Record<SyncStatus, string> = {
   error: "数据库未连接"
 };
 
-const views: Array<{ key: ViewKey; label: string; icon: typeof Home }> = [
-  { key: "overview", label: "基地总览", icon: Home },
-  { key: "survivors", label: "幸存者", icon: Users },
-  { key: "expedition", label: "远征准备", icon: Send },
+const views: ViewDefinition[] = [
+  { key: "overview", label: "基地总览", icon: Home, mobilePrimary: true },
+  { key: "survivors", label: "幸存者", icon: Users, mobilePrimary: true },
+  { key: "expedition", label: "远征准备", icon: Send, mobilePrimary: true },
   { key: "reports", label: "战报动态", icon: ClipboardList },
-  { key: "facilities", label: "设施", icon: Wrench },
-  { key: "members", label: "成员", icon: Shield },
+  { key: "facilities", label: "设施", icon: Wrench, mobilePrimary: true },
+  { key: "members", label: "成员", icon: Shield, mobilePrimary: true },
   { key: "archive", label: "档案", icon: Archive }
 ];
 
@@ -1041,10 +1042,17 @@ export default function App() {
         <nav className="nav-list" aria-label="主导航">
           {views.map((item) => {
             const Icon = item.icon;
+            const navClassName = [
+              "nav-item",
+              view === item.key ? "active" : "",
+              item.mobilePrimary ? "mobile-primary" : "mobile-secondary"
+            ]
+              .filter(Boolean)
+              .join(" ");
             return (
               <button
                 key={item.key}
-                className={view === item.key ? "nav-item active" : "nav-item"}
+                className={navClassName}
                 type="button"
                 onClick={() => setView(item.key)}
               >
