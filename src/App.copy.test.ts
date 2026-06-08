@@ -194,14 +194,22 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("const playtestSettings = {");
+    expect(source).toContain("languagePackChecklist");
     expect(source).toContain("languageMode: \"中文\"");
     expect(source).toContain("英文包待接入后再开放切换");
     expect(source).toContain("aria-label=\"试玩设置\"");
+    expect(source).toContain("aria-label=\"语言模式\"");
+    expect(source).toContain("aria-label=\"语言包覆盖范围\"");
+    expect(source).toContain("中文已启用");
+    expect(source).toContain("英文包待完整");
+    expect(source).toContain("异常提示");
     expect(source).toContain("playtest-settings-card");
     expect(source).toContain("playtestSettings.pageStatus");
     expect(source).toContain("playtestSettings.releaseStatus");
     expect(styles).toContain(".playtest-settings-card");
     expect(styles).toContain(".playtest-settings-grid");
+    expect(styles).toContain(".language-mode-switch");
+    expect(styles).toContain(".language-pack-grid");
   });
 
   test("keeps expedition actions reachable as a mobile single-page command dock", () => {

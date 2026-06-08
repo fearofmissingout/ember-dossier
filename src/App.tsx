@@ -224,6 +224,29 @@ const playtestSettings = {
   releaseStatus: "大功能先跑本地门禁，通过后再发布试玩。"
 };
 
+const languagePackChecklist = [
+  {
+    label: "界面按钮",
+    status: "中文已覆盖",
+    text: "导航、操作按钮、设置和确认提示必须整包切换。"
+  },
+  {
+    label: "路上文本",
+    status: "中文已覆盖",
+    text: "远征事件、战斗意图、商店和营地文本必须同语种显示。"
+  },
+  {
+    label: "结算战报",
+    status: "中文已覆盖",
+    text: "战报、成长、复盘建议和回基地队列必须同语种输出。"
+  },
+  {
+    label: "异常提示",
+    status: "中文已覆盖",
+    text: "登录、同步、数据库降级和发布验收提示不能混用语言。"
+  }
+];
+
 const releaseReadinessSteps = [
   {
     command: "npm run iteration:check",
@@ -1150,6 +1173,23 @@ export default function App() {
           <span>试玩设置</span>
           <strong>{playtestSettings.languageMode}</strong>
           <small>{playtestSettings.languageStatus}</small>
+          <div className="language-mode-switch" aria-label="语言模式">
+            <button className="active" type="button">
+              中文已启用
+            </button>
+            <button disabled type="button">
+              英文包待完整
+            </button>
+          </div>
+          <div className="language-pack-grid" aria-label="语言包覆盖范围">
+            {languagePackChecklist.map((item) => (
+              <span key={item.label}>
+                {item.label}
+                <b>{item.status}</b>
+                <small>{item.text}</small>
+              </span>
+            ))}
+          </div>
           <div className="playtest-settings-grid">
             <span>
               {playtestSettings.pageMode}

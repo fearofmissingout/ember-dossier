@@ -249,6 +249,42 @@ button:disabled {
   gap: 7px;
 }
 
+.language-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.language-mode-switch button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid #c6d1a8;
+  border-radius: 999px;
+  background: #fffdf5;
+  color: #415030;
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.language-mode-switch button.active {
+  border-color: #6f8a48;
+  background: #e7f0d7;
+  color: #2f4826;
+}
+
+.language-mode-switch button:disabled {
+  color: #808875;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.language-pack-grid {
+  display: grid;
+  gap: 6px;
+}
+
 .playtest-settings-grid span {
   display: grid;
   gap: 3px;
@@ -261,11 +297,35 @@ button:disabled {
   font-weight: 950;
 }
 
+.language-pack-grid span {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid #d1d9bb;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.78);
+  color: #415030;
+  font-size: 12px;
+  font-weight: 950;
+}
+
 .playtest-settings-grid b {
   color: #626d55;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.35;
+}
+
+.language-pack-grid b,
+.language-pack-grid small {
+  color: #626d55;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.language-pack-grid small {
+  overflow-wrap: anywhere;
 }
 
 .room-actions {
