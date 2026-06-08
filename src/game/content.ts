@@ -1,4 +1,4 @@
-import type { BaseResources, Facility, GameState, Location, ResourceBundle, Survivor } from "./types";
+import type { BaseResources, Facility, GameState, Location, LocationFamily, ResourceBundle, Survivor } from "./types";
 import { facilityBlueprints } from "./facilities";
 
 export const emptyResources = (): ResourceBundle => ({
@@ -254,6 +254,16 @@ export const starterLocations: Location[] = [
     dossier: "招牌还亮着一半，像在坚持营业到世界结束。"
   },
   {
+    id: "river-filter",
+    name: "河湾净水站",
+    family: "resources",
+    risk: 48,
+    recommendedStats: ["technical", "stamina", "infectionResistance"],
+    reward: { food: 0, water: 8, materials: 3, medicine: 0, fuel: 2, ammo: 0 },
+    tags: ["水源", "滤芯", "河雾"],
+    dossier: "净水站半截沉在河雾里，滤芯仓的门却每天换一把锁。"
+  },
+  {
     id: "greenhouse",
     name: "异常温室",
     family: "weird",
@@ -262,6 +272,26 @@ export const starterLocations: Location[] = [
     reward: { food: 8, water: 2, materials: 1, medicine: 3, fuel: 0, ammo: 0 },
     tags: ["怪异", "食物", "精神压力"],
     dossier: "里面的植物会朝你转头。至少目前只有植物。"
+  },
+  {
+    id: "blackbox-theater",
+    name: "黑箱剧院",
+    family: "weird",
+    risk: 69,
+    recommendedStats: ["willpower", "social", "luck"],
+    reward: { food: 1, water: 0, materials: 4, medicine: 3, fuel: 0, ammo: 1 },
+    tags: ["怪异", "舞台", "黑色信号"],
+    dossier: "观众席空无一人，掌声却总在错误的地方响起来。"
+  },
+  {
+    id: "folded-apartments",
+    name: "折叠公寓",
+    family: "weird",
+    risk: 78,
+    recommendedStats: ["willpower", "technical", "infectionResistance"],
+    reward: { food: 2, water: 2, materials: 3, medicine: 4, fuel: 0, ammo: 0 },
+    tags: ["怪异", "住户门牌", "空间错位"],
+    dossier: "每层楼都声称自己是一楼，电梯按钮多到像一份供词。"
   },
   {
     id: "school",
@@ -274,6 +304,16 @@ export const starterLocations: Location[] = [
     dossier: "广播室每天正午自动播放课间操，没人承认设置过。"
   },
   {
+    id: "metro-east",
+    name: "东环地铁站",
+    family: "urban",
+    risk: 58,
+    recommendedStats: ["agility", "technical", "willpower"],
+    reward: { food: 1, water: 1, materials: 6, medicine: 1, fuel: 1, ammo: 1 },
+    tags: ["材料", "地下", "广播"],
+    dossier: "闸机还在计数，尽管已经很久没有人真正刷卡进站。"
+  },
+  {
     id: "farm",
     name: "南坡农场",
     family: "wilds",
@@ -282,8 +322,38 @@ export const starterLocations: Location[] = [
     reward: { food: 10, water: 1, materials: 2, medicine: 0, fuel: 1, ammo: 0 },
     tags: ["食物", "荒野", "低风险"],
     dossier: "稻草人排成一列，像在等迟到的公交。"
+  },
+  {
+    id: "salt-dike",
+    name: "盐雾堤岸",
+    family: "wilds",
+    risk: 49,
+    recommendedStats: ["stamina", "agility", "infectionResistance"],
+    reward: { food: 4, water: 4, materials: 3, medicine: 0, fuel: 1, ammo: 0 },
+    tags: ["荒野", "水路", "盐雾"],
+    dossier: "堤岸白得像旧骨头，潮声会把远处的脚步藏起来。"
+  },
+  {
+    id: "old-orchard",
+    name: "旧果园",
+    family: "wilds",
+    risk: 42,
+    recommendedStats: ["social", "luck", "medical"],
+    reward: { food: 8, water: 1, materials: 1, medicine: 2, fuel: 0, ammo: 0 },
+    tags: ["食物", "药草", "低语蜂箱"],
+    dossier: "果树还在结果，只是枝条会在没人看见的时候换位置。"
   }
 ];
+
+export function locationContentBreadth(locations: Location[] = starterLocations): Record<LocationFamily, number> {
+  return locations.reduce(
+    (counts, location) => ({
+      ...counts,
+      [location.family]: counts[location.family] + 1
+    }),
+    { resources: 0, urban: 0, weird: 0, wilds: 0 } satisfies Record<LocationFamily, number>
+  );
+}
 
 export const starterFacilities: Facility[] = [
   ...facilityBlueprints
