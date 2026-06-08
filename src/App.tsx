@@ -1877,9 +1877,66 @@ function ExpeditionPrep({
       value: launchChecklist.canDispatch ? "可以派遣" : "先处理阻塞项"
     }
   ];
+  const prepCommandItems = [
+    {
+      detail: draft.squadIds.length > 0 ? `${draft.squadIds.length} 名幸存者已入队` : "先选择 3-5 名幸存者",
+      id: "prep-squad",
+      label: "编队",
+      status: draft.squadIds.length >= 3 && draft.squadIds.length <= 5 ? "ready" : "blocked",
+      value: `${draft.squadIds.length}/5`
+    },
+    {
+      detail: `${locationFamilyLabels[selectedLocation.family]} / 危险 ${selectedLocation.risk}`,
+      id: "prep-route",
+      label: "路线",
+      status: "ready",
+      value: selectedLocation.name
+    },
+    {
+      detail: burdenSummary(carryBurden),
+      id: "prep-loadout",
+      label: "补给",
+      status: canAffordLoadout ? "ready" : "blocked",
+      value: `${carryBurden.load}/${carryBurden.capacity}`
+    },
+    {
+      detail: riskDescriptions[draft.risk],
+      id: "prep-risk",
+      label: "策略",
+      status: readiness >= 45 ? "ready" : "warning",
+      value: riskLabels[draft.risk]
+    }
+  ];
+  const scrollToPrepStep = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
     <div className="expedition-layout">
-      <section className="panel">
+      <section className="expedition-prep-command" aria-label="出征准备指挥台">
+        <div className="expedition-prep-heading">
+          <div>
+            <span>出征准备</span>
+            <strong>{selectedLocation.name}</strong>
+            <small>{launchChecklist.summary}</small>
+          </div>
+          <button className="primary-button" type="button" disabled={!launchChecklist.canDispatch} onClick={onDispatch}>
+            <Send size={17} aria-hidden="true" />
+            出发
+          </button>
+        </div>
+        <div className="expedition-prep-steps" aria-label="出征准备步骤">
+          {prepCommandItems.map((item, index) => (
+            <button className={`expedition-prep-step ${item.status}`} key={item.id} type="button" onClick={() => scrollToPrepStep(item.id)}>
+              <span>{index + 1}</span>
+              <strong>{item.label}</strong>
+              <b>{item.value}</b>
+              <small>{item.detail}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel expedition-prep-section" id="prep-squad">
         <p className="eyebrow">步骤 1</p>
         <h2>选择编队</h2>
         <div className="compact-list">
@@ -1897,7 +1954,7 @@ function ExpeditionPrep({
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel expedition-prep-section" id="prep-route">
         <p className="eyebrow">步骤 2</p>
         <h2>选择地点</h2>
         <div className="compact-list">
@@ -1915,7 +1972,7 @@ function ExpeditionPrep({
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel expedition-prep-section" id="prep-loadout">
         <p className="eyebrow">步骤 3</p>
         <h2>携带物资</h2>
         <div className="loadout-list">
@@ -1946,7 +2003,7 @@ function ExpeditionPrep({
         <BurdenPreview burden={carryBurden} />
       </section>
 
-      <section className="panel">
+      <section className="panel expedition-prep-section" id="prep-risk">
         <p className="eyebrow">步骤 4</p>
         <h2>风险策略</h2>
         <div className="risk-options">
@@ -1959,7 +2016,7 @@ function ExpeditionPrep({
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel expedition-prep-section" id="prep-doctrine">
         <p className="eyebrow">步骤 5</p>
         <h2>出征纪律</h2>
         <div className="doctrine-grid">

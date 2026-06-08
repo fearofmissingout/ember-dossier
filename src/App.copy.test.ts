@@ -36,6 +36,25 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".yield-preview");
   });
 
+  test("keeps expedition prep as a mobile-first single-page command flow", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("aria-label=\"出征准备指挥台\"");
+    expect(source).toContain("aria-label=\"出征准备步骤\"");
+    expect(source).toContain("expedition-prep-command");
+    expect(source).toContain("expedition-prep-steps");
+    expect(source).toContain("scrollToPrepStep");
+    expect(source).toContain("document.getElementById(id)?.scrollIntoView");
+    expect(source).toContain("id=\"prep-squad\"");
+    expect(source).toContain("id=\"prep-route\"");
+    expect(source).toContain("id=\"prep-loadout\"");
+    expect(source).toContain("id=\"prep-risk\"");
+    expect(styles).toContain(".expedition-prep-command");
+    expect(styles).toContain(".expedition-prep-step");
+    expect(styles).toContain("scroll-margin-top");
+  });
+
   test("shows a Chinese action guide during expeditions", () => {
     const source = readFileSync("src/App.tsx", "utf8");
 

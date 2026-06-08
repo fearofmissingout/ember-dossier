@@ -1576,6 +1576,127 @@ button:disabled {
   grid-column: span 4;
 }
 
+.expedition-prep-command {
+  display: grid;
+  grid-column: span 4;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #b9c7a6;
+  border-radius: 8px;
+  background: #f8fbef;
+}
+
+.expedition-prep-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.expedition-prep-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.expedition-prep-heading span,
+.expedition-prep-step strong {
+  color: #3c694b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.expedition-prep-heading strong {
+  color: #24362c;
+  font-size: 22px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.expedition-prep-heading small {
+  color: #5f6e62;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.expedition-prep-heading .primary-button {
+  width: auto;
+  min-width: 118px;
+  margin: 0;
+}
+
+.expedition-prep-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.expedition-prep-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid #c9d8b8;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  text-align: left;
+}
+
+.expedition-prep-step span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: #dce8d3;
+  color: #2f5438;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.expedition-prep-step b {
+  grid-column: 1 / -1;
+  color: #26312c;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.expedition-prep-step small {
+  grid-column: 1 / -1;
+  color: #627066;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.expedition-prep-step.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.expedition-prep-step.warning span {
+  background: #f0dfaa;
+  color: #775414;
+}
+
+.expedition-prep-step.blocked {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.expedition-prep-step.blocked span {
+  background: #f0cabf;
+  color: #87321f;
+}
+
+.expedition-prep-section {
+  scroll-margin-top: 96px;
+}
+
 .pick-row,
 .risk-card,
 .doctrine-card {
@@ -4973,6 +5094,76 @@ button:disabled {
     .room-cooperation-board,
     .resource-grid {
     grid-template-columns: 1fr;
+  }
+
+  .expedition-prep-command {
+    position: sticky;
+    top: 70px;
+    z-index: 8;
+    grid-column: span 1;
+    gap: 9px;
+    margin: 0 -4px 4px;
+    padding: 10px;
+    box-shadow: 0 14px 24px rgba(64, 43, 21, 0.13);
+  }
+
+  .expedition-prep-heading {
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .expedition-prep-heading strong {
+    font-size: 17px;
+  }
+
+  .expedition-prep-heading small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .expedition-prep-heading .primary-button {
+    min-width: 84px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .expedition-prep-steps {
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .expedition-prep-step {
+    min-height: 68px;
+    padding: 8px;
+  }
+
+  .expedition-prep-step span {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .expedition-prep-step strong {
+    font-size: 10px;
+  }
+
+  .expedition-prep-step b {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .expedition-prep-step small {
+    display: none;
+  }
+
+  .expedition-prep-section {
+    scroll-margin-top: 204px;
   }
 
   .journey-plan-strip,
