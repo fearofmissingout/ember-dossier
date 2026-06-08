@@ -159,8 +159,14 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("facility-impact-grid");
     expect(source).toContain("preview.baseText");
     expect(source).toContain("preview.expeditionText");
+    expect(source).toContain("expeditionDoctrineForFacility");
+    expect(source).toContain("aria-label=\"设施出征方针解锁\"");
+    expect(source).toContain("facility-doctrine-unlock");
+    expect(source).toContain("已解锁出征方针");
+    expect(source).toContain("建造后解锁");
     expect(styles).toContain(".development-project-why");
     expect(styles).toContain(".facility-impact-grid");
+    expect(styles).toContain(".facility-doctrine-unlock");
   });
 
   test("shows a Chinese base task list on the overview", () => {

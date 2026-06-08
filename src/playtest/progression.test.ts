@@ -6,6 +6,7 @@ import {
   accountBaseSupportBriefing,
   advanceSurvivorExperience,
   basePrepSupportFromAssignments,
+  expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
   expeditionSupportPlan,
   isSurvivorAtLevelCap,
@@ -35,6 +36,19 @@ describe("expedition doctrines", () => {
       facilityId: "dorm",
       label: "收紧队形"
     });
+  });
+
+  test("facilities can explain their expedition doctrine unlocks", () => {
+    expect(expeditionDoctrineForFacility("clinic")).toMatchObject({
+      effect: "药品 +1 / 包扎 +3",
+      id: "field-triage",
+      label: "前线分诊"
+    });
+    expect(expeditionDoctrineForFacility("kitchen")).toMatchObject({
+      id: "road-rations",
+      label: "路上口粮"
+    });
+    expect(expeditionDoctrineForFacility("unknown")).toBeNull();
   });
 
   test("selected expedition doctrine changes combat support without changing passive facility support", () => {

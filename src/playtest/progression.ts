@@ -242,6 +242,10 @@ export function expeditionDoctrineOptions(facilities: Facility[]): ExpeditionDoc
   return expeditionDoctrineDefinitions.filter((doctrine) => facilityLevel(facilities, doctrine.facilityId) > 0);
 }
 
+export function expeditionDoctrineForFacility(facilityId: string): ExpeditionDoctrineOption | null {
+  return expeditionDoctrineDefinitions.find((doctrine) => doctrine.facilityId === facilityId) ?? null;
+}
+
 export function supportFromFacilities(facilities: Facility[], doctrineId?: ExpeditionDoctrineId | null): ExpeditionSupport {
   const dorm = facilityLevel(facilities, "dorm");
   const clinic = facilityLevel(facilities, "clinic");

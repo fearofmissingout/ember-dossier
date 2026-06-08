@@ -4984,6 +4984,50 @@ button:disabled {
   line-height: 1.4;
 }
 
+.facility-doctrine-unlock {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid #bfd0b2;
+  border-radius: 8px;
+  background: #f2faef;
+}
+
+.facility-doctrine-unlock.locked {
+  border-color: #d5bd80;
+  background: #fff7df;
+}
+
+.facility-doctrine-unlock span {
+  color: #526c38;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.facility-doctrine-unlock.locked span {
+  color: #7a5720;
+}
+
+.facility-doctrine-unlock strong,
+.facility-doctrine-unlock small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.facility-doctrine-unlock strong {
+  color: #263727;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.facility-doctrine-unlock small {
+  color: #5b654f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .compact-action {
   width: auto;
   min-height: 36px;

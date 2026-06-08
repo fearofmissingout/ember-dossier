@@ -103,6 +103,7 @@ import {
 import {
   accountBaseSupportBriefing,
   basePrepSupportFromAssignments,
+  expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
   expeditionSupportPlan,
   isSurvivorAtLevelCap,
@@ -3568,6 +3569,7 @@ function Facilities({
           const built = isFacilityBuilt(facility);
           const maxed = isFacilityMaxed(facility);
           const preview = facilityImpactPreview(facility);
+          const doctrineUnlock = expeditionDoctrineForFacility(facility.id);
           return (
             <article className={`facility-card ${facility.status} ${built ? "" : "unbuilt"}`} key={facility.id}>
               <div className="facility-title-row">
@@ -3589,6 +3591,13 @@ function Facilities({
                   </span>
                 </div>
               </div>
+              {doctrineUnlock && (
+                <div className={`facility-doctrine-unlock ${built ? "ready" : "locked"}`} aria-label="设施出征方针解锁">
+                  <span>{built ? "已解锁出征方针" : "建造后解锁"}</span>
+                  <strong>{doctrineUnlock.label}</strong>
+                  <small>{doctrineUnlock.effect}</small>
+                </div>
+              )}
               <button
                 className="ghost-button compact-action"
                 type="button"
