@@ -29,6 +29,14 @@ const requiredChineseAnchors = [
   "试玩登录"
 ];
 
+const additionalRequiredChineseAnchors = [
+  "手机端回合战斗面板",
+  "设施推荐原因",
+  "房间协作缺口",
+  "试玩完整性检查",
+  "核心试玩闭环已通过"
+];
+
 const bannedVisibleEnglish = [
   "Archive",
   "Continue as guest",
@@ -58,7 +66,9 @@ const fileTexts = filesToScan.map((path) => ({
 const allText = fileTexts.map((file) => file.text).join("\n");
 const failures = [];
 
-for (const anchor of requiredChineseAnchors) {
+const allRequiredChineseAnchors = [...requiredChineseAnchors, ...additionalRequiredChineseAnchors];
+
+for (const anchor of allRequiredChineseAnchors) {
   if (!allText.includes(anchor)) {
     failures.push(`Missing required Chinese UI anchor: ${anchor}`);
   }
@@ -87,7 +97,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Visible copy check passed (${requiredChineseAnchors.length} anchors, ${filesToScan.length} files).`);
+console.log(`Visible copy check passed (${allRequiredChineseAnchors.length} anchors, ${filesToScan.length} files).`);
 
 function extractQuotedStrings(text) {
   const strings = [];

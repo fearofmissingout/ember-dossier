@@ -216,11 +216,16 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("核心试玩闭环已通过");
     expect(source).toContain("playtest-readiness-card");
     expect(source).toContain("playtest-checkpoint-grid");
+    expect(source).toContain("aria-label=\"发布前本地门禁\"");
+    expect(source).toContain("npm run copy:check");
+    expect(source).toContain("npm run playable:check");
+    expect(source).toContain("npm run iteration:check");
     expect(source).toContain("playtestCheckpointLabel");
     expect(source).toContain("回基地行动");
     expect(styles).toContain(".playtest-readiness-card");
     expect(styles).toContain(".playtest-checkpoint-grid");
     expect(styles).toContain(".playtest-checkpoint");
+    expect(styles).toContain(".playtest-gate-strip");
   });
 
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {

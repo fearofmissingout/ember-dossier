@@ -3723,6 +3723,11 @@ function ArchiveView({ state }: { state: GameState }) {
           <span>{playableSmoke.reportDigest.settlement.summary}</span>
           <strong>{playableSmoke.nextBaseTasks.summary}</strong>
         </div>
+        <div className="playtest-gate-strip" aria-label="发布前本地门禁">
+          <span>npm run copy:check</span>
+          <span>npm run playable:check</span>
+          <span>npm run iteration:check</span>
+        </div>
       </div>
       <div className="archive-grid">
         <div>

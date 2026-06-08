@@ -5231,6 +5231,25 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.playtest-gate-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.playtest-gate-strip span {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #d8c4a4;
+  border-radius: 999px;
+  background: rgba(255, 253, 245, 0.82);
+  color: #604733;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .archive-grid div {
   display: grid;
   gap: 8px;
