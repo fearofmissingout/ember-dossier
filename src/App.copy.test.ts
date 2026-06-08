@@ -221,6 +221,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("npm run playable:check");
     expect(source).toContain("npm run iteration:check");
     expect(source).toContain("playtestCheckpointLabel");
+    expect(source).toContain("多人协作");
     expect(source).toContain("回合战斗");
     expect(source).toContain("回基地行动");
     expect(styles).toContain(".playtest-readiness-card");

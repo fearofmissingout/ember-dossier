@@ -1,12 +1,22 @@
 import type { FeedItem } from "../game/types";
 import { createCombatForNode, createJourney, resolveCombatRound, type JourneyCombatRoundRecord } from "./journey";
-import { assignSurvivorToRoom, baseTaskList, resolvePlaytestExpedition, setBaseAssignment, type BaseTaskList } from "./sim";
+import {
+  applyContribution,
+  assignSurvivorToRoom,
+  baseTaskList,
+  resolvePlaytestExpedition,
+  roomCooperationSummary,
+  setBaseAssignment,
+  type BaseTaskList,
+  type RoomCooperationSummary
+} from "./sim";
 import { createStarterSession } from "./state";
 import { summarizeFeedReportSettlement, summarizeFeedReturnLedger, type FeedReportSettlement, type FeedReturnLedger } from "./reports";
 
 export type PlayableLoopCheckpointId =
   | "base-command"
   | "squad-assigned"
+  | "multiplayer-cooperation"
   | "combat-round"
   | "expedition-settled"
   | "report-readable"
@@ -23,6 +33,7 @@ export type PlayableLoopSmoke = {
   nextBaseTasks: BaseTaskList;
   ok: boolean;
   combatRound: JourneyCombatRoundRecord | null;
+  cooperation: RoomCooperationSummary;
   reportDigest: {
     ledger: FeedReturnLedger;
     settlement: FeedReportSettlement;
@@ -32,8 +43,37 @@ export type PlayableLoopSmoke = {
 export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   let session = createStarterSession("smoke-user", "Smoke Player", "local-playable-loop");
   const userId = session.account.profile.userId;
+  const guestUserId = "smoke-guest";
   const squad = session.account.survivors.slice(0, 3);
   const baseTasksBefore = baseTaskList(session);
+
+  session.room.members.push({
+    displayName: "Smoke Guest",
+    joinedAt: "2026-06-08T08:00:00.000Z",
+    lastSeenAt: "2026-06-08T08:15:00.000Z",
+    role: "member",
+    userId: guestUserId
+  });
+  session = applyContribution(session, userId, { ammo: 0, food: 2, fuel: 0, materials: 0, medicine: 0, water: 1 });
+  session.room.contributions.push({
+    createdAt: "2026-06-08T08:18:00.000Z",
+    id: "smoke-guest-contribution",
+    resources: { ammo: 0, food: 0, fuel: 0, materials: 4, medicine: 1, water: 0 },
+    roomId: session.room.id,
+    userId: guestUserId
+  });
+  session.room.assignedSurvivors.push({
+    assignedAt: "2026-06-08T08:20:00.000Z",
+    roomId: session.room.id,
+    survivorId: "guest-scout",
+    userId: guestUserId
+  });
+  session.room.baseAssignments.push({
+    roomId: session.room.id,
+    survivorId: "guest-guard",
+    type: "guard",
+    userId: guestUserId
+  });
 
   session = setBaseAssignment(session, userId, squad[0].id, "guard");
   session = setBaseAssignment(session, userId, squad[1].id, "repair");
@@ -41,6 +81,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   for (const survivor of squad) {
     session = assignSurvivorToRoom(session, userId, survivor.id);
   }
+  const cooperation = roomCooperationSummary(session);
 
   const journey = createJourney(
     session,
@@ -102,6 +143,16 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: session.room.assignedSurvivors.filter((assignment) => assignment.userId === userId).length === squad.length
     },
     {
+      detail: cooperation.actionHint,
+      id: "multiplayer-cooperation",
+      ok:
+        cooperation.memberCount >= 2 &&
+        cooperation.contributionCount >= 2 &&
+        cooperation.assignedSurvivors >= squad.length + 1 &&
+        cooperation.baseShifts >= 3 &&
+        cooperation.gaps.length > 0
+    },
+    {
       detail: combatRound ? `${combatRound.actionLabel}：${combatRound.outcomeText}` : "未记录回合战斗",
       id: "combat-round",
       ok: Boolean(combatRound && foughtJourney.combatHistory.length > 0 && foughtJourney.logs.length > journey.logs.length)
@@ -125,6 +176,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
 
   return {
     combatRound,
+    cooperation,
     checkpoints,
     nextBaseTasks,
     ok: checkpoints.every((checkpoint) => checkpoint.ok),
