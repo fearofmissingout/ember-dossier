@@ -3,14 +3,17 @@ import {
   campOptionOutcome,
   createCombatForNode,
   createJourney,
+  combatRoundPlan,
   resolveCombatRound,
   shopOfferOutcome,
+  type JourneyCombatRoundPlan,
   type JourneyCombatRoundRecord
 } from "./journey";
 import { expeditionDoctrineForFacility, supportFromFacilities } from "./progression";
 import {
   applyContribution,
   assignSurvivorToRoom,
+  baseDevelopmentPlan,
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
@@ -28,11 +31,14 @@ export type PlayableLoopCheckpointId =
   | "base-command"
   | "facility-upgraded"
   | "facility-doctrine"
+  | "facility-stage"
   | "survivor-treated"
   | "squad-assigned"
   | "multiplayer-cooperation"
+  | "player-cooperation-task"
   | "member-guidance"
   | "journey-choice-preview"
+  | "combat-turn-plan"
   | "combat-round"
   | "expedition-settled"
   | "report-readable"
@@ -49,8 +55,10 @@ export type PlayableLoopSmoke = {
   nextBaseTasks: BaseTaskList;
   ok: boolean;
   combatRound: JourneyCombatRoundRecord | null;
+  combatTurnPlan: JourneyCombatRoundPlan | null;
   cooperation: RoomCooperationSummary;
   doctrineDetail: string;
+  facilityStageDetail: string;
   facilityFeedTitle: string;
   journeyChoiceDetail: string;
   memberGuidanceDetail: string;
@@ -69,6 +77,8 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   const baseTasksBefore = baseTaskList(session);
 
   session.room.base.resources.materials = Math.max(session.room.base.resources.materials, 20);
+  const developmentPlan = baseDevelopmentPlan(session);
+  const facilityStageDetail = developmentPlan.recommended.map((project) => `${project.name}：${project.expeditionStage}`).join(" / ");
   const beforeWorkshopLevel = session.room.base.facilities.find((facility) => facility.id === "workshop")?.level ?? 0;
   session = upgradeFacility(session, userId, "workshop");
   const afterWorkshopLevel = session.room.base.facilities.find((facility) => facility.id === "workshop")?.level ?? 0;
@@ -134,6 +144,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   }
   const cooperation = roomCooperationSummary(session);
   const memberGuidance = roomMemberSummaries(session);
+  const currentMemberGuidance = memberGuidance.find((member) => member.userId === userId);
   const memberGuidanceDetail = memberGuidance.map((member) => `${member.displayName}：${member.collaborationHint}`).join(" / ");
 
   const journey = createJourney(
@@ -169,6 +180,12 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     combat: createCombatForNode(journey.nodes[1], squad, 60, journey.support),
     currentNodeIndex: 1
   };
+  if (combatJourney.combat) {
+    combatJourney.combat.intent = "windup";
+    combatJourney.combat.intentLabel = "蓄力";
+    combatJourney.combat.intentText = "重击正在积蓄。防守可以反制。";
+  }
+  const combatTurnPlan = combatRoundPlan(combatJourney);
   const foughtJourney = resolveCombatRound(combatJourney, "guard", squad, 60);
   const combatRound = foughtJourney.combatHistory[foughtJourney.combatHistory.length - 1] ?? null;
 
@@ -212,6 +229,14 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: Boolean(workshopDoctrine && workshopDoctrine.id === "salvage-rig" && afterWorkshopLevel > 0)
     },
     {
+      detail: facilityStageDetail,
+      id: "facility-stage",
+      ok:
+        developmentPlan.recommended.length > 0 &&
+        developmentPlan.recommended.every((project) => project.expeditionStage.length > 0) &&
+        facilityStageDetail.includes("战斗医疗")
+    },
+    {
       detail: treatmentFeedTitle,
       id: "survivor-treated",
       ok: Boolean(treatedSurvivor && treatedSurvivor.injuries.length === 0 && treatedSurvivor.fatigue < 48)
@@ -232,6 +257,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
         cooperation.gaps.length > 0
     },
     {
+      detail: currentMemberGuidance ? `${currentMemberGuidance.displayName}：${currentMemberGuidance.collaborationHint}` : "未找到当前玩家协作任务",
+      id: "player-cooperation-task",
+      ok: Boolean(currentMemberGuidance && currentMemberGuidance.collaborationStatus === "ready" && currentMemberGuidance.collaborationHint.includes("都已覆盖"))
+    },
+    {
       detail: memberGuidanceDetail,
       id: "member-guidance",
       ok: memberGuidance.some((member) => member.collaborationStatus === "ready") && memberGuidance.some((member) => member.collaborationHint.includes("派 1 名幸存者"))
@@ -240,6 +270,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       detail: journeyChoiceDetail,
       id: "journey-choice-preview",
       ok: Boolean(campPreview && shopPreview && journeyChoiceDetail.includes("压力") && journeyChoiceDetail.includes("商店支援"))
+    },
+    {
+      detail: combatTurnPlan ? `${combatTurnPlan.label}：${combatTurnPlan.reason}` : "未生成回合建议",
+      id: "combat-turn-plan",
+      ok: Boolean(combatTurnPlan && combatTurnPlan.action === "guard" && combatTurnPlan.reason.includes("推荐 防守"))
     },
     {
       detail: combatRound ? `${combatRound.actionLabel}：${combatRound.outcomeText}` : "未记录回合战斗",
@@ -265,9 +300,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
 
   return {
     combatRound,
+    combatTurnPlan,
     cooperation,
     checkpoints,
     doctrineDetail,
+    facilityStageDetail,
     facilityFeedTitle,
     journeyChoiceDetail,
     memberGuidanceDetail,

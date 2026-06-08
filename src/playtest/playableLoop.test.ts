@@ -11,11 +11,14 @@ describe("playable loop smoke", () => {
       "base-command",
       "facility-upgraded",
       "facility-doctrine",
+      "facility-stage",
       "survivor-treated",
       "squad-assigned",
       "multiplayer-cooperation",
+      "player-cooperation-task",
       "member-guidance",
       "journey-choice-preview",
+      "combat-turn-plan",
       "combat-round",
       "expedition-settled",
       "report-readable",
@@ -24,12 +27,15 @@ describe("playable loop smoke", () => {
     expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
     expect(smoke.facilityFeedTitle).toContain("设施");
     expect(smoke.doctrineDetail).toContain("搜刮套件");
+    expect(smoke.facilityStageDetail).toContain("战斗医疗");
     expect(smoke.treatmentFeedTitle).toContain("治疗");
     expect(smoke.cooperation.memberCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.contributionCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.gaps.length).toBeGreaterThan(0);
     expect(smoke.memberGuidanceDetail).toContain("派 1 名幸存者");
     expect(smoke.journeyChoiceDetail).toContain("商店支援");
+    expect(smoke.combatTurnPlan?.label).toBe("防守");
+    expect(smoke.combatTurnPlan?.reason).toContain("推荐 防守");
     expect(smoke.combatRound?.actionLabel).toBeTruthy();
     expect(smoke.combatRound?.outcomeText).toContain("防");
     expect(smoke.reportDigest.settlement.hasSettlement).toBe(true);

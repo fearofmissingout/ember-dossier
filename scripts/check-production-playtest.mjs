@@ -22,6 +22,9 @@ export const requiredProductionStrings = [
   "出征开局预案",
   "战后复盘",
   "单页行动",
+  "你的协作任务",
+  "出征接入",
+  "本回合建议",
   "当前可执行操作"
 ];
 
