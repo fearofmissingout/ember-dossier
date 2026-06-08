@@ -1612,6 +1612,79 @@ button:disabled {
   line-height: 1.3;
 }
 
+.launch-checklist {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #d6c8a8;
+  border-radius: 8px;
+  background: #fff9ec;
+}
+
+.launch-checklist-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.launch-checklist-heading span,
+.launch-checklist-item span {
+  color: #7b6942;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.launch-checklist-heading strong {
+  color: #4b3b20;
+  font-size: 15px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.launch-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.launch-checklist-item {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #ddcfaf;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.launch-checklist-item.blocked {
+  border-color: #d9a08b;
+  background: #fff3ef;
+}
+
+.launch-checklist-item.blocked span {
+  color: #9c3d27;
+}
+
+.launch-checklist-item strong,
+.launch-checklist-item small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.launch-checklist-item strong {
+  color: #4b3b20;
+  font-size: 13px;
+}
+
+.launch-checklist-item small {
+  color: #665b48;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .journey-panel {
   display: grid;
   gap: 12px;
@@ -3618,6 +3691,7 @@ button:disabled {
   .journey-objective-card,
   .extraction-preview-options,
   .support-plan-grid,
+  .launch-checklist-grid,
   .base-command-strip,
   .march-forecast,
   .travel-record-strip,
@@ -3719,6 +3793,7 @@ button:disabled {
   .journey-objective-card,
   .extraction-preview-options,
   .support-plan-grid,
+  .launch-checklist-grid,
   .base-command-strip,
   .travel-record-strip,
   .road-event-strip,

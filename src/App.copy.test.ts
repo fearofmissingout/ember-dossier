@@ -18,4 +18,12 @@ describe("hosted playtest copy", () => {
       /Email confirmed|Loading your playtest account|Username must be|Password needs|Registration failed|Continue as guest|Supabase did not return a session|Username signup did not return a session|Supabase request failed with HTTP/
     );
   });
+
+  test("shows a Chinese expedition launch checklist in the prep UI", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+
+    expect(source).toContain("expeditionLaunchChecklist");
+    expect(source).toContain("aria-label=\"出征检查\"");
+    expect(source).toContain("出征检查");
+  });
 });

@@ -109,6 +109,7 @@ import {
   type ExpeditionDoctrineId
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
+import { expeditionLaunchChecklist } from "./playtest/launchChecklist";
 import { summarizeFeedReportSettlement, summarizeFeedReportTimeline, summarizeFeedReturnLedger } from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
@@ -1675,6 +1676,13 @@ function ExpeditionPrep({
     { label: "路线情报", sign: "+", value: accountSupport.lootIntel },
     { label: "商店情报", sign: "+", value: accountSupport.shopIntel }
   ].filter((item) => item.value > 0);
+  const launchChecklist = expeditionLaunchChecklist({
+    canAffordLoadout,
+    hasActiveJourney: Boolean(journey),
+    objectiveActive,
+    selectedLocationName: selectedLocation.name,
+    squadCount: draft.squadIds.length
+  });
   return (
     <div className="expedition-layout">
       <section className="panel">
@@ -1942,7 +1950,22 @@ function ExpeditionPrep({
             squad={selectedSquad}
           />
         )}
-        <button className="primary-button full-width" type="button" disabled={!squadReady || !canAffordLoadout || Boolean(journey)} onClick={onDispatch}>
+        <div className="launch-checklist" aria-label="出征检查">
+          <div className="launch-checklist-heading">
+            <span>出征检查</span>
+            <strong>{launchChecklist.summary}</strong>
+          </div>
+          <div className="launch-checklist-grid">
+            {launchChecklist.items.map((item) => (
+              <article className={`launch-checklist-item ${item.status}`} key={item.id}>
+                <span>{item.status === "ready" ? "就绪" : "待处理"}</span>
+                <strong>{item.label}</strong>
+                <small>{item.text}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+        <button className="primary-button full-width" type="button" disabled={!launchChecklist.canDispatch} onClick={onDispatch}>
           <Send size={18} aria-hidden="true" />
           派遣远征
         </button>
