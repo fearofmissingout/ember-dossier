@@ -66,6 +66,19 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("@media (max-width: 720px)");
   });
 
+  test("keeps mobile navigation as an in-app bottom bar instead of page hops", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("onClick={() => setView(item.key)}");
+    expect(source).toContain("className={view === item.key ? \"nav-item active\" : \"nav-item\"}");
+    expect(source).not.toMatch(/<a\s+href=|window\.location\.href/);
+    expect(styles).toContain("bottom: max(10px, env(safe-area-inset-bottom))");
+    expect(styles).toContain("grid-auto-flow: column");
+    expect(styles).toContain("overscroll-behavior-x: contain");
+    expect(styles).toContain("padding-bottom: calc(76px + env(safe-area-inset-bottom))");
+  });
+
   test("shows a Chinese base task list on the overview", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

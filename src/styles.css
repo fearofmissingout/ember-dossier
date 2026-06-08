@@ -4467,7 +4467,7 @@ button:disabled {
 @media (max-width: 720px) {
   body {
     min-width: 0;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 
   .workspace,
@@ -4523,7 +4523,46 @@ button:disabled {
   }
 
   .nav-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    position: fixed;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 20;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(74px, 1fr);
+    grid-template-columns: none;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 7px;
+    border: 1px solid #c4ad86;
+    border-radius: 8px;
+    background: rgba(255, 250, 239, 0.96);
+    box-shadow: 0 16px 34px rgba(52, 36, 19, 0.24);
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-item {
+    display: grid;
+    min-width: 0;
+    min-height: 54px;
+    justify-items: center;
+    gap: 4px;
+    padding: 7px 6px;
+    text-align: center;
+  }
+
+  .nav-item svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .nav-item span {
+    max-width: 100%;
+    font-size: 11px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
   }
 
   .view-grid,
