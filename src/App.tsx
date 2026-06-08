@@ -4305,6 +4305,23 @@ function RoomMembers({
       title: "留守班次"
     }
   ];
+  const ownershipBoundaries = [
+    {
+      detail: "幸存者等级、专长、疲劳恢复、个人基地房间和个人库存跟随账号。",
+      label: "账号保留",
+      value: "长期成长"
+    },
+    {
+      detail: "共享基地资源、房间设施、目标进度、成员捐入和班次属于当前房间。",
+      label: "房间共享",
+      value: "共同建设"
+    },
+    {
+      detail: "路线选择、战斗伤痕、战利品和战报会在结算后回填账号与房间。",
+      label: "单次远征",
+      value: "结算回流"
+    }
+  ];
 
   return (
     <section className="panel">
@@ -4344,6 +4361,22 @@ function RoomMembers({
               <span>{gap.status === "urgent" ? "紧急" : gap.status === "ready" ? "就绪" : "待办"}</span>
               <strong>{gap.label}</strong>
               <small>{gap.text}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="ownership-boundary-card" aria-label="账号房间边界">
+        <div className="ownership-boundary-heading">
+          <span>数据归属</span>
+          <strong>账号保留成长，房间共享基地，对局远征结算回流。</strong>
+        </div>
+        <div className="ownership-boundary-grid">
+          {ownershipBoundaries.map((item) => (
+            <article key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
             </article>
           ))}
         </div>

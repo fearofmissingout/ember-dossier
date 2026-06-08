@@ -42,6 +42,7 @@ const requiredChineseAnchors = [
   "英文包待接入",
   "语言包覆盖范围",
   "账号成长边界",
+  "账号房间边界",
   "建设队列总览",
   "多人试玩开局检查",
   "房间协作分工板",
@@ -70,7 +71,8 @@ const additionalRequiredChineseAnchors = [
   "补给容错",
   "反制动作",
   "完整基地到出征闭环",
-  "游客房间"
+  "游客房间",
+  "房间共享"
 ];
 
 const bannedVisibleEnglish = [

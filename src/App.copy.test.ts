@@ -423,6 +423,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("roomCooperationSummary");
     expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
+    expect(source).toContain("aria-label=\"账号房间边界\"");
+    expect(source).toContain("ownershipBoundaries");
+    expect(source).toContain("账号保留");
+    expect(source).toContain("房间共享");
+    expect(source).toContain("单次远征");
     expect(source).toContain("aria-label=\"多人试玩开局检查\"");
     expect(source).toContain("aria-label=\"房间协作分工板\"");
     expect(source).toContain("协作状态");
@@ -448,6 +453,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("member-collaboration-hint");
     expect(source).toContain("协作建议：");
     expect(styles).toContain(".room-cooperation-board");
+    expect(styles).toContain(".ownership-boundary-card");
+    expect(styles).toContain(".ownership-boundary-grid");
     expect(styles).toContain(".room-cooperation-metrics");
     expect(styles).toContain(".room-cooperation-gaps");
     expect(styles).toContain(".room-duty-board");
