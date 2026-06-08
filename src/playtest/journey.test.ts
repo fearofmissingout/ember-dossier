@@ -12,6 +12,7 @@ import {
   journeyExtractionPreview,
   journeyDecisionSummaryLines,
   journeyActionGuide,
+  journeyContentBreadth,
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
@@ -58,6 +59,35 @@ describe("journey route generation", () => {
     expect(weirdRoute.nodes[1].enemy?.name).toBe("借影");
     expect(weirdRoute.nodes[2].type).toBe("camp");
     expect(weirdRoute.nodes[3].shop?.label).toBe("付给面具摊主");
+  });
+
+  test("keeps each location family stocked with multiple route beats", () => {
+    expect(journeyContentBreadth()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "resources", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "urban", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "weird", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "wilds", roadBeats: 3, shops: 2 })
+      ])
+    );
+  });
+
+  test("can roll into the expanded route event and shop pools", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "expanded-route-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const resourceRoute = createJourney(session, draft, "water-plant", 60);
+    const weirdRoute = createJourney(session, draft, "greenhouse", 60);
+
+    expect(resourceRoute.nodes[0].title).toBe("沉降池吊桥");
+    expect(resourceRoute.nodes[3].shop?.label).toBe("换水渠通行牌");
+    expect(weirdRoute.nodes[0].title).toBe("倒置候诊区");
+    expect(weirdRoute.nodes[3].shop?.label).toBe("向镜中售货员买路");
   });
 
   test("summarizes route pace and upcoming journey beats", () => {

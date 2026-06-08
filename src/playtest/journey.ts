@@ -1127,6 +1127,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "工具消耗换来一次快速撬锁，噪音被压在房间里。",
         supplyPriority: ["materials", "ammo"]
       }
+    },
+    {
+      title: "沉降池吊桥",
+      body: "细窄吊桥横在沉降池上，桥下的水面偶尔会自己冒出一串气泡。",
+      careful: {
+        fallbackLog: "队伍贴着护栏前进，鞋底沾满滑腻沉渣，速度被拖慢。",
+        label: "沿护栏慢行",
+        pressure: -9,
+        rewardKeys: ["water", "medicine"],
+        rollShift: -0.09,
+        successLog: "饮水和绳扣让队伍稳住重心，顺手捞起一只密封急救盒。",
+        supplyPriority: ["water", "materials"]
+      },
+      force: {
+        fallbackLog: "队伍冲过吊桥，铁链尖叫着把整座池子都吵醒了。",
+        label: "快速越桥",
+        pressure: 13,
+        rewardKeys: ["materials", "fuel"],
+        rollShift: 0.12,
+        successLog: "燃料点亮的照明弹压住了黑水里的动静，队伍抢在桥面塌陷前通过。",
+        supplyPriority: ["fuel", "ammo"]
+      }
     }
   ],
   urban: [
@@ -1172,6 +1194,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rollShift: 0.09,
         successLog: "燃料点出的火光短暂吸引了走廊注意，队伍趁机移动。",
         supplyPriority: ["fuel", "ammo"]
+      }
+    },
+    {
+      title: "屋顶晾衣线",
+      body: "几栋楼之间拉着旧晾衣线，床单在风里像信号旗一样互相告密。",
+      careful: {
+        fallbackLog: "队伍压低身形穿过屋顶，花了不少时间才避开松动砖面。",
+        label: "低姿穿越",
+        pressure: -8,
+        rewardKeys: ["food", "medicine"],
+        rollShift: -0.08,
+        successLog: "食物分配让队伍不急着抢路，顺手取下几包被包好的药。",
+        supplyPriority: ["food", "water"]
+      },
+      force: {
+        fallbackLog: "他们剪断晾衣线开路，布片落下去的时候带走了屋里的安静。",
+        label: "剪线直穿",
+        pressure: 12,
+        rewardKeys: ["materials", "ammo"],
+        rollShift: 0.11,
+        successLog: "弹药吓退了楼下的动静，队伍趁乱拆下几段可用线缆。",
+        supplyPriority: ["ammo", "materials"]
       }
     }
   ],
@@ -1219,6 +1263,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "弹药在错误倒影走出来前击碎了它。",
         supplyPriority: ["ammo", "fuel"]
       }
+    },
+    {
+      title: "倒置候诊区",
+      body: "椅子固定在天花板上，排号屏倒着滚动，每个号码都像刚念过你的名字。",
+      careful: {
+        fallbackLog: "队伍闭眼数步，靠触感绕开错位家具，精神被磨得发紧。",
+        label: "闭眼数步",
+        pressure: -6,
+        rewardKeys: ["medicine", "materials"],
+        rollShift: -0.1,
+        successLog: "药品压住了眩晕，队伍把真正落在地上的柜门标了出来。",
+        supplyPriority: ["medicine", "water"]
+      },
+      force: {
+        fallbackLog: "他们把排号屏砸停，号码停止后，候诊区开始直接叫人。",
+        label: "砸停排号屏",
+        pressure: 16,
+        rewardKeys: ["ammo", "medicine"],
+        rollShift: 0.15,
+        successLog: "燃料烧掉了倒挂帘幕，露出一条短暂正常的通道。",
+        supplyPriority: ["fuel", "ammo"]
+      }
     }
   ],
   wilds: [
@@ -1264,6 +1330,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rollShift: 0.12,
         successLog: "弹药吓退了盯着小龛的东西。",
         supplyPriority: ["ammo", "fuel"]
+      }
+    },
+    {
+      title: "倒伏温棚",
+      body: "塑料温棚被风压到半塌，里面的植物仍按固定间隔轻轻摆头。",
+      careful: {
+        fallbackLog: "队伍沿着塌棚边缘摸索，避开了大部分钩刺，也错过了最快路线。",
+        label: "沿边摸索",
+        pressure: -8,
+        rewardKeys: ["food", "water"],
+        rollShift: -0.08,
+        successLog: "水让队伍能停下来分辨可食用作物，温棚没有被彻底惊动。",
+        supplyPriority: ["water", "food"]
+      },
+      force: {
+        fallbackLog: "他们从棚顶踩过去，塑料膜发出的裂响传得很远。",
+        label: "踏棚直过",
+        pressure: 11,
+        rewardKeys: ["food", "materials"],
+        rollShift: 0.1,
+        successLog: "燃料烟雾遮住了队伍，留下的棚架还能拆成材料。",
+        supplyPriority: ["fuel", "materials"]
       }
     }
   ]
@@ -1380,6 +1468,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.03,
       rollShiftSuccess: -0.06,
       successLog: "修路人用一套野外工具和几枚子弹换走了材料。"
+    },
+    {
+      costPriority: ["water", "ammo"],
+      failLog: "水渠边的换货人把桶盖扣紧，表示空手的人只能听水声。",
+      label: "换水渠通行牌",
+      pressureFail: 4,
+      pressureSuccess: -5,
+      rewardKeys: ["water", "fuel"],
+      rollShiftFail: 0.04,
+      rollShiftSuccess: -0.05,
+      successLog: "换货人收下补给，递来一块还带着湿气的通行牌和燃料瓶。"
     }
   ],
   urban: [
@@ -1393,6 +1492,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.04,
       rollShiftSuccess: -0.07,
       successLog: "跑腿人卖出一段捷径口令和一卷弹药。"
+    },
+    {
+      costPriority: ["food", "ammo"],
+      failLog: "楼顶电台里的人沉默了，只留下越来越近的杂音。",
+      label: "请楼顶电台报路",
+      pressureFail: 5,
+      pressureSuccess: -8,
+      rewardKeys: ["fuel", "materials"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.08,
+      successLog: "楼顶电台给出一条避开主街的撤离口令，还送下一包旧线圈。"
     }
   ],
   weird: [
@@ -1406,6 +1516,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.06,
       rollShiftSuccess: -0.08,
       successLog: "面具摊主收下供品，指向真正的出口。"
+    },
+    {
+      costPriority: ["medicine", "materials"],
+      failLog: "镜中售货员笑着把价签翻面，价格变成队伍刚好没有的东西。",
+      label: "向镜中售货员买路",
+      pressureFail: 7,
+      pressureSuccess: -9,
+      rewardKeys: ["medicine", "ammo"],
+      rollShiftFail: 0.07,
+      rollShiftSuccess: -0.09,
+      successLog: "镜中售货员把药品收进反光里，吐出一段不会重复的路线。"
     }
   ],
   wilds: [
@@ -1419,6 +1540,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.02,
       rollShiftSuccess: -0.05,
       successLog: "田边商贩标出一条干路，递来一只包好的瓶子。"
+    },
+    {
+      costPriority: ["materials", "fuel"],
+      failLog: "谷仓门后的声音说：没有垫脚石，就别问河怎么过。",
+      label: "向谷仓守夜人换船桨",
+      pressureFail: 3,
+      pressureSuccess: -6,
+      rewardKeys: ["food", "water"],
+      rollShiftFail: 0.03,
+      rollShiftSuccess: -0.06,
+      successLog: "守夜人收下零件，交出一支短船桨和一袋压缩饼。"
     }
   ]
 };
@@ -1779,6 +1911,18 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     travelPlan: "steady",
     woundedSurvivorIds: []
   };
+}
+
+export function journeyContentBreadth() {
+  const families = Object.keys(familyEvents) as LocationFamily[];
+  return families.map((family) => ({
+    camps: familyCamps[family] ? 1 : 0,
+    enemies: familyEnemies[family]?.length ?? 0,
+    events: familyEvents[family]?.length ?? 0,
+    family,
+    roadBeats: familyRoadBeats[family]?.length ?? 0,
+    shops: familyShops[family]?.length ?? 0
+  }));
 }
 
 export function createCombatForNode(
