@@ -38,6 +38,7 @@ const requiredChineseAnchors = [
   "试玩登录",
   "试玩路线导航",
   "试玩设置",
+  "试玩环境状态",
   "英文包待接入",
   "语言包覆盖范围",
   "账号成长边界",
@@ -68,7 +69,8 @@ const additionalRequiredChineseAnchors = [
   "等待认领",
   "补给容错",
   "反制动作",
-  "完整基地到出征闭环"
+  "完整基地到出征闭环",
+  "游客房间"
 ];
 
 const bannedVisibleEnglish = [

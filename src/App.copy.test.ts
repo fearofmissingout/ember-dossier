@@ -213,8 +213,14 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("languageMode: \"中文\"");
     expect(source).toContain("英文包待接入后再开放切换");
     expect(source).toContain("aria-label=\"试玩设置\"");
+    expect(source).toContain("aria-label=\"试玩环境状态\"");
     expect(source).toContain("aria-label=\"语言模式\"");
     expect(source).toContain("aria-label=\"语言包覆盖范围\"");
+    expect(source).toContain("playtestEnvironment.mode");
+    expect(source).toContain("账号云端");
+    expect(source).toContain("游客房间");
+    expect(source).toContain("本地试玩");
+    expect(source).toContain("房间人数");
     expect(source).toContain("中文已启用");
     expect(source).toContain("英文包待完整");
     expect(source).toContain("异常提示");
@@ -222,6 +228,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("playtestSettings.pageStatus");
     expect(source).toContain("playtestSettings.releaseStatus");
     expect(styles).toContain(".playtest-settings-card");
+    expect(styles).toContain(".playtest-environment-card");
     expect(styles).toContain(".playtest-settings-grid");
     expect(styles).toContain(".language-mode-switch");
     expect(styles).toContain(".language-pack-grid");

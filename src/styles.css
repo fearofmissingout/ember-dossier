@@ -249,6 +249,58 @@ button:disabled {
   gap: 7px;
 }
 
+.playtest-environment-card {
+  display: grid;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #b8c9a1;
+  border-radius: 8px;
+  background: #f7fbef;
+}
+
+.playtest-environment-card span {
+  color: #536c3d;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.playtest-environment-card strong,
+.playtest-environment-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.playtest-environment-card strong {
+  color: #2f3d27;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.playtest-environment-card small {
+  color: #5f6b50;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.playtest-environment-card div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.playtest-environment-card b,
+.playtest-environment-card em {
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(255, 253, 245, 0.88);
+  color: #415030;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .language-mode-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

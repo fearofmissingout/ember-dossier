@@ -1068,6 +1068,29 @@ export default function App() {
     : authSession
       ? "账号进度会先保留在本机；稍后刷新页面或重新登录后再同步。"
       : "当前会继续使用本地试玩数据。";
+  const playtestEnvironment = hasSupabaseConfig
+    ? authSession
+      ? {
+          detail: "账号进度会随登录账号保存，房间仍通过链接协作。",
+          mode: "账号云端",
+          sync: syncStatusLabels[syncStatus]
+        }
+      : guestMode
+        ? {
+            detail: "游客房间会尝试同步到数据库，失败时仍可本地继续。",
+            mode: "游客房间",
+            sync: syncStatusLabels[syncStatus]
+          }
+        : {
+            detail: "需要登录或选择游客继续后，才能进入房间试玩。",
+            mode: "等待登录",
+            sync: "尚未进入"
+          }
+    : {
+        detail: "当前没有远端配置，所有试玩数据只保存在本机。",
+        mode: "本地试玩",
+        sync: syncStatusLabels[syncStatus]
+      };
 
   if (hasSupabaseConfig && !authSession && !guestMode) {
     return (
@@ -1173,6 +1196,15 @@ export default function App() {
           <span>试玩设置</span>
           <strong>{playtestSettings.languageMode}</strong>
           <small>{playtestSettings.languageStatus}</small>
+          <div className="playtest-environment-card" aria-label="试玩环境状态">
+            <span>试玩环境</span>
+            <strong>{playtestEnvironment.mode}</strong>
+            <small>{playtestEnvironment.detail}</small>
+            <div>
+              <b>{playtestEnvironment.sync}</b>
+              <em>房间人数 {roomPlayers.length}</em>
+            </div>
+          </div>
           <div className="language-mode-switch" aria-label="语言模式">
             <button className="active" type="button">
               中文已启用
