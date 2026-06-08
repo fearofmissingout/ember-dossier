@@ -5141,6 +5141,96 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(160px, 1fr));
 }
 
+.playtest-readiness-card {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 14px;
+  padding: 12px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.playtest-readiness-card.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.playtest-readiness-card.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.playtest-readiness-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.playtest-readiness-heading span,
+.playtest-checkpoint span {
+  color: #6a766f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.playtest-readiness-heading strong {
+  color: #25352c;
+  font-size: 18px;
+}
+
+.playtest-readiness-heading small,
+.playtest-checkpoint small,
+.playtest-readiness-footer span {
+  color: #5f6b62;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.playtest-checkpoint-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.playtest-checkpoint {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #c8d1c2;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.playtest-checkpoint.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.playtest-checkpoint strong {
+  color: #25352c;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.playtest-readiness-footer {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.82);
+}
+
+.playtest-readiness-footer strong {
+  color: #3d3024;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .archive-grid div {
   display: grid;
   gap: 8px;
@@ -5412,6 +5502,7 @@ button:disabled {
     .facility-impact-grid,
     .development-project-strip,
     .member-summary-row,
+    .playtest-checkpoint-grid,
     .room-cooperation-board,
     .room-cooperation-gaps,
     .resource-grid {

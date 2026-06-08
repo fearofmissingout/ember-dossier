@@ -115,6 +115,7 @@ import {
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import { expeditionLaunchChecklist, expeditionYieldPreview } from "./playtest/launchChecklist";
+import { runPlayableLoopSmoke } from "./playtest/playableLoop";
 import {
   summarizeFeedBaseReturnPlan,
   summarizeFeedGrowthRoadmap,
@@ -3697,10 +3698,32 @@ function RoomMembers({
 }
 
 function ArchiveView({ state }: { state: GameState }) {
+  const playableSmoke = useMemo(() => runPlayableLoopSmoke(), []);
+
   return (
     <section className="panel">
       <p className="eyebrow">档案</p>
       <h2>档案/图鉴</h2>
+      <div className={`playtest-readiness-card ${playableSmoke.ok ? "ready" : "blocked"}`} aria-label="试玩完整性检查">
+        <div className="playtest-readiness-heading">
+          <span>本地验收</span>
+          <strong>{playableSmoke.ok ? "核心试玩闭环已通过" : "核心试玩闭环有阻塞"}</strong>
+          <small>覆盖基地待办、编队、出征结算、战报解析和回基地下一步。</small>
+        </div>
+        <div className="playtest-checkpoint-grid">
+          {playableSmoke.checkpoints.map((checkpoint) => (
+            <article className={checkpoint.ok ? "playtest-checkpoint ready" : "playtest-checkpoint blocked"} key={checkpoint.id}>
+              <span>{checkpoint.ok ? "通过" : "阻塞"}</span>
+              <strong>{playtestCheckpointLabel(checkpoint.id)}</strong>
+              <small>{checkpoint.detail}</small>
+            </article>
+          ))}
+        </div>
+        <div className="playtest-readiness-footer">
+          <span>{playableSmoke.reportDigest.settlement.summary}</span>
+          <strong>{playableSmoke.nextBaseTasks.summary}</strong>
+        </div>
+      </div>
       <div className="archive-grid">
         <div>
           <BookOpen size={20} aria-hidden="true" />
@@ -3720,6 +3743,18 @@ function ArchiveView({ state }: { state: GameState }) {
       </div>
     </section>
   );
+}
+
+function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["checkpoints"][number]["id"]) {
+  const labels: Record<ReturnType<typeof runPlayableLoopSmoke>["checkpoints"][number]["id"], string> = {
+    "base-command": "基地待办",
+    "squad-assigned": "出征编队",
+    "expedition-settled": "出征结算",
+    "report-readable": "战报可读",
+    "next-base-action": "回基地行动"
+  };
+
+  return labels[id];
 }
 
 function calculateReadiness(squad: GameState["survivors"], recommendedStats: GameState["locations"][number]["recommendedStats"]) {

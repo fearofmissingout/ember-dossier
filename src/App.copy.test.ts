@@ -207,6 +207,22 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".base-return-plan");
   });
 
+  test("shows a local playtest readiness checklist in the archive view", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("runPlayableLoopSmoke");
+    expect(source).toContain("aria-label=\"试玩完整性检查\"");
+    expect(source).toContain("核心试玩闭环已通过");
+    expect(source).toContain("playtest-readiness-card");
+    expect(source).toContain("playtest-checkpoint-grid");
+    expect(source).toContain("playtestCheckpointLabel");
+    expect(source).toContain("回基地行动");
+    expect(styles).toContain(".playtest-readiness-card");
+    expect(styles).toContain(".playtest-checkpoint-grid");
+    expect(styles).toContain(".playtest-checkpoint");
+  });
+
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");
