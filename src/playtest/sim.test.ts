@@ -1068,6 +1068,30 @@ describe("playtest room loop", () => {
     expect(next.room.base.resources.food).toBeGreaterThanOrEqual(6);
   });
 
+  test("medical surge events name the injury they clear", () => {
+    const session = createStarterSession("user-a", "Alice", "event-medical-room");
+    const patient = session.account.survivors[0];
+    patient.injuries = ["裂伤"];
+    patient.fatigue = 70;
+    patient.status = "recovering";
+    session.room.base.day = 3;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    const clinic = session.room.base.facilities.find((facility) => facility.id === "clinic");
+    if (clinic) {
+      clinic.level = 2;
+    }
+
+    const next = advanceRoomDay(session, "user-a");
+    const recoveredPatient = next.account.survivors.find((survivor) => survivor.id === patient.id);
+
+    expect(next.room.feed[0]?.title).toContain("医务高峰");
+    expect(next.room.feed[0]?.body).toContain("基地事件：医务高峰");
+    expect(next.room.feed[0]?.body).toContain("处理裂伤");
+    expect(next.room.feed[0]?.body).toContain("清除 1 个伤病");
+    expect(recoveredPatient?.injuries).toEqual([]);
+  });
+
   test("repair coverage converts signal windows into objective progress", () => {
     let session = createStarterSession("user-a", "Alice", "event-signal-room");
     session.room.base.day = 4;

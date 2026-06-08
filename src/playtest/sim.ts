@@ -1310,12 +1310,17 @@ function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage
     if (support >= 2) {
       if (patient) {
         const fatigueRelief = 6 + support * 2;
+        const clearedInjury = patient.injuries.length > 0 ? patient.injuries[0] : "";
         patient.fatigue = clamp(patient.fatigue - fatigueRelief, 0, 100);
-        if (patient.injuries.length > 0) {
+        if (clearedInjury) {
           patient.injuries = patient.injuries.slice(1);
         }
         patient.status = patient.injuries.length > 0 ? "recovering" : "available";
-        logs.push(`基地事件：${title}。医务覆盖稳定了 ${patient.name}。疲劳 -${fatigueRelief}，若有伤病则清除 1 个。`);
+        logs.push(
+          `基地事件：${title}。医务覆盖稳定了 ${patient.name}。疲劳 -${fatigueRelief}${
+            clearedInjury ? `，处理${clearedInjury}，清除 1 个伤病` : "，没有需要清除的伤病"
+          }。`
+        );
       } else {
         session.room.base.resources.medicine += 1;
         logs.push(`基地事件：${title}。医务室难得安静，重新整理了野外药包。药品 +1。`);
