@@ -10,6 +10,7 @@ function completeContractFiles(overrides = {}) {
 Rules live in src/playtest/
 ### 2.3 Local test
 npm run iteration:check
+npm run playable:check
 ### 2.4 Commit
 git status --short
 ### 2.5 Release
@@ -28,6 +29,7 @@ https://ember-dossier.pages.dev/?room=playtest-smoke
     gates: `
 assertCloudflarePagesConfig();
 run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["run", "playable:check"], "Playable loop smoke");
 run("npm", ["test"], "Unit and smoke tests");
 run("npm", ["run", "build"], "Typecheck and production build");
 if (productionMode) {
@@ -37,6 +39,7 @@ if (productionMode) {
     packageJson: JSON.stringify({
       scripts: {
         "iteration:check": "node scripts/check-iteration-gates.mjs",
+        "playable:check": "vitest run src/playtest/playableLoop.test.ts",
         "playtest:check": "node scripts/check-production-playtest.mjs",
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
         "release:publish:api": "node scripts/publish-github-api.mjs",
@@ -69,8 +72,9 @@ describe("playtest iteration workflow contract", () => {
         gates: 'run("npm", ["test"], "Unit and smoke tests"); run("npm", ["run", "build"], "Typecheck and production build");',
         packageJson: JSON.stringify({
           scripts: {
-            "iteration:check": "node scripts/check-iteration-gates.mjs",
-            "playtest:check": "node scripts/check-production-playtest.mjs",
+        "iteration:check": "node scripts/check-iteration-gates.mjs",
+        "playable:check": "vitest run src/playtest/playableLoop.test.ts",
+        "playtest:check": "node scripts/check-production-playtest.mjs",
             "release:preflight": "node scripts/check-iteration-gates.mjs --release",
             "release:publish:api": "node scripts/publish-github-api.mjs",
             "release:verify": "node scripts/check-iteration-gates.mjs --production"
@@ -84,10 +88,39 @@ describe("playtest iteration workflow contract", () => {
     expect(report.missing).toEqual(
       expect.arrayContaining([
         "package script: workflow:check",
+        "release gate: playable loop smoke",
         "release gate: workflow contract",
         "release gate: production playtest smoke",
         "GitHub Actions: production playtest smoke"
       ])
     );
+  });
+
+  test("reports drift when the playable loop smoke script is removed", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        gates: `
+run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["test"], "Unit and smoke tests");
+run("npm", ["run", "build"], "Typecheck and production build");
+if (productionMode) {
+  run("npm", ["run", "playtest:check"], "Production playtest smoke");
+}
+`,
+        packageJson: JSON.stringify({
+          scripts: {
+            "iteration:check": "node scripts/check-iteration-gates.mjs",
+            "playtest:check": "node scripts/check-production-playtest.mjs",
+            "release:preflight": "node scripts/check-iteration-gates.mjs --release",
+            "release:publish:api": "node scripts/publish-github-api.mjs",
+            "release:verify": "node scripts/check-iteration-gates.mjs --production",
+            "workflow:check": "node scripts/check-workflow-contract.mjs"
+          }
+        })
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(expect.arrayContaining(["package script: playable:check", "release gate: playable loop smoke"]));
   });
 });

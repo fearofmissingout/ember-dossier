@@ -19,7 +19,7 @@ const requiredChecks = [
   },
   {
     id: "doc stage: local test",
-    test: ({ docs }) => docs.includes("### 2.3") && docs.includes("npm run iteration:check")
+    test: ({ docs }) => docs.includes("### 2.3") && docs.includes("npm run iteration:check") && docs.includes("npm run playable:check")
   },
   {
     id: "doc stage: commit",
@@ -58,6 +58,10 @@ const requiredChecks = [
     test: ({ scripts }) => scripts["workflow:check"] === "node scripts/check-workflow-contract.mjs"
   },
   {
+    id: "package script: playable:check",
+    test: ({ scripts }) => scripts["playable:check"] === "vitest run src/playtest/playableLoop.test.ts"
+  },
+  {
     id: "package script: release:preflight",
     test: ({ scripts }) => scripts["release:preflight"]?.includes("--release")
   },
@@ -76,6 +80,10 @@ const requiredChecks = [
   {
     id: "release gate: workflow contract",
     test: ({ gates }) => gates.includes("scripts/check-workflow-contract.mjs")
+  },
+  {
+    id: "release gate: playable loop smoke",
+    test: ({ gates }) => gates.includes('["run", "playable:check"]')
   },
   {
     id: "release gate: unit tests",
