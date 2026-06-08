@@ -54,6 +54,7 @@ import {
   campOptionOutcome,
   calculateCarryBurden,
   combatActionPreview,
+  combatRoundPlan,
   combatThreatPreview,
   combatLootOutcome,
   combatLootList,
@@ -2341,6 +2342,7 @@ function JourneyPanel({
   const baseCommands = baseCommandOptions(journey);
   const objectivePreview = journeyObjectivePreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
+  const roundPlan = combatRoundPlan(journey);
   const recentDecisions = (journey.decisions ?? []).slice(-4).reverse();
   const latestCombatRound = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
   const counterLabels = segmentThreat.counterTactics
@@ -2993,6 +2995,14 @@ function JourneyPanel({
                   <small>{threatPreview?.warning ?? activeCombatPulse?.text}</small>
                 </div>
               </div>
+              {roundPlan && (
+                <div className={`combat-mobile-plan ${roundPlan.tone}`} aria-label="本回合建议">
+                  <span>本回合建议</span>
+                  <strong>{roundPlan.label}</strong>
+                  <small>{roundPlan.reason}</small>
+                  <small>{roundPlan.riskText}</small>
+                </div>
+              )}
               <div className="combat-mobile-result">
                 <span>{latestCombatRound ? `最近：${latestCombatRound.actionLabel}` : "还未交手"}</span>
                 <strong>{latestCombatRound?.outcomeText ?? "选择一个动作开始本回合。"}</strong>

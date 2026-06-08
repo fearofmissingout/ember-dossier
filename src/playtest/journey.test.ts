@@ -5,6 +5,7 @@ import {
   calculateCarryBurden,
   campOptionOutcome,
   combatActionPreview,
+  combatRoundPlan,
   combatThreatPreview,
   createJourney,
   createCombatForNode,
@@ -1688,6 +1689,40 @@ describe("journey route generation", () => {
     expect(preview?.summary).toContain("预计反击 14");
     expect(preview?.summary).toContain("压力转化伤害 +3");
     expect(preview?.warning).toContain("包扎会被游猎惩罚");
+  });
+
+  test("combat round plan highlights the best counter and risks for the current turn", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-plan-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.pressure = 64;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "prowl";
+      journey.combat.intentLabel = "游猎";
+      journey.combat.intentText = "它在寻找薄弱队形。攻击或战术可以打断。";
+    }
+
+    const plan = combatRoundPlan(journey);
+
+    expect(plan).toMatchObject({
+      action: "strike",
+      label: "攻击",
+      tone: "warning"
+    });
+    expect(plan?.reason).toContain("游猎 推荐 攻击");
+    expect(plan?.riskText).toContain("避开 防守 / 包扎");
   });
 
   test("combat counters build tempo and enemy stagger", () => {

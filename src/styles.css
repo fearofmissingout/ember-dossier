@@ -4180,7 +4180,8 @@ button:disabled {
 .combat-mobile-heading span,
 .combat-mobile-result span,
 .combat-mobile-bars span,
-.combat-mobile-intent span {
+.combat-mobile-intent span,
+.combat-mobile-plan span {
   color: #8a3524;
   font-size: 11px;
   font-weight: 900;
@@ -4190,7 +4191,8 @@ button:disabled {
 .combat-mobile-heading strong,
 .combat-mobile-result strong,
 .combat-mobile-bars strong,
-.combat-mobile-intent strong {
+.combat-mobile-intent strong,
+.combat-mobile-plan strong {
   min-width: 0;
   color: #32251b;
   font-weight: 900;
@@ -4203,7 +4205,8 @@ button:disabled {
 
 .combat-mobile-heading small,
 .combat-mobile-result small,
-.combat-mobile-intent small {
+.combat-mobile-intent small,
+.combat-mobile-plan small {
   min-width: 0;
   color: #6e5a47;
   font-size: 12px;
@@ -4261,6 +4264,25 @@ button:disabled {
   border: 1px solid #d8b471;
   border-radius: 8px;
   background: #fffaf0;
+}
+
+.combat-mobile-plan {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid #99b77f;
+  border-radius: 8px;
+  background: #f0f8e9;
+}
+
+.combat-mobile-plan.warning {
+  border-color: #d8b471;
+  background: #fff7dd;
+}
+
+.combat-mobile-plan strong {
+  font-size: 15px;
 }
 
 .combat-mobile-result {

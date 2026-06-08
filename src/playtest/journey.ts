@@ -1044,6 +1044,14 @@ export type JourneyCombatThreatPreview = {
   warning: string;
 };
 
+export type JourneyCombatRoundPlan = {
+  action: CombatAction;
+  label: string;
+  reason: string;
+  riskText: string;
+  tone: "safe" | "warning";
+};
+
 type JourneyEventTemplate = {
   body: string;
   careful: Omit<JourneyChoice, "reward"> & { rewardKeys: ResourceKey[] };
@@ -3952,6 +3960,25 @@ export function combatThreatPreview(journey: Pick<JourneyState, "combat" | "pres
     roundLabel: `第 ${combat.round} 回合`,
     summary: `${summaryParts.join("。")}。`,
     warning: `${warningParts.join("。")}。`
+  };
+}
+
+export function combatRoundPlan(journey: Pick<JourneyState, "combat" | "pressure">): JourneyCombatRoundPlan | null {
+  const threat = combatThreatPreview(journey);
+  if (!threat) {
+    return null;
+  }
+
+  const action = threat.counterActions[0] ?? "guard";
+  const label = combatActionNames[action];
+  const riskyText = threat.riskyLabels.length > 0 ? `避开 ${threat.riskyLabels.join(" / ")}` : "暂无必须避开的动作";
+
+  return {
+    action,
+    label,
+    reason: `${threat.intentLabel} 推荐 ${label}，预计反击 ${threat.incomingDamage}。`,
+    riskText: `${riskyText}。${threat.warning}`,
+    tone: threat.riskyActions.length > 0 || threat.pressureDamage > 0 ? "warning" : "safe"
   };
 }
 
