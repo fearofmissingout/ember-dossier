@@ -64,6 +64,16 @@ const requiredChecks = [
     test: ({ docs }) => docs.includes("https://ember-dossier.pages.dev/?room=playtest-smoke")
   },
   {
+    id: "doc qa: local browser smoke checklist",
+    test: ({ docs }) =>
+      docs.includes("#### 2.3.1 本地浏览器冒烟清单") &&
+      docs.includes("http://localhost:5173/?room=playtest-smoke") &&
+      docs.includes("视口：桌面 / 手机") &&
+      docs.includes("路线预告") &&
+      docs.includes("敌人意图") &&
+      docs.includes("数据库不可用")
+  },
+  {
     id: "package script: iteration:check",
     test: ({ scripts }) => scripts["iteration:check"] === "node scripts/check-iteration-gates.mjs"
   },

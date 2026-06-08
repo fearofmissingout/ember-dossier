@@ -12,6 +12,12 @@ Rules live in src/playtest/
 npm run iteration:check
 npm run playable:check
 npm run copy:check
+#### 2.3.1 本地浏览器冒烟清单
+http://localhost:5173/?room=playtest-smoke
+视口：桌面 / 手机
+路线预告
+敌人意图
+数据库不可用
 ### 2.4 Commit
 git status --short
 ### 2.5 Release
