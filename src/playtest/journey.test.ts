@@ -64,10 +64,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "resources", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "urban", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "weird", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 2, events: 3, family: "wilds", roadBeats: 3, shops: 2 })
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "resources", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "urban", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "weird", roadBeats: 3, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "wilds", roadBeats: 3, shops: 2 })
       ])
     );
   });
@@ -88,6 +88,24 @@ describe("journey route generation", () => {
     expect(resourceRoute.nodes[3].shop?.label).toBe("换水渠通行牌");
     expect(weirdRoute.nodes[0].title).toBe("倒置候诊区");
     expect(weirdRoute.nodes[3].shop?.label).toBe("向镜中售货员买路");
+  });
+
+  test("can roll into the expanded combat enemy pools", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "expanded-enemy-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const urbanRoute = createJourney(session, draft, "hospital", 60);
+    const wildRoute = createJourney(session, draft, "farm", 60);
+
+    expect(urbanRoute.nodes[1].enemy?.name).toBe("拖把车残响");
+    expect(urbanRoute.nodes[1].enemy?.trait).toBe("bleeder");
+    expect(wildRoute.nodes[1].enemy?.name).toBe("风铃稻草人");
+    expect(wildRoute.nodes[1].enemy?.trait).toBe("dread");
   });
 
   test("summarizes route pace and upcoming journey beats", () => {
@@ -1915,7 +1933,7 @@ describe("journey route generation", () => {
   });
 
   test("bleeder enemies add persistent bleed until patched", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     const session = createStarterSession("user-a", "Alice", "bleed-room");
     const squad = session.account.survivors.slice(0, 3);
     const journey = createJourney(

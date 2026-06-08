@@ -1380,6 +1380,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "bleeder",
       traitLabel: "锯齿",
       traitText: "命中会留下持续流血，直到包扎处理。"
+    },
+    {
+      armor: 0,
+      attackBonus: 3,
+      hpBonus: 4,
+      intro: "排水渠里浮出一张没有五官的水膜，贴着地面向队伍滑来。",
+      name: "浮膜饥影",
+      rewardKeys: ["water", "medicine"],
+      trait: "dread",
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     }
   ],
   urban: [
@@ -1404,6 +1415,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "armored",
       traitLabel: "装甲",
       traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
+    },
+    {
+      armor: 0,
+      attackBonus: 2,
+      hpBonus: 5,
+      intro: "楼梯拐角的旧保洁车自己转了出来，拖把头像湿冷的手。",
+      name: "拖把车残响",
+      rewardKeys: ["materials", "medicine"],
+      trait: "bleeder",
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
     }
   ],
   weird: [
@@ -1428,6 +1450,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "dread",
       traitLabel: "惊惧",
       traitText: "若没有防守，每次命中都会增加压力。"
+    },
+    {
+      armor: 0,
+      attackBonus: 2,
+      hpBonus: 6,
+      intro: "一群纸面人从病历夹里站起来，边缘锋利得像刚裁开的纸。",
+      name: "纸面人群",
+      rewardKeys: ["materials", "ammo"],
+      trait: "swarm",
+      traitLabel: "成群",
+      traitText: "压力越高，反击越凶。"
     }
   ],
   wilds: [
@@ -1452,6 +1485,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "bleeder",
       traitLabel: "锯齿",
       traitText: "命中会留下持续流血，直到包扎处理。"
+    },
+    {
+      armor: 1,
+      attackBonus: 3,
+      hpBonus: 5,
+      intro: "一具挂满风铃和鸟骨的稻草人转过头，风声突然有了牙。",
+      name: "风铃稻草人",
+      rewardKeys: ["food", "ammo"],
+      trait: "dread",
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     }
   ]
 };
