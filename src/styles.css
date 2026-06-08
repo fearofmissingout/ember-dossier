@@ -5625,6 +5625,100 @@ button:disabled {
   font-weight: 800;
 }
 
+.room-contribution-plan {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #cdb27a;
+  border-radius: 8px;
+  background: #fff7df;
+}
+
+.room-contribution-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-contribution-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.room-contribution-heading span,
+.room-contribution-grid span {
+  color: #7b5a13;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.room-contribution-heading strong,
+.room-contribution-grid strong,
+.room-contribution-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-contribution-heading strong {
+  color: #3f331e;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.room-contribution-heading button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #b48a3a;
+  border-radius: 8px;
+  background: #805f1e;
+  color: #fff8e8;
+  font-weight: 900;
+}
+
+.room-contribution-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-contribution-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 86px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #dcc184;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.room-contribution-grid article.urgent {
+  border-color: #d19369;
+  background: #fff0e6;
+}
+
+.room-contribution-grid article.ready {
+  border-color: #9fbd7e;
+  background: #f4fbec;
+}
+
+.room-contribution-grid strong {
+  color: #3d3024;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.room-contribution-grid small {
+  color: #695a42;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .member-summary-list {
   display: grid;
   gap: 10px;
@@ -6022,6 +6116,18 @@ button:disabled {
   .sync-health-card .sync-retry {
     min-width: 68px;
     justify-content: center;
+  }
+
+  .room-contribution-heading {
+    display: grid;
+  }
+
+  .room-contribution-heading button {
+    width: 100%;
+  }
+
+  .room-contribution-grid {
+    grid-template-columns: 1fr;
   }
 
   .nav-list {

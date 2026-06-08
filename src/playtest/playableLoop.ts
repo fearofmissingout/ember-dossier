@@ -17,6 +17,7 @@ import {
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
+  roomContributionPlan,
   roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
@@ -37,6 +38,7 @@ export type PlayableLoopCheckpointId =
   | "survivor-growth-plan"
   | "squad-assigned"
   | "multiplayer-cooperation"
+  | "room-contribution-plan"
   | "player-cooperation-task"
   | "member-guidance"
   | "journey-choice-preview"
@@ -65,6 +67,7 @@ export type PlayableLoopSmoke = {
   logisticsDiagnosisDetail: string;
   journeyChoiceDetail: string;
   memberGuidanceDetail: string;
+  roomContributionPlanDetail: string;
   reportDigest: {
     ledger: FeedReturnLedger;
     settlement: FeedReportSettlement;
@@ -156,6 +159,8 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     session = assignSurvivorToRoom(session, userId, survivor.id);
   }
   const cooperation = roomCooperationSummary(session);
+  const contributionPlan = roomContributionPlan(session);
+  const roomContributionPlanDetail = contributionPlan.summary;
   const memberGuidance = roomMemberSummaries(session);
   const currentMemberGuidance = memberGuidance.find((member) => member.userId === userId);
   const memberGuidanceDetail = memberGuidance.map((member) => `${member.displayName}：${member.collaborationHint}`).join(" / ");
@@ -285,6 +290,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
         cooperation.gaps.length > 0
     },
     {
+      detail: roomContributionPlanDetail,
+      id: "room-contribution-plan",
+      ok: contributionPlan.items.length > 0 && contributionPlan.summary.includes("捐入优先级")
+    },
+    {
       detail: currentMemberGuidance ? `${currentMemberGuidance.displayName}：${currentMemberGuidance.collaborationHint}` : "未找到当前玩家协作任务",
       id: "player-cooperation-task",
       ok: Boolean(currentMemberGuidance && currentMemberGuidance.collaborationStatus === "ready" && currentMemberGuidance.collaborationHint.includes("都已覆盖"))
@@ -337,6 +347,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     journeyChoiceDetail,
     logisticsDiagnosisDetail,
     memberGuidanceDetail,
+    roomContributionPlanDetail,
     nextBaseTasks,
     ok: checkpoints.every((checkpoint) => checkpoint.ok),
     reportDigest: {

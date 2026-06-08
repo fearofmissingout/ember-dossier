@@ -851,6 +851,19 @@ export type RoomCooperationSummary = {
   readiness: "blocked" | "building" | "ready";
 };
 
+export type RoomContributionPlanItem = {
+  detail: string;
+  key: ResourceKey;
+  label: string;
+  priority: "urgent" | "todo" | "ready";
+  target: number;
+};
+
+export type RoomContributionPlan = {
+  items: RoomContributionPlanItem[];
+  summary: string;
+};
+
 export type BaseTaskStatus = "urgent" | "todo" | "ready";
 
 export type BaseTaskItem = {
@@ -940,6 +953,15 @@ function roomMemberCollaborationStatus(
   return "ready";
 }
 
+function contributionPriorityScore(item: RoomContributionPlanItem) {
+  const scores: Record<RoomContributionPlanItem["priority"], number> = {
+    urgent: 0,
+    todo: 1,
+    ready: 2
+  };
+  return scores[item.priority];
+}
+
 export function roomCooperationSummary(session: PlaytestSession): RoomCooperationSummary {
   const memberCount = session.room.members.length;
   const contributionCount = session.room.contributions.length;
@@ -984,6 +1006,78 @@ export function roomCooperationSummary(session: PlaytestSession): RoomCooperatio
     memberCount,
     nextNeed: primaryTask.title,
     readiness
+  };
+}
+
+export function roomContributionPlan(session: PlaytestSession): RoomContributionPlan {
+  const day = baseDayPreview(session);
+  const recovery = baseRecoveryPlan(session);
+  const development = baseDevelopmentPlan(session);
+  const items: RoomContributionPlanItem[] = [];
+
+  if (day.foodShortage > 0) {
+    items.push({
+      detail: `明日预计缺食物 ${day.foodShortage}，优先保证成员消耗。`,
+      key: "food",
+      label: "补足食物",
+      priority: "urgent",
+      target: day.foodShortage
+    });
+  }
+
+  if (day.waterShortage > 0) {
+    items.push({
+      detail: `明日预计缺饮水 ${day.waterShortage}，否则危险和士气会承压。`,
+      key: "water",
+      label: "补足饮水",
+      priority: "urgent",
+      target: day.waterShortage
+    });
+  }
+
+  if (recovery.medicineShortage > 0) {
+    items.push({
+      detail: `还有 ${recovery.medicineShortage} 名优先伤员缺药品处理。`,
+      key: "medicine",
+      label: "补治疗药品",
+      priority: "urgent",
+      target: recovery.medicineShortage
+    });
+  }
+
+  const affordableProject = development.recommended.find((project) => project.action !== "Maxed");
+  if (affordableProject) {
+    const materialNeed = Math.max(0, affordableProject.cost - session.room.base.resources.materials);
+    items.push({
+      detail:
+        materialNeed > 0
+          ? `${affordableProject.name} 还差 ${materialNeed} 材料，建成后会改善基地和出征。`
+          : `${affordableProject.name} 已可推进，材料可继续储备用于下一次升级。`,
+      key: "materials",
+      label: "推进设施材料",
+      priority: materialNeed > 0 ? "todo" : "ready",
+      target: materialNeed || Math.max(1, Math.ceil(affordableProject.cost / 2))
+    });
+  }
+
+  if (session.room.base.resources.ammo < 2) {
+    items.push({
+      detail: "下一次遭遇战缺少弹药余量，建议至少储备 2。",
+      key: "ammo",
+      label: "准备战斗弹药",
+      priority: "todo",
+      target: Math.max(1, 2 - session.room.base.resources.ammo)
+    });
+  }
+
+  const sorted = items.sort((left, right) => contributionPriorityScore(left) - contributionPriorityScore(right)).slice(0, 3);
+
+  return {
+    items: sorted,
+    summary:
+      sorted.length > 0
+        ? `捐入优先级：${sorted.map((item) => `${item.label} ${item.target}`).join(" / ")}。`
+        : "房间库存暂时可控，可以把资源留给下一轮设施或出征准备。"
   };
 }
 

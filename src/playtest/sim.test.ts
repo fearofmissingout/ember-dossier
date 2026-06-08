@@ -20,6 +20,7 @@ import {
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
+  roomContributionPlan,
   roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
@@ -218,6 +219,22 @@ describe("playtest room loop", () => {
       status: "urgent"
     });
     expect(cooperation.gaps.map((gap) => gap.id)).toContain("shifts");
+  });
+
+  test("room contribution plan turns shared gaps into resource priorities", () => {
+    const session = createStarterSession("user-a", "Alice", "contribution-plan-room");
+    session.room.base.resources.food = 0;
+    session.room.base.resources.water = 0;
+    session.room.base.resources.medicine = 0;
+    session.account.survivors[0].injuries = ["裂伤"];
+
+    const plan = roomContributionPlan(session);
+
+    expect(plan.summary).toContain("捐入优先级");
+    expect(plan.items.map((item) => item.key)).toEqual(["food", "water", "medicine"]);
+    expect(plan.items.every((item) => item.priority === "urgent")).toBe(true);
+    expect(plan.items[0].detail).toContain("明日预计缺食物");
+    expect(plan.items[2].detail).toContain("优先伤员");
   });
 
   test("upgrades account base rooms with account resources and readable planning", () => {

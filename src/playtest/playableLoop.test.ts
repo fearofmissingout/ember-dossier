@@ -17,6 +17,7 @@ describe("playable loop smoke", () => {
       "survivor-growth-plan",
       "squad-assigned",
       "multiplayer-cooperation",
+      "room-contribution-plan",
       "player-cooperation-task",
       "member-guidance",
       "journey-choice-preview",
@@ -36,6 +37,7 @@ describe("playable loop smoke", () => {
     expect(smoke.cooperation.memberCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.contributionCount).toBeGreaterThanOrEqual(2);
     expect(smoke.cooperation.gaps.length).toBeGreaterThan(0);
+    expect(smoke.roomContributionPlanDetail).toContain("捐入优先级");
     expect(smoke.memberGuidanceDetail).toContain("派 1 名幸存者");
     expect(smoke.journeyChoiceDetail).toContain("商店支援");
     expect(smoke.combatTurnPlan?.label).toBe("防守");

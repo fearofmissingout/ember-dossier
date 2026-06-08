@@ -34,6 +34,7 @@ import {
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
+  roomContributionPlan,
   roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
@@ -1200,6 +1201,7 @@ export default function App() {
         )}
         {view === "members" && (
           <RoomMembers
+            contributionPlan={roomContributionPlan(session)}
             player={player}
             players={roomPlayers}
             memberSummaries={roomMemberSummaries(session)}
@@ -3874,6 +3876,7 @@ function Facilities({
 }
 
 function RoomMembers({
+  contributionPlan,
   currentUserId,
   player,
   players,
@@ -3886,6 +3889,7 @@ function RoomMembers({
   onNavigate,
   onRenamePlayer
 }: {
+  contributionPlan: ReturnType<typeof roomContributionPlan>;
   currentUserId: string;
   player: RoomPlayer;
   players: RoomPlayer[];
@@ -3939,6 +3943,29 @@ function RoomMembers({
               <span>{gap.status === "urgent" ? "紧急" : gap.status === "ready" ? "就绪" : "待办"}</span>
               <strong>{gap.label}</strong>
               <small>{gap.text}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="room-contribution-plan" aria-label="房间捐入优先级">
+        <div className="room-contribution-heading">
+          <div>
+            <span>捐入优先级</span>
+            <strong>{contributionPlan.summary}</strong>
+          </div>
+          <button type="button" onClick={() => onNavigate("overview")}>
+            去捐入
+          </button>
+        </div>
+        <div className="room-contribution-grid">
+          {contributionPlan.items.map((item) => (
+            <article className={item.priority} key={item.key}>
+              <span>{item.priority === "urgent" ? "紧急" : item.priority === "ready" ? "储备" : "待办"}</span>
+              <strong>
+                {item.label} {item.target}
+              </strong>
+              <small>{item.detail}</small>
             </article>
           ))}
         </div>
@@ -4096,6 +4123,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "survivor-treated": "伤病治疗",
     "squad-assigned": "出征编队",
     "multiplayer-cooperation": "多人协作",
+    "room-contribution-plan": "捐入优先",
     "combat-turn-plan": "战斗建议",
     "combat-round": "回合战斗",
     "expedition-settled": "出征结算",
