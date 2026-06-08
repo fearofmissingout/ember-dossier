@@ -1292,6 +1292,15 @@ function Overview({
           <span>剩余期限</span>
           <strong>{daysRemaining} 天</strong>
         </div>
+        <div className="base-cycle-compass" aria-label="基地循环罗盘">
+          {baseCycleSteps(primaryTask.id).map((step) => (
+            <article className={step.active ? "active" : ""} key={step.label}>
+              <span>{step.label}</span>
+              <strong>{step.title}</strong>
+              <small>{step.body}</small>
+            </article>
+          ))}
+        </div>
         <div className="base-task-list" aria-label="今日基地待办">
           <div className="base-command-center" aria-label="基地行动中枢">
             <div className="base-command-priority">
@@ -1488,6 +1497,45 @@ function baseTaskNavigation(taskId: BaseTaskItem["id"]): { label: string; sectio
   };
 
   return actions[taskId];
+}
+
+function baseCycleSteps(primaryTaskId: BaseTaskItem["id"]) {
+  const activeByTask: Record<BaseTaskItem["id"], string> = {
+    development: "建设",
+    expedition: "出征",
+    objective: "复盘",
+    recovery: "恢复",
+    shifts: "恢复",
+    supplies: "恢复"
+  };
+  const activeLabel = activeByTask[primaryTaskId];
+  const steps = [
+    {
+      body: "处理伤病、补齐口粮、安排班次。",
+      label: "恢复",
+      title: "稳住基地"
+    },
+    {
+      body: "升级个人基地和房间设施，转化长期优势。",
+      label: "建设",
+      title: "扩大支援"
+    },
+    {
+      body: "编队、带补给、选择地点推进目标。",
+      label: "出征",
+      title: "拿回资源"
+    },
+    {
+      body: "查看战报，把伤病、战利和线索接回下一轮。",
+      label: "复盘",
+      title: "整理结果"
+    }
+  ];
+
+  return steps.map((step) => ({
+    ...step,
+    active: step.label === activeLabel
+  }));
 }
 
 function Survivors({

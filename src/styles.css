@@ -539,6 +539,62 @@ button:disabled {
   background: #fff9ec;
 }
 
+.base-cycle-compass {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #f8f0df;
+}
+
+.base-cycle-compass article {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #d8c7a7;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.base-cycle-compass article.active {
+  border-color: #9b3f2a;
+  background: #fff1e8;
+}
+
+.base-cycle-compass span {
+  color: #7b6942;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.base-cycle-compass strong,
+.base-cycle-compass small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-cycle-compass strong {
+  color: #3f331e;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.base-cycle-compass small {
+  color: #665b48;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.base-cycle-compass article.active strong {
+  color: #7b351f;
+}
+
 .base-command-center {
   display: grid;
   gap: 10px;
@@ -4436,10 +4492,11 @@ button:disabled {
   .extraction-preview-options,
   .support-plan-grid,
   .dispatch-briefing-grid,
-  .launch-checklist-grid,
-  .base-task-grid,
-  .base-command-actions,
-  .base-command-strip,
+    .launch-checklist-grid,
+    .base-task-grid,
+    .base-cycle-compass,
+    .base-command-actions,
+    .base-command-strip,
   .march-forecast,
   .travel-record-strip,
   .road-event-strip,
@@ -4581,10 +4638,11 @@ button:disabled {
   .extraction-preview-options,
   .support-plan-grid,
   .dispatch-briefing-grid,
-  .launch-checklist-grid,
-  .base-command-strip,
-  .base-command-actions,
-  .travel-record-strip,
+    .launch-checklist-grid,
+    .base-command-strip,
+    .base-command-actions,
+    .base-cycle-compass,
+    .travel-record-strip,
   .road-event-strip,
   .report-settlement-grid,
   .report-action-digest-grid,

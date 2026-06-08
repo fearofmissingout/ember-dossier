@@ -84,12 +84,19 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("baseTaskList");
+    expect(source).toContain("baseCycleSteps");
+    expect(source).toContain("aria-label=\"基地循环罗盘\"");
+    expect(source).toContain("恢复");
+    expect(source).toContain("建设");
+    expect(source).toContain("出征");
+    expect(source).toContain("复盘");
     expect(source).toContain("aria-label=\"基地行动中枢\"");
     expect(source).toContain("base-command-center");
     expect(source).toContain("base-command-actions");
     expect(source).toContain("aria-label=\"今日基地待办\"");
     expect(source).toContain("aria-label=\"今日待办操作\"");
     expect(source).toContain("base-task-actions");
+    expect(styles).toContain(".base-cycle-compass");
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-actions");
     expect(source).toContain("今日待办");
