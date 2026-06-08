@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { FeedItem } from "../game/types";
 import {
   summarizeFeedBaseReturnPlan,
+  summarizeFeedExpeditionDebrief,
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
@@ -166,6 +167,32 @@ describe("playtest report timeline", () => {
     const plan = summarizeFeedBaseReturnPlan(report);
 
     expect(plan.primaryAction).toEqual(expect.objectContaining({ id: "objective", label: "检查目标", targetView: "overview", tone: "warning" }));
+  });
+
+  test("turns expedition reports into next-run debrief advice", () => {
+    const report: FeedItem = {
+      body: [
+        "结果：提前撤离。主要收获：水 +1，材料 +1。",
+        "路线：遭遇战：阀门尸被击退，队伍压力 +12%。",
+        "目标：目标 +0。",
+        "伤病：林岚 擦伤，回基地后需要治疗。",
+        "归队清单：基地入库 水 +1, 材料 +1；目标推进 +0；账号回收 个人仓库带回情报 +1；伤病 1 名待恢复；提前返程。"
+      ].join("\n"),
+      id: "feed-report-debrief",
+      kind: "report",
+      timestamp: "第 3 天",
+      title: "远征报告"
+    };
+
+    const debrief = summarizeFeedExpeditionDebrief(report);
+
+    expect(debrief.hasDebrief).toBe(true);
+    expect(debrief.headline).toContain("撤离");
+    expect(debrief.summary).toContain("复盘建议");
+    expect(debrief.advice.map((item) => item.id)).toEqual(expect.arrayContaining(["risk", "objective", "supplies", "growth", "combat"]));
+    expect(debrief.advice.find((item) => item.id === "risk")?.text).toContain("药品");
+    expect(debrief.advice.find((item) => item.id === "objective")?.text).toContain("电台");
+    expect(debrief.advice.find((item) => item.id === "supplies")?.tone).toBe("blocked");
   });
 
   test("extracts survivor growth roadmap entries from expedition reports", () => {

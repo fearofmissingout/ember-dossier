@@ -66,6 +66,20 @@ export type FeedBaseReturnPlan = {
   summary: string;
 };
 
+export type FeedExpeditionDebriefAdvice = {
+  id: "risk" | "objective" | "supplies" | "growth" | "combat" | "tempo";
+  label: string;
+  text: string;
+  tone: "safe" | "warning" | "blocked";
+};
+
+export type FeedExpeditionDebrief = {
+  advice: FeedExpeditionDebriefAdvice[];
+  hasDebrief: boolean;
+  headline: string;
+  summary: string;
+};
+
 const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
@@ -251,6 +265,90 @@ export function summarizeFeedBaseReturnPlan(item: FeedItem): FeedBaseReturnPlan 
   };
 }
 
+export function summarizeFeedExpeditionDebrief(item: FeedItem): FeedExpeditionDebrief {
+  if (item.kind !== "report") {
+    return emptyExpeditionDebrief();
+  }
+
+  const settlement = summarizeFeedReportSettlement(item);
+  const ledger = summarizeFeedReturnLedger(item);
+  const growth = summarizeFeedGrowthRoadmap(item);
+  const timeline = summarizeFeedReportTimeline(item);
+  if (!settlement.hasSettlement && !ledger.hasLedger && !timeline.hasProcess) {
+    return emptyExpeditionDebrief();
+  }
+
+  const advice: FeedExpeditionDebriefAdvice[] = [];
+  const injuryRisk = ledger.injuries || settlement.risk.find((entry) => /伤|疲劳|压力净变化 \+/.test(entry)) || "";
+  const objectiveText = ledger.objective || settlement.objective[0] || "";
+  const earlyReturn = ledger.extraction === "提前返程";
+  const combatCount = timeline.steps.filter((step) => step.category === "combat").length;
+
+  if (injuryRisk && !/伤病\s*0|0\s*名|压力净变化 -/.test(injuryRisk)) {
+    advice.push({
+      id: "risk",
+      label: "压低风险",
+      text: "下次先补药品、安排护理或改用谨慎策略，避免伤病和压力拖垮后续基地循环。",
+      tone: "warning"
+    });
+  }
+
+  if (!objectiveText || /\+0/.test(objectiveText)) {
+    advice.push({
+      id: "objective",
+      label: "补目标推进",
+      text: "优先升级电台、安排修理班或选择带线索的地点，让远征更稳定地推进房间目标。",
+      tone: "warning"
+    });
+  }
+
+  if (earlyReturn) {
+    advice.push({
+      id: "supplies",
+      label: "延长路线",
+      text: "提前返程说明补给或压力余量不足，下次多带水粮并提高仓库、厨房或营地支援。",
+      tone: "blocked"
+    });
+  }
+
+  if (!growth.hasGrowth) {
+    advice.push({
+      id: "growth",
+      label: "安排成长",
+      text: "让接近升级的幸存者进入编队，或建设训练室，把远征收益转成局外成长。",
+      tone: "warning"
+    });
+  }
+
+  if (combatCount > 0) {
+    advice.push({
+      id: "combat",
+      label: "战斗准备",
+      text: `本轮有 ${combatCount} 段战斗记录。下次确认弹药、医务室和防守方针，减少回合损耗。`,
+      tone: injuryRisk ? "warning" : "safe"
+    });
+  }
+
+  if (advice.length === 0) {
+    advice.push({
+      id: "tempo",
+      label: "保持节奏",
+      text: "本轮收益、目标和队伍状态都较稳，可以继续同类地点并逐步提高风险档位。",
+      tone: "safe"
+    });
+  }
+
+  return {
+    advice: advice.slice(0, 5),
+    hasDebrief: true,
+    headline: debriefHeadline(advice),
+    summary: `复盘建议 ${Math.min(5, advice.length)} 条：${advice
+      .slice(0, 4)
+      .map((item) => item.label)
+      .join("、")}。`
+  };
+}
+
 function emptySettlement(): FeedReportSettlement {
   return {
     growth: [],
@@ -270,6 +368,15 @@ function emptyBaseReturnPlan(): FeedBaseReturnPlan {
     headline: "暂无回基地计划",
     primaryAction: null,
     summary: "暂无回基地计划"
+  };
+}
+
+function emptyExpeditionDebrief(): FeedExpeditionDebrief {
+  return {
+    advice: [],
+    hasDebrief: false,
+    headline: "暂无远征复盘",
+    summary: "暂无远征复盘"
   };
 }
 
@@ -298,6 +405,18 @@ function emptyTimeline(): FeedReportTimeline {
     steps: [],
     summary: "暂无过程回放"
   };
+}
+
+function debriefHeadline(advice: FeedExpeditionDebriefAdvice[]) {
+  if (advice.some((item) => item.tone === "blocked")) {
+    return "下一轮先修正撤离和补给余量。";
+  }
+
+  if (advice.some((item) => item.tone === "warning")) {
+    return "下一轮先处理风险和目标短板。";
+  }
+
+  return "本轮节奏稳定，可以继续扩大收益。";
 }
 
 function stripLedgerLabel(value: string | undefined, label: string): string {

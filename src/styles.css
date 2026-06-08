@@ -1453,6 +1453,78 @@ button:disabled {
   color: #7b4f21;
 }
 
+.report-expedition-debrief {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid #c8b28a;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.report-expedition-debrief-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.report-expedition-debrief-heading span,
+.report-expedition-debrief-grid span {
+  color: #8c4b32;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.report-expedition-debrief-heading strong,
+.report-expedition-debrief-grid strong {
+  min-width: 0;
+  color: #2d342f;
+  overflow-wrap: anywhere;
+}
+
+.report-expedition-debrief-heading strong {
+  font-size: 16px;
+}
+
+.report-expedition-debrief-heading small {
+  color: #5f6b62;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.report-expedition-debrief-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-expedition-debrief-grid article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d7cab0;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.report-expedition-debrief-grid article.warning {
+  border-color: #d4a45c;
+  background: #fff4d9;
+}
+
+.report-expedition-debrief-grid article.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.report-expedition-debrief-grid strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .return-ledger {
   display: grid;
   gap: 10px;
@@ -6317,6 +6389,7 @@ button:disabled {
   .development-project-strip,
     .report-settlement-grid,
     .report-growth-grid,
+    .report-expedition-debrief-grid,
     .report-action-digest-grid,
   .report-timeline-grid,
   .hardship-strip {
@@ -6550,6 +6623,7 @@ button:disabled {
   .road-event-strip,
     .report-settlement-grid,
     .report-growth-grid,
+    .report-expedition-debrief-grid,
     .report-action-digest-grid,
   .report-timeline-grid,
     .base-return-plan-grid,

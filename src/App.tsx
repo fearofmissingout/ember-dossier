@@ -125,6 +125,7 @@ import { expeditionLaunchChecklist, expeditionYieldPreview } from "./playtest/la
 import { runPlayableLoopSmoke } from "./playtest/playableLoop";
 import {
   summarizeFeedBaseReturnPlan,
+  summarizeFeedExpeditionDebrief,
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
@@ -3676,6 +3677,7 @@ function Reports({
               <p>{item.body}</p>
               <ReportSettlement item={item} />
               <ReportGrowthRoadmap item={item} />
+              <ReportExpeditionDebrief item={item} />
               <ReportReturnLedger item={item} />
               <ReportActionDigest item={item} />
               <ReportTimeline item={item} />
@@ -3742,6 +3744,31 @@ function ReportGrowthRoadmap({ item }: { item: FeedItem }) {
             <strong>{entry.xpText || "获得经验"}</strong>
             <small>{entry.levelText || entry.nextText || "继续远征会推进下一级"}</small>
             {entry.perkText && <em>{entry.perkText}</em>}
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportExpeditionDebrief({ item }: { item: FeedItem }) {
+  const debrief = summarizeFeedExpeditionDebrief(item);
+  if (!debrief.hasDebrief) {
+    return null;
+  }
+
+  return (
+    <div className="report-expedition-debrief" aria-label="下一轮远征建议">
+      <div className="report-expedition-debrief-heading">
+        <span>复盘建议</span>
+        <strong>{debrief.headline}</strong>
+        <small>{debrief.summary}</small>
+      </div>
+      <div className="report-expedition-debrief-grid">
+        {debrief.advice.map((advice) => (
+          <article className={advice.tone} key={`${item.id}-debrief-${advice.id}`}>
+            <span>{advice.label}</span>
+            <strong>{advice.text}</strong>
           </article>
         ))}
       </div>
