@@ -26,6 +26,7 @@ if (releaseMode) {
 
 assertCloudflarePagesConfig();
 run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["run", "copy:check"], "Visible copy check");
 run("npm", ["run", "playable:check"], "Playable loop smoke");
 run("npm", ["test"], "Unit and smoke tests");
 run("npm", ["run", "build"], "Typecheck and production build");

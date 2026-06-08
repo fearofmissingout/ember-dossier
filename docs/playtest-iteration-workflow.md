@@ -55,8 +55,11 @@ npm run iteration:check
 `iteration:check` 会单独运行：
 
 ```bash
+npm run copy:check
 npm run playable:check
 ```
+
+`copy:check` 会扫描玩家可见的核心源码，阻止已知英文错误提示、英文按钮文案和中文乱码重新进入试玩版。
 
 这条门禁用确定性样本跑通基地待办、编队、出征结算、战报解析和回到基地下一步，确保每次迭代没有把核心试玩闭环拆断。
 
@@ -64,6 +67,7 @@ npm run playable:check
 
 - 迭代工作流契约检查，确认本文、`package.json`、本地门禁脚本和 GitHub Actions 没有互相漂移。
 - Cloudflare Pages 输出目录配置检查。
+- `npm run copy:check`
 - `npm run playable:check`
 - `npm test`
 - `npm run build`

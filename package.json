@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
+    "copy:check": "node scripts/check-visible-copy.mjs",
     "supabase:init": "node scripts/init-supabase.mjs",
     "supabase:sql": "node scripts/print-supabase-sql.mjs",
     "supabase:check": "node scripts/check-supabase-demo.mjs",

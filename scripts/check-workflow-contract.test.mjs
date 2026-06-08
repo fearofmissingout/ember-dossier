@@ -11,6 +11,7 @@ Rules live in src/playtest/
 ### 2.3 Local test
 npm run iteration:check
 npm run playable:check
+npm run copy:check
 ### 2.4 Commit
 git status --short
 ### 2.5 Release
@@ -29,6 +30,7 @@ https://ember-dossier.pages.dev/?room=playtest-smoke
     gates: `
 assertCloudflarePagesConfig();
 run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["run", "copy:check"], "Visible copy check");
 run("npm", ["run", "playable:check"], "Playable loop smoke");
 run("npm", ["test"], "Unit and smoke tests");
 run("npm", ["run", "build"], "Typecheck and production build");
@@ -39,6 +41,7 @@ if (productionMode) {
     packageJson: JSON.stringify({
       scripts: {
         "iteration:check": "node scripts/check-iteration-gates.mjs",
+        "copy:check": "node scripts/check-visible-copy.mjs",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
         "playtest:check": "node scripts/check-production-playtest.mjs",
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
@@ -74,6 +77,7 @@ describe("playtest iteration workflow contract", () => {
           scripts: {
         "iteration:check": "node scripts/check-iteration-gates.mjs",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
+        "copy:check": "node scripts/check-visible-copy.mjs",
         "playtest:check": "node scripts/check-production-playtest.mjs",
             "release:preflight": "node scripts/check-iteration-gates.mjs --release",
             "release:publish:api": "node scripts/publish-github-api.mjs",
@@ -110,6 +114,7 @@ if (productionMode) {
         packageJson: JSON.stringify({
           scripts: {
             "iteration:check": "node scripts/check-iteration-gates.mjs",
+            "copy:check": "node scripts/check-visible-copy.mjs",
             "playtest:check": "node scripts/check-production-playtest.mjs",
             "release:preflight": "node scripts/check-iteration-gates.mjs --release",
             "release:publish:api": "node scripts/publish-github-api.mjs",
