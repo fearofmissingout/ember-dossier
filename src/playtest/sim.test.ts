@@ -351,13 +351,32 @@ describe("playtest room loop", () => {
       action: "Build",
       canAfford: true,
       cost: 10,
-      expeditionImpact: expect.stringContaining("拆解")
+      expeditionImpact: expect.stringContaining("拆解"),
+      reason: expect.stringContaining("工坊"),
+      nextStep: expect.stringContaining("建议本轮建造")
     });
     expect(radio).toMatchObject({
       canAfford: false,
-      materialDeficit: 2
+      materialDeficit: 2,
+      nextStep: expect.stringContaining("还缺 2 材料")
     });
     expect(plan.summary).toContain("当前材料 10");
+  });
+
+  test("base development reasons react to injury and objective pressure", () => {
+    const session = createStarterSession("user-a", "Alice", "development-reason-room");
+    session.room.base.resources.materials = 20;
+    session.account.survivors[0].injuries = ["裂伤"];
+    session.room.base.objective.repairedParts = 0;
+    session.room.base.objective.requiredParts = 6;
+
+    const plan = baseDevelopmentPlan(session);
+    const clinic = plan.projects.find((project) => project.id === "clinic");
+    const radio = plan.projects.find((project) => project.id === "radio");
+
+    expect(clinic?.reason).toContain("1 名伤员");
+    expect(radio?.reason).toContain("房间目标还没完成");
+    expect(clinic?.nextStep).toContain("建议本轮");
   });
 
   test("summarizes urgent base tasks for supplies recovery shifts and upgrades", () => {

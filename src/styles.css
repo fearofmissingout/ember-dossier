@@ -4780,6 +4780,36 @@ button:disabled {
   line-height: 1.4;
 }
 
+.development-project-why {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid #d7bd83;
+  border-radius: 8px;
+  background: #fff7df;
+}
+
+.development-project-why span {
+  color: #8a6f2f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.development-project-why strong {
+  color: #3d3024;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.development-project-why small {
+  color: #70553a;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .facility-card {
   padding: 16px;
   border: 1px solid #d1c4aa;

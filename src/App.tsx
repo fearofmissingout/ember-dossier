@@ -3521,6 +3521,11 @@ function Facilities({
               <small>
                 {project.canAfford ? `材料 ${project.cost} 已备齐` : `还缺 ${project.materialDeficit} 材料`}
               </small>
+              <div className="development-project-why" aria-label="设施推荐原因">
+                <span>推荐原因</span>
+                <strong>{project.reason}</strong>
+                <small>{project.nextStep}</small>
+              </div>
               <p>基地：{project.baseImpact}</p>
               <p>出征：{project.expeditionImpact}</p>
             </article>

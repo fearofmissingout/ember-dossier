@@ -784,6 +784,8 @@ export type BaseDevelopmentProjectPreview = {
   name: string;
   nextLevel: number;
   priority: number;
+  reason: string;
+  nextStep: string;
 };
 
 export type BaseDevelopmentPlan = {
@@ -979,19 +981,22 @@ export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPl
     const cost = facilityActionCost(facility);
     const nextLevel = action === "Maxed" ? facility.level : isFacilityBuilt(facility) ? facility.level + 1 : 1;
     const canAfford = action !== "Maxed" && materials >= cost;
+    const impact = facilityDevelopmentImpact(facility.id);
     return {
       action,
-      baseImpact: facilityDevelopmentImpact(facility.id).base,
+      baseImpact: impact.base,
       canAfford,
       category: facility.category ?? "core",
       cost,
-      expeditionImpact: facilityDevelopmentImpact(facility.id).expedition,
+      expeditionImpact: impact.expedition,
       id: facility.id,
       level: facility.level,
       materialDeficit: Math.max(0, cost - materials),
       name: facility.name,
       nextLevel,
-      priority: developmentProjectScore(facility.id, facility.category ?? "core", action, canAfford)
+      nextStep: facilityDevelopmentNextStep(facility.name, action, canAfford, Math.max(0, cost - materials)),
+      priority: developmentProjectScore(facility.id, facility.category ?? "core", action, canAfford),
+      reason: facilityDevelopmentReason(session, facility.id)
     };
   });
   const activeProjects = projects
@@ -1697,6 +1702,42 @@ function developmentProjectScore(facilityId: string, category: string, action: "
   };
 
   return (categoryScore[category] ?? 4) + (focusScore[facilityId] ?? 0) + (action === "Build" ? 3 : 0) + (canAfford ? 2 : -1);
+}
+
+function facilityDevelopmentReason(session: PlaytestSession, facilityId: string): string {
+  const injuredCount = session.account.survivors.filter((survivor) => survivor.injuries.length > 0).length;
+  const wearyCount = session.account.survivors.filter((survivor) => survivor.fatigue >= 55).length;
+  const foodWater = session.room.base.resources.food + session.room.base.resources.water;
+  const objective = session.room.base.objective;
+  const danger = session.room.base.danger;
+  const baseReasons: Record<string, string> = {
+    barricade: danger >= 35 ? "当前基地危险偏高，先补防线能降低日结压力。" : "提升守卫班价值，减少基地被突发事件拖垮。",
+    clinic: injuredCount > 0 ? `当前有 ${injuredCount} 名伤员，医务室会直接缩短战后恢复。` : "提前补医疗线，让下一次战斗后的伤病更容易处理。",
+    dorm: wearyCount > 0 ? `当前有 ${wearyCount} 名高疲劳队员，宿舍会提高每日恢复。` : "提高队伍周转率，让连续出征不用等太久。",
+    generator: "供电会强化弹药准备，并支撑净水、工坊和夜间事件处理。",
+    kitchen: foodWater <= 10 ? "当前口粮和饮水偏紧，厨房能降低基地日结压力。" : "厨房把搜寻、营地和商店补给串成稳定后勤。",
+    radio:
+      objective.status === "active" && objective.repairedParts < objective.requiredParts
+        ? "房间目标还没完成，电台能加快线索、减压和目标推进。"
+        : "电台增强协作和路线情报，让多人房间更容易同步。",
+    training: "训练室提升出征成长，让幸存者等级和战斗表现更快进入正循环。",
+    watchtower: danger >= 25 ? "当前危险需要提前发现，瞭望塔能减压并支援守卫。" : "瞭望塔让路线搜索和基地防守更稳定。",
+    workshop: "工坊同时提升修理班、弹药伤害和商店服务，是出征效率核心设施。"
+  };
+
+  return baseReasons[facilityId] ?? "当前项目能补强基地和出征之间的长期循环。";
+}
+
+function facilityDevelopmentNextStep(name: string, action: "Build" | "Upgrade" | "Maxed", canAfford: boolean, materialDeficit: number): string {
+  if (action === "Maxed") {
+    return `${name} 已达到当前上限。`;
+  }
+
+  if (canAfford) {
+    return `材料已够，建议本轮${action === "Build" ? "建造" : "升级"}。`;
+  }
+
+  return `还缺 ${materialDeficit} 材料；先出征、搜寻或让队友捐入材料。`;
 }
 
 function facilityDevelopmentImpact(facilityId: string): { base: string; expedition: string } {

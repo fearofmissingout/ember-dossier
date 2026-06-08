@@ -136,9 +136,14 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("facilityImpactPreview");
     expect(source).toContain("aria-label=\"设施升级收益预览\"");
+    expect(source).toContain("aria-label=\"设施推荐原因\"");
+    expect(source).toContain("development-project-why");
+    expect(source).toContain("project.reason");
+    expect(source).toContain("project.nextStep");
     expect(source).toContain("facility-impact-grid");
     expect(source).toContain("preview.baseText");
     expect(source).toContain("preview.expeditionText");
+    expect(styles).toContain(".development-project-why");
     expect(styles).toContain(".facility-impact-grid");
   });
 
