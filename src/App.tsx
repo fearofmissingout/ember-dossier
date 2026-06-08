@@ -2129,6 +2129,17 @@ function JourneyPanel({
   const processDigest = journeyProcessDigest(journey);
   const actionGuide = journeyActionGuide(journey);
   const latestActionResult = journey.logs[journey.logs.length - 1] ?? nodeBody;
+  const activeRouteStop = routePace.forecast.find((stop) => stop.state === "active") ?? routePace.forecast[0];
+  const compactRouteStops = routePace.forecast.slice(0, 5);
+  const nextCommandHint = pendingRoad
+    ? "先处理路上抉择，队伍才能继续前进。"
+    : journey.combat
+      ? "选择本回合战斗动作，留意敌人意图和反制标签。"
+      : journey.pendingCombatLoot
+        ? "分配战利品，决定这场战斗如何转化为基地收益。"
+        : activeNode.type === "extraction"
+          ? "确认撤离，把随身收益结算回基地。"
+          : "选择当前节点行动，系统会推进到下一段路线。";
   const segmentForecast =
     !journey.combat && !journey.pendingCombatLoot && !pendingRoad && activeNode.type !== "extraction" ? forecastNextSegment(journey, squad, readiness) : null;
   const segmentThreat = segmentThreatFor(journey);
@@ -2155,6 +2166,32 @@ function JourneyPanel({
             <small>{actionGuide.body}</small>
           </div>
           <b>{actionGuide.primaryAction}</b>
+        </div>
+        <div className="journey-mobile-flow" aria-label="手机端出征路线摘要">
+          <div className="journey-mobile-flow-main">
+            <span>当前任务</span>
+            <strong>{activeRouteStop?.label ?? nodeTypeLabel}</strong>
+            <small>{nextCommandHint}</small>
+          </div>
+          <div className="journey-mobile-route" aria-label="当前路线步骤">
+            {compactRouteStops.map((stop) => (
+              <span className={stop.state} key={`${journey.id}-mobile-flow-${stop.index}`}>
+                <b>{stop.index}</b>
+                <small>{stop.label}</small>
+              </span>
+            ))}
+          </div>
+          <div className="journey-mobile-meters" aria-label="关键状态">
+            <span>
+              压力 <b>{journey.pressure}%</b>
+            </span>
+            <span>
+              疲劳 <b>{journey.condition.fatigue}</b>
+            </span>
+            <span>
+              补给 <b>{extractionPreview.fieldSupplySummary}</b>
+            </span>
+          </div>
         </div>
         <div className="journey-command-snapshot">
           <div>
