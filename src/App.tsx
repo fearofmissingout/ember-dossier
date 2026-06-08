@@ -2495,7 +2495,12 @@ function JourneyPanel({
                   <button className="journey-command-button safe" key={`command-shop-${action}`} type="button" onClick={() => onJourneyAction(`shop-${action}` as JourneyAction)}>
                     <strong>{outcome.label}</strong>
                     <span>{outcome.text}</span>
-                    <small>随身 {formatResourceDelta(outcome.fieldSupplyReward)} / 入库 {formatResourceDelta(outcome.reward)}</small>
+                    <small>
+                      随身 {formatResourceDelta(outcome.fieldSupplyReward)} / 入库 {formatResourceDelta(outcome.reward)} / 压力
+                      {formatSignedPercent(outcome.pressure)}
+                      {outcome.objectiveBonus > 0 ? ` / 目标 +${outcome.objectiveBonus}` : ""}
+                    </small>
+                    {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                   </button>
                 );
               })}
@@ -2518,7 +2523,10 @@ function JourneyPanel({
                   <span>{outcome.successLog}</span>
                   <small>
                     疲{formatSignedNumber(outcome.fatigue)} / 饥{formatSignedNumber(outcome.hunger)} / 渴{formatSignedNumber(outcome.thirst)}
+                    / 压{formatSignedPercent(outcome.pressure)}
+                    {outcome.objectiveBonus > 0 ? ` / 目标 +${outcome.objectiveBonus}` : ""}
                   </small>
+                  {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
                 </button>
               );
             })

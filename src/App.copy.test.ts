@@ -139,8 +139,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"当前行动栏说明\"");
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-command-dock-heading");
+    expect(source).toContain("outcome.supportText && <small className=\"facility-support-note\"");
+    expect(source).toContain("formatSignedPercent(outcome.pressure)");
+    expect(source).toContain("目标 +${outcome.objectiveBonus}");
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-command-dock-heading");
+    expect(styles).toContain(".facility-support-note");
     expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("max-height: 42vh");
     expect(styles).toContain("overscroll-behavior: contain");
