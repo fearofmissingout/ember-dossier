@@ -2719,6 +2719,105 @@ function JourneyPanel({
     segmentMitigation.value > 0
       ? `设施减压 ${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / 疲劳 -${segmentMitigation.fatigue}` : ""}`
       : "暂无设施掩护";
+  const currentActionQueue = pendingRoad
+    ? pendingRoad.choices.map((choice) => {
+        const preview = roadEncounterChoicePreview(journey, choice);
+        return {
+          detail: `${preview.costText} / ${preview.rewardText}`,
+          id: `road-${choice.id}`,
+          label: choice.label,
+          result: preview.outcomeLabel,
+          tone: preview.tone
+        };
+      })
+    : journey.pendingCombatLoot
+      ? combatLootList.map((option) => {
+          const outcome = combatLootOutcome(option, journey.support);
+          return {
+            detail: `${formatResourceDelta(outcome.reward)} / 疲${formatSignedNumber(outcome.fatigue)} / 压${formatSignedPercent(outcome.pressure)}`,
+            id: `loot-${option.id}`,
+            label: option.label,
+            result: "战利结算",
+            tone: "safe"
+          };
+        })
+      : journey.combat
+        ? combatActionPreviews.map(({ action, preview }) => ({
+            detail: preview.effect,
+            id: `combat-${action}`,
+            label: preview.label,
+            result: combatCounterTagLabel(preview.counterTag),
+            tone: preview.counterTag.toLowerCase()
+          }))
+        : activeNode.type === "event"
+          ? [
+              {
+                detail: activeNode.careful?.successLog ?? "放慢速度，降低失误。",
+                id: "careful",
+                label: activeNode.careful?.label ?? "谨慎搜索",
+                result: "稳妥推进",
+                tone: "safe"
+              },
+              {
+                detail: activeNode.force?.fallbackLog ?? activeNode.force?.successLog ?? "更快通过，承担额外风险。",
+                id: "force",
+                label: activeNode.force?.label ?? "强行推进",
+                result: "快速推进",
+                tone: "warning"
+              }
+            ]
+          : activeNode.type === "shop"
+            ? [
+                ...shopActionList.flatMap((action) => {
+                  const offer = activeNode.shop?.offers[action];
+                  if (!offer) {
+                    return [];
+                  }
+                  const outcome = shopOfferOutcome(action, offer, journey.support);
+                  return [
+                    {
+                      detail: `随身 ${formatResourceDelta(outcome.fieldSupplyReward)} / 入库 ${formatResourceDelta(outcome.reward)} / 压力${formatSignedPercent(outcome.pressure)}`,
+                      id: `shop-${action}`,
+                      label: outcome.label,
+                      result: outcome.objectiveBonus > 0 ? `目标 +${outcome.objectiveBonus}` : "补给交易",
+                      tone: "safe"
+                    }
+                  ];
+                }),
+                {
+                  detail: "不消耗，不补给。",
+                  id: "skip-shop",
+                  label: "跳过交易",
+                  result: "保留筹码",
+                  tone: "standard"
+                }
+              ]
+            : activeNode.type === "camp"
+              ? campActionList.flatMap((action) => {
+                  const option = activeNode.camp?.[action];
+                  if (!option) {
+                    return [];
+                  }
+                  const outcome = campOptionOutcome(action, option, journey.support);
+                  return [
+                    {
+                      detail: `疲${formatSignedNumber(outcome.fatigue)} / 饥${formatSignedNumber(outcome.hunger)} / 渴${formatSignedNumber(outcome.thirst)} / 压${formatSignedPercent(outcome.pressure)}`,
+                      id: `camp-${action}`,
+                      label: outcome.label,
+                      result: outcome.objectiveBonus > 0 ? `目标 +${outcome.objectiveBonus}` : "营地恢复",
+                      tone: "safe"
+                    }
+                  ];
+                })
+              : [
+                  {
+                    detail: extractionPreview.fieldSupplySummary,
+                    id: "extract",
+                    label: "撤离并结算",
+                    result: "回基地",
+                    tone: "safe"
+                  }
+                ];
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -2851,6 +2950,24 @@ function JourneyPanel({
             <strong>{routeIntel.remainingSummary}</strong>
             <small>{routeIntel.priorityHint}</small>
           </article>
+        </div>
+        <div className="journey-action-queue" aria-label="当前操作清单">
+          <div className="journey-action-queue-heading">
+            <span>操作清单</span>
+            <strong>先看代价和收益，再点下方动作。</strong>
+          </div>
+          <div className="journey-action-queue-list">
+            {currentActionQueue.slice(0, 4).map((item, index) => (
+              <article className={item.tone} key={item.id}>
+                <b>{index + 1}</b>
+                <div>
+                  <span>{item.result}</span>
+                  <strong>{item.label}</strong>
+                  <small>{item.detail}</small>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
           <div className="journey-command-dock-heading" aria-label="当前行动栏说明">

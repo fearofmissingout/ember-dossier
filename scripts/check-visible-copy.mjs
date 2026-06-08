@@ -49,7 +49,8 @@ const requiredChineseAnchors = [
   "下一轮远征建议",
   "发布准入检查",
   "浏览器冒烟清单",
-  "本回合指挥摘要"
+  "本回合指挥摘要",
+  "当前操作清单"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -72,7 +73,8 @@ const additionalRequiredChineseAnchors = [
   "反制动作",
   "完整基地到出征闭环",
   "游客房间",
-  "房间共享"
+  "房间共享",
+  "先看代价和收益"
 ];
 
 const bannedVisibleEnglish = [
