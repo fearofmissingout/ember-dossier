@@ -114,7 +114,7 @@ import {
   type ExpeditionDoctrineId
 } from "./playtest/progression";
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
-import { expeditionLaunchChecklist } from "./playtest/launchChecklist";
+import { expeditionLaunchChecklist, expeditionYieldPreview } from "./playtest/launchChecklist";
 import {
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
@@ -1821,6 +1821,21 @@ function ExpeditionPrep({
     selectedLocationName: selectedLocation.name,
     squadCount: draft.squadIds.length
   });
+  const roomTrainingLevel = state.facilities.find((facility) => facility.id === "training")?.level ?? 0;
+  const trainingLevel = roomTrainingLevel + Math.max(0, accountBase.trainingRoomLevel - 1);
+  const loadoutTotal = resourceKeys.reduce((sum, key) => sum + draft.loadout[key] + (support.startingSupplies[key] ?? 0), 0);
+  const supportEffects = supportPlan.totalEffects;
+  const yieldPreview = expeditionYieldPreview({
+    canDispatch: launchChecklist.canDispatch,
+    loadoutTotal,
+    objectiveActive,
+    readiness,
+    riskLabel: riskLabels[draft.risk],
+    selectedLocationName: selectedLocation.name,
+    squadCount: draft.squadIds.length,
+    supportEffects,
+    trainingLevel
+  });
   const readinessLabel = readiness >= 70 ? "优势开局" : readiness >= 45 ? "可以行动" : "风险偏高";
   const burdenLabel =
     carryBurden.tier === "overloaded" ? "超载" : carryBurden.tier === "heavy" ? "偏重" : "轻装";
@@ -2121,6 +2136,21 @@ function ExpeditionPrep({
           <div className="dispatch-briefing-grid">
             {dispatchBriefingItems.map((item) => (
               <article className="dispatch-briefing-card" key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="yield-preview" aria-label="本次远征收益预览">
+          <div className="yield-preview-heading">
+            <span>收益预览</span>
+            <strong>{yieldPreview.headline}</strong>
+          </div>
+          <div className="yield-preview-grid">
+            {yieldPreview.items.map((item) => (
+              <article className={`yield-preview-card ${item.tone}`} key={item.label}>
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
                 <small>{item.detail}</small>

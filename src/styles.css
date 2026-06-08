@@ -2094,6 +2094,88 @@ button:disabled {
   line-height: 1.35;
 }
 
+.yield-preview {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #a9bd90;
+  border-radius: 8px;
+  background: #f5faef;
+}
+
+.yield-preview-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.yield-preview-heading span,
+.yield-preview-card span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.yield-preview-heading strong {
+  color: #263727;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.yield-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.yield-preview-card {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #c9d6ae;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.yield-preview-card.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.yield-preview-card.blocked {
+  border-color: #d79883;
+  background: #fff0eb;
+}
+
+.yield-preview-card strong,
+.yield-preview-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.yield-preview-card strong {
+  color: #2f5438;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.yield-preview-card small {
+  color: #5d6854;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.yield-preview-card.blocked strong {
+  color: #8a3524;
+}
+
 .launch-checklist {
   display: grid;
   gap: 10px;
@@ -4637,8 +4719,9 @@ button:disabled {
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,
-  .support-plan-grid,
-  .dispatch-briefing-grid,
+    .support-plan-grid,
+    .dispatch-briefing-grid,
+    .yield-preview-grid,
     .launch-checklist-grid,
     .base-task-grid,
     .base-cycle-compass,
@@ -4784,8 +4867,9 @@ button:disabled {
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,
-  .support-plan-grid,
-  .dispatch-briefing-grid,
+    .support-plan-grid,
+    .dispatch-briefing-grid,
+    .yield-preview-grid,
     .launch-checklist-grid,
     .base-command-strip,
     .base-command-actions,

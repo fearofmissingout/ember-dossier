@@ -26,9 +26,14 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("expeditionLaunchChecklist");
     expect(source).toContain("aria-label=\"出征检查\"");
     expect(source).toContain("aria-label=\"出征开局预案\"");
+    expect(source).toContain("aria-label=\"本次远征收益预览\"");
+    expect(source).toContain("expeditionYieldPreview");
+    expect(source).toContain("收益预览");
+    expect(source).toContain("yield-preview");
     expect(source).toContain("dispatch-briefing");
     expect(source).toContain("出征检查");
     expect(styles).toContain(".dispatch-briefing");
+    expect(styles).toContain(".yield-preview");
   });
 
   test("shows a Chinese action guide during expeditions", () => {
