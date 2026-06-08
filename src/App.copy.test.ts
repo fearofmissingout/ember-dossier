@@ -62,10 +62,22 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("document.getElementById(id)?.scrollIntoView");
     expect(source).toContain("id=\"prep-squad\"");
     expect(source).toContain("id=\"prep-route\"");
+    expect(source).toContain("aria-label=\"出征地点列表\"");
+    expect(source).toContain("location-choice-grid");
+    expect(source).toContain("location-choice-card");
+    expect(source).toContain("locationRewardSummary");
+    expect(source).toContain("主要收益");
+    expect(source).toContain("location.recommendedStats.map");
+    expect(source).toContain("location.tags.slice(0, 3)");
     expect(source).toContain("id=\"prep-loadout\"");
     expect(source).toContain("id=\"prep-risk\"");
     expect(styles).toContain(".expedition-prep-command");
     expect(styles).toContain(".expedition-prep-step");
+    expect(styles).toContain(".location-choice-grid");
+    expect(styles).toContain(".location-choice-card");
+    expect(styles).toContain(".location-choice-reward");
+    expect(styles).toContain(".location-choice-stats");
+    expect(styles).toContain(".location-choice-tags");
     expect(styles).toContain("scroll-margin-top");
   });
 

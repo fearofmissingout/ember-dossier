@@ -2045,18 +2045,41 @@ function ExpeditionPrep({
       <section className="panel expedition-prep-section" id="prep-route">
         <p className="eyebrow">步骤 2</p>
         <h2>选择地点</h2>
-        <div className="compact-list">
-          {state.locations.map((location) => (
-            <button
-              className={draft.locationId === location.id ? "pick-row selected" : "pick-row"}
-              key={location.id}
-              type="button"
-              onClick={() => onLocationChange(location.id)}
-            >
-              <span>{location.name}</span>
-              <small>{locationFamilyLabels[location.family]} / 危险 {location.risk}</small>
-            </button>
-          ))}
+        <div className="location-choice-grid" aria-label="出征地点列表">
+          {state.locations.map((location) => {
+            const selected = draft.locationId === location.id;
+            return (
+              <button
+                className={selected ? "location-choice-card selected" : "location-choice-card"}
+                key={location.id}
+                type="button"
+                onClick={() => onLocationChange(location.id)}
+              >
+                <div className="location-choice-heading">
+                  <div>
+                    <span>{locationFamilyLabels[location.family]}</span>
+                    <strong>{location.name}</strong>
+                  </div>
+                  <b>危险 {location.risk}</b>
+                </div>
+                <div className="location-choice-reward">
+                  <span>主要收益</span>
+                  <strong>{locationRewardSummary(location.reward)}</strong>
+                </div>
+                <div className="location-choice-stats">
+                  {location.recommendedStats.map((stat) => (
+                    <small key={`${location.id}-${stat}`}>{statLabels[stat]}</small>
+                  ))}
+                </div>
+                <p>{location.dossier}</p>
+                <div className="location-choice-tags">
+                  {location.tags.slice(0, 3).map((tag) => (
+                    <small key={`${location.id}-${tag}`}>{tag}</small>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -4368,6 +4391,15 @@ function formatResourceDelta(resources: ResourceBundle) {
   }
 
   return entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ");
+}
+
+function locationRewardSummary(resources: ResourceBundle) {
+  const entries = [...resourceKeys]
+    .filter((key) => resources[key] > 0)
+    .sort((left, right) => resources[right] - resources[left] || resourceKeys.indexOf(left) - resourceKeys.indexOf(right))
+    .slice(0, 3);
+
+  return entries.length > 0 ? entries.map((key) => `${resourceLabels[key]} +${resources[key]}`).join(" / ") : "以路线线索为主";
 }
 
 function clampPercent(value: number) {
