@@ -97,6 +97,23 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("@media (max-width: 720px)");
   });
 
+  test("surfaces combat as a mobile-readable turn panel", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("aria-label=\"手机端回合战斗面板\"");
+    expect(source).toContain("aria-label=\"战斗生命摘要\"");
+    expect(source).toContain("combat-mobile-dashboard");
+    expect(source).toContain("combat-mobile-bars");
+    expect(source).toContain("combat-mobile-intent");
+    expect(source).toContain("latestCombatRound");
+    expect(source).toContain("推荐反制");
+    expect(styles).toContain(".combat-mobile-dashboard");
+    expect(styles).toContain(".combat-mobile-bars");
+    expect(styles).toContain(".combat-mobile-intent");
+    expect(styles).toContain(".combat-mobile-result");
+  });
+
   test("keeps mobile navigation as an in-app bottom bar instead of page hops", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

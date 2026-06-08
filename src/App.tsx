@@ -2308,6 +2308,7 @@ function JourneyPanel({
   const objectivePreview = journeyObjectivePreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
   const recentDecisions = (journey.decisions ?? []).slice(-4).reverse();
+  const latestCombatRound = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
@@ -2892,6 +2893,50 @@ function JourneyPanel({
           </div>
         ) : journey.combat ? (
           <div className="combat-card">
+            <div className="combat-mobile-dashboard" aria-label="手机端回合战斗面板">
+              <div className="combat-mobile-heading">
+                <span>第 {journey.combat.round} 回合</span>
+                <strong>{journey.combat.enemyName}</strong>
+                <small>{journey.combat.enemyTraitLabel}：{journey.combat.enemyTraitText}</small>
+              </div>
+              <div className="combat-mobile-bars" aria-label="战斗生命摘要">
+                <div>
+                  <span>敌人</span>
+                  <strong>
+                    {journey.combat.enemyHp}/{journey.combat.enemyMaxHp}
+                  </strong>
+                  <i>
+                    <b style={{ width: `${Math.max(0, Math.min(100, Math.round((journey.combat.enemyHp / journey.combat.enemyMaxHp) * 100)))}%` }} />
+                  </i>
+                </div>
+                <div>
+                  <span>队伍</span>
+                  <strong>
+                    {journey.combat.squadHp}/{journey.combat.squadMaxHp}
+                  </strong>
+                  <i>
+                    <b style={{ width: `${Math.max(0, Math.min(100, Math.round((journey.combat.squadHp / journey.combat.squadMaxHp) * 100)))}%` }} />
+                  </i>
+                </div>
+              </div>
+              <div className="combat-mobile-intent">
+                <div>
+                  <span>敌人意图</span>
+                  <strong>{threatPreview?.intentLabel ?? journey.combat.intentLabel}</strong>
+                  <small>{threatPreview?.summary ?? journey.combat.intentText}</small>
+                </div>
+                <div>
+                  <span>推荐反制</span>
+                  <strong>{threatPreview?.counterLabels.join(" / ") || activeCombatPulse?.counterActions.map(combatActionLabel).join(" / ")}</strong>
+                  <small>{threatPreview?.warning ?? activeCombatPulse?.text}</small>
+                </div>
+              </div>
+              <div className="combat-mobile-result">
+                <span>{latestCombatRound ? `最近：${latestCombatRound.actionLabel}` : "还未交手"}</span>
+                <strong>{latestCombatRound?.outcomeText ?? "选择一个动作开始本回合。"}</strong>
+                <small>{latestCombatRound?.enemyText ?? "先看敌人意图，再决定攻击、防守、包扎或战术。"}</small>
+              </div>
+            </div>
             <div className="combat-trait">
               <strong>{journey.combat.enemyTraitLabel}</strong>
               <span>{journey.combat.enemyTraitText}</span>
