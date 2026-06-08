@@ -2576,6 +2576,28 @@ function JourneyPanel({
           </div>
           <b>{actionGuide.primaryAction}</b>
         </div>
+        <div className="journey-turn-summary" aria-label="本回合指挥摘要">
+          <article>
+            <span>当前阻碍</span>
+            <strong>{routeIntel.blocker}</strong>
+            <small>{routeIntel.blockerHint}</small>
+          </article>
+          <article>
+            <span>推荐动作</span>
+            <strong>{actionGuide.primaryAction}</strong>
+            <small>{nextCommandHint}</small>
+          </article>
+          <article className={outlook.tone}>
+            <span>队伍风险</span>
+            <strong>{outlook.label}</strong>
+            <small>{outlook.text}</small>
+          </article>
+          <article>
+            <span>撤离收益</span>
+            <strong>{extractionPreview.options[0]?.rewardSummary ?? extractionPreview.fieldSupplySummary}</strong>
+            <small>{extractionPreview.canExtractNow ? "可以带回当前收益。" : "先解除阻碍再稳妥撤离。"}</small>
+          </article>
+        </div>
         <div className="journey-mobile-flow" aria-label="手机端出征路线摘要">
           <div className="journey-mobile-flow-main">
             <span>当前任务</span>

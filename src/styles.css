@@ -3225,6 +3225,58 @@ button:disabled {
   background: #9c3d27;
 }
 
+.journey-turn-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.journey-turn-summary article {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid rgba(126, 98, 57, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.78);
+}
+
+.journey-turn-summary article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.journey-turn-summary article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.journey-turn-summary span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-turn-summary strong,
+.journey-turn-summary small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-turn-summary strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.journey-turn-summary small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .journey-mobile-flow {
   display: grid;
   gap: 8px;
@@ -6761,6 +6813,7 @@ button:disabled {
     .playtest-checkpoint-grid,
     .release-readiness-grid,
     .browser-smoke-grid,
+    .journey-turn-summary,
     .room-playtest-check-grid,
     .location-choice-grid,
     .room-cooperation-board,
@@ -6885,6 +6938,10 @@ button:disabled {
     box-shadow: 0 14px 26px rgba(64, 43, 21, 0.14);
   }
 
+  .journey-turn-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .journey-command-snapshot {
     display: none;
   }
@@ -6988,6 +7045,12 @@ button:disabled {
   .journey-command-button {
     min-height: 64px;
     padding: 9px;
+  }
+
+  .journey-primary-actions .combat-loot-grid,
+  .journey-primary-actions .journey-actions,
+  .journey-primary-actions .combat-action-grid {
+    display: none;
   }
 
   .journey-panel {

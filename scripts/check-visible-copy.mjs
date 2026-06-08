@@ -40,7 +40,8 @@ const requiredChineseAnchors = [
   "多人试玩开局检查",
   "下一轮远征建议",
   "发布准入检查",
-  "浏览器冒烟清单"
+  "浏览器冒烟清单",
+  "本回合指挥摘要"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -54,7 +55,8 @@ const additionalRequiredChineseAnchors = [
   "开局检查",
   "复盘建议",
   "默认不要频繁发布",
-  "本地先走完整路径"
+  "本地先走完整路径",
+  "撤离收益"
 ];
 
 const bannedVisibleEnglish = [

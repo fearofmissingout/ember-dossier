@@ -100,11 +100,16 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("aria-label=\"远征行动台\"");
+    expect(source).toContain("aria-label=\"本回合指挥摘要\"");
     expect(source).toContain("aria-label=\"当前可执行操作\"");
     expect(source).toContain("aria-label=\"最近行动结果\"");
     expect(source).toContain("journey-command-center");
+    expect(source).toContain("journey-turn-summary");
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-command-result");
+    expect(source).toContain("当前阻碍");
+    expect(source).toContain("推荐动作");
+    expect(source).toContain("撤离收益");
     expect(source).toContain("journey-mobile-flow");
     expect(source).toContain("aria-label=\"手机端远征页内导航\"");
     expect(source).toContain("aria-label=\"手机端单页行动摘要\"");
@@ -121,6 +126,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-vitals-strip");
     expect(source).toContain("journey-detail-grid");
     expect(styles).toContain(".journey-command-center");
+    expect(styles).toContain(".journey-turn-summary");
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-command-result");
     expect(styles).toContain(".journey-mobile-flow");
@@ -131,6 +137,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-primary-actions");
     expect(styles).toContain("position: sticky");
     expect(styles).toContain("padding-bottom: 28px");
+    expect(styles).toContain(".journey-primary-actions .combat-action-grid");
     expect(styles).not.toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("@media (max-width: 720px)");
   });
