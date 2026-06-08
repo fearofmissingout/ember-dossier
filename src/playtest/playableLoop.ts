@@ -9,7 +9,7 @@ import {
   type JourneyCombatRoundPlan,
   type JourneyCombatRoundRecord
 } from "./journey";
-import { expeditionDoctrineForFacility, expeditionSupportDiagnosis, supportFromAccountBase, supportFromFacilities } from "./progression";
+import { expeditionDoctrineForFacility, expeditionSupportDiagnosis, supportFromAccountBase, supportFromFacilities, survivorGrowthPlan } from "./progression";
 import {
   applyContribution,
   assignSurvivorToRoom,
@@ -34,6 +34,7 @@ export type PlayableLoopCheckpointId =
   | "facility-stage"
   | "logistics-diagnosis"
   | "survivor-treated"
+  | "survivor-growth-plan"
   | "squad-assigned"
   | "multiplayer-cooperation"
   | "player-cooperation-task"
@@ -69,6 +70,7 @@ export type PlayableLoopSmoke = {
     settlement: FeedReportSettlement;
   };
   treatmentFeedTitle: string;
+  survivorGrowthPlanDetail: string;
 };
 
 export function runPlayableLoopSmoke(): PlayableLoopSmoke {
@@ -101,6 +103,9 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   session = treatSurvivor(session, userId, treatmentTargetId);
   const treatedSurvivor = session.account.survivors.find((survivor) => survivor.id === treatmentTargetId);
   const treatmentFeedTitle = session.room.feed[0]?.title ?? "";
+  session.account.survivors[0].xp = 18;
+  const growthPlan = survivorGrowthPlan(session.account.survivors);
+  const survivorGrowthPlanDetail = `${growthPlan.summary} / ${growthPlan.items.map((item) => `${item.name}:${item.label}`).join(" / ")}`;
 
   session.room.members.push({
     displayName: "Smoke Guest",
@@ -260,6 +265,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: Boolean(treatedSurvivor && treatedSurvivor.injuries.length === 0 && treatedSurvivor.fatigue < 48)
     },
     {
+      detail: survivorGrowthPlanDetail,
+      id: "survivor-growth-plan",
+      ok: growthPlan.items.length > 0 && growthPlan.items.some((item) => item.label === "接近升级")
+    },
+    {
       detail: `${squad.length} 名幸存者加入房间编队`,
       id: "squad-assigned",
       ok: session.room.assignedSurvivors.filter((assignment) => assignment.userId === userId).length === squad.length
@@ -333,7 +343,8 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ledger,
       settlement
     },
-    treatmentFeedTitle
+    treatmentFeedTitle,
+    survivorGrowthPlanDetail
   };
 }
 

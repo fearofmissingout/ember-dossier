@@ -36,6 +36,20 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".yield-preview");
   });
 
+  test("shows survivor growth planning as a base loop surface", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("survivorGrowthPlan");
+    expect(source).toContain("aria-label=\"幸存者培养队列\"");
+    expect(source).toContain("培养队列");
+    expect(source).toContain("按顺序处理，下一次出征更稳。");
+    expect(styles).toContain(".growth-plan-card");
+    expect(styles).toContain(".growth-plan-grid");
+    expect(styles).toContain(".growth-plan-item.ready");
+    expect(styles).toContain(".growth-plan-item.blocked");
+  });
+
   test("keeps expedition prep as a mobile-first single-page command flow", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

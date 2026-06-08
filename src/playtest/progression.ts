@@ -31,6 +31,20 @@ export type SurvivorAdvancement = {
   xpToNextLevel: number;
 };
 
+export type SurvivorGrowthPlanItem = {
+  detail: string;
+  id: string;
+  label: string;
+  name: string;
+  priority: "blocked" | "ready" | "steady" | "capped";
+};
+
+export type SurvivorGrowthPlan = {
+  hasAction: boolean;
+  items: SurvivorGrowthPlanItem[];
+  summary: string;
+};
+
 export type ExpeditionSupport = {
   ammoDamage: number;
   campCook: number;
@@ -186,6 +200,84 @@ export function advanceSurvivorExperience(survivor: AccountSurvivor, xpGained: n
     xpGained: survivorAfterGain.xp - survivor.xp,
     xpToNextLevel: atLevelCap ? 0 : Math.max(0, xpForNextLevel(survivorAfterGain) - survivorAfterGain.xp)
   };
+}
+
+export function survivorGrowthPlan(survivors: AccountSurvivor[]): SurvivorGrowthPlan {
+  const items = survivors
+    .map(growthPlanItemFor)
+    .sort((left, right) => growthPriorityScore(left) - growthPriorityScore(right))
+    .slice(0, 4);
+  const injuredCount = survivors.filter((survivor) => survivor.injuries.length > 0).length;
+  const nearLevelCount = survivors.filter((survivor) => {
+    if (isSurvivorAtLevelCap(survivor) || survivor.injuries.length > 0) {
+      return false;
+    }
+    return xpForNextLevel(survivor) - survivor.xp <= 10;
+  }).length;
+
+  return {
+    hasAction: items.some((item) => item.priority !== "capped"),
+    items,
+    summary:
+      injuredCount > 0
+        ? `${injuredCount} 名幸存者需要先处理伤病，再谈培养。`
+        : nearLevelCount > 0
+          ? `${nearLevelCount} 名幸存者接近升级，适合安排下一次出征。`
+          : "队伍成长稳定推进，优先让低疲劳成员轮换出征。"
+  };
+}
+
+function growthPlanItemFor(survivor: AccountSurvivor): SurvivorGrowthPlanItem {
+  if (survivor.injuries.length > 0) {
+    return {
+      detail: `${survivor.injuries.length} 个伤病，疲劳 ${survivor.fatigue}。先治疗，避免下一次出征滚雪球。`,
+      id: survivor.id,
+      label: "先治疗",
+      name: survivor.name,
+      priority: "blocked"
+    };
+  }
+
+  if (isSurvivorAtLevelCap(survivor)) {
+    return {
+      detail: `Lv.${survivor.level} 已达当前成长上限，可以转去基地班次或带新人。`,
+      id: survivor.id,
+      label: "已达上限",
+      name: survivor.name,
+      priority: "capped"
+    };
+  }
+
+  const nextLevelXp = xpForNextLevel(survivor);
+  const xpGap = Math.max(0, nextLevelXp - survivor.xp);
+
+  if (xpGap <= 10) {
+    return {
+      detail: `距 Lv.${survivor.level + 1} 还差 ${xpGap} 经验，下一次完整撤离很可能升级。`,
+      id: survivor.id,
+      label: "接近升级",
+      name: survivor.name,
+      priority: "ready"
+    };
+  }
+
+  return {
+    detail: `当前 ${survivor.xp}/${nextLevelXp} 经验。保持低疲劳轮换，稳定推进专长解锁。`,
+    id: survivor.id,
+    label: "稳定培养",
+    name: survivor.name,
+    priority: "steady"
+  };
+}
+
+function growthPriorityScore(item: SurvivorGrowthPlanItem) {
+  const scores: Record<SurvivorGrowthPlanItem["priority"], number> = {
+    blocked: 0,
+    ready: 1,
+    steady: 2,
+    capped: 3
+  };
+  return scores[item.priority];
 }
 
 const expeditionDoctrineDefinitions: ExpeditionDoctrineOption[] = [

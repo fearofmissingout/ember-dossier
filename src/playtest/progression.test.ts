@@ -13,6 +13,7 @@ import {
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
   survivorLevelCap,
+  survivorGrowthPlan,
   survivorMaxXp,
   survivorPerkDetails,
   supportFromAccountBase,
@@ -245,6 +246,21 @@ function survivor(overrides: Partial<AccountSurvivor> = {}): AccountSurvivor {
 }
 
 describe("survivor progression", () => {
+  test("survivor growth plan prioritizes injuries and near level-ups", () => {
+    const plan = survivorGrowthPlan([
+      survivor({ id: "capped", injuries: [], level: survivorLevelCap, name: "满级队员", xp: survivorMaxXp }),
+      survivor({ id: "near", injuries: [], level: 2, name: "临门队员", xp: 35 }),
+      survivor({ id: "hurt", injuries: ["裂伤"], name: "伤员", xp: 4 }),
+      survivor({ id: "steady", injuries: [], name: "稳定队员", xp: 3 })
+    ]);
+
+    expect(plan.summary).toContain("需要先处理伤病");
+    expect(plan.items.map((item) => item.id)).toEqual(["hurt", "near", "steady", "capped"]);
+    expect(plan.items[0]).toMatchObject({ label: "先治疗", priority: "blocked" });
+    expect(plan.items[1].detail).toContain("距 Lv.3 还差 5 经验");
+    expect(plan.items[3]).toMatchObject({ label: "已达上限", priority: "capped" });
+  });
+
   test("advances through every reached threshold and reports unlocked perks", () => {
     const result = advanceSurvivorExperience(survivor({ xp: 18 }), 45);
 

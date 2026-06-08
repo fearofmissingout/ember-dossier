@@ -112,6 +112,7 @@ import {
   mergeExpeditionSupport,
   supportFromAccountBase,
   supportFromFacilities,
+  survivorGrowthPlan,
   survivorPerkDetails,
   xpForNextLevel,
   type ExpeditionDoctrineId
@@ -1636,6 +1637,8 @@ function Survivors({
   onTreat: (id: string) => void;
   onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
 }) {
+  const growthPlan = survivorGrowthPlan(accountSurvivors);
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -1680,6 +1683,24 @@ function Survivors({
             ))}
           </div>
         )}
+      </div>
+      <div className="growth-plan-card" aria-label="幸存者培养队列">
+        <div className="growth-plan-heading">
+          <div>
+            <span>培养队列</span>
+            <strong>{growthPlan.summary}</strong>
+          </div>
+          <small>{growthPlan.hasAction ? "按顺序处理，下一次出征更稳。" : "当前队伍以轮换和带新人为主。"}</small>
+        </div>
+        <div className="growth-plan-grid">
+          {growthPlan.items.map((item) => (
+            <article className={`growth-plan-item ${item.priority}`} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.name}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
       </div>
       <div className="survivor-grid">
         {state.survivors.map((survivor) => {
@@ -4071,6 +4092,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "journey-choice-preview": "路途选择",
     "member-guidance": "成员建议",
     "player-cooperation-task": "个人协作",
+    "survivor-growth-plan": "培养队列",
     "survivor-treated": "伤病治疗",
     "squad-assigned": "出征编队",
     "multiplayer-cooperation": "多人协作",
