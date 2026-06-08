@@ -2633,6 +2633,28 @@ function JourneyPanel({
   const objectivePreview = journeyObjectivePreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
   const roundPlan = combatRoundPlan(journey);
+  const combatActionPreviews = journey.combat
+    ? combatActionList.flatMap((action) => {
+        const preview = combatActionPreview(journey, action, squad, readiness);
+        if (!preview) {
+          return [];
+        }
+
+        return [{ action, icon: combatActionIcon(action), preview }];
+      })
+    : [];
+  const counterActionLabels = combatActionPreviews
+    .filter((item) => item.preview.counterTag === "Counter")
+    .map((item) => item.preview.label)
+    .join(" / ");
+  const riskyActionLabels = combatActionPreviews
+    .filter((item) => item.preview.counterTag === "Risk")
+    .map((item) => item.preview.label)
+    .join(" / ");
+  const standardActionLabels = combatActionPreviews
+    .filter((item) => item.preview.counterTag === "Standard")
+    .map((item) => item.preview.label)
+    .join(" / ");
   const recentDecisions = (journey.decisions ?? []).slice(-4).reverse();
   const latestCombatRound = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
   const counterLabels = segmentThreat.counterTactics
@@ -3426,13 +3448,25 @@ function JourneyPanel({
               <span>节奏 {journey.combat.tempo ?? 0}</span>
               <span>破势 {journey.combat.stagger ?? 0}</span>
             </div>
+            <div className="combat-action-readout" aria-label="战斗动作判读">
+              <article className="counter">
+                <span>反制动作</span>
+                <strong>{counterActionLabels || "暂无"}</strong>
+                <small>{roundPlan ? `建议优先：${roundPlan.label}` : "先观察敌人意图，再决定本回合动作。"}</small>
+              </article>
+              <article className="risk">
+                <span>高风险动作</span>
+                <strong>{riskyActionLabels || threatPreview?.riskyLabels.join(" / ") || "暂无"}</strong>
+                <small>{threatPreview?.warning ?? "当前没有明确禁手，但仍要留意压力和队伍血量。"}</small>
+              </article>
+              <article>
+                <span>常规选择</span>
+                <strong>{standardActionLabels || "暂无"}</strong>
+                <small>常规动作更稳，但通常不会推进节奏和破势。</small>
+              </article>
+            </div>
             <div className="combat-action-grid">
-              {combatActionList.map((action) => {
-                const preview = combatActionPreview(journey, action, squad, readiness);
-                if (!preview) {
-                  return null;
-                }
-                const Icon = combatActionIcon(action);
+              {combatActionPreviews.map(({ action, icon: Icon, preview }) => {
                 return (
                   <button className={`combat-action-card ${preview.counterTag.toLowerCase()}`} key={action} type="button" onClick={() => onCombatAction(action)}>
                     <div>

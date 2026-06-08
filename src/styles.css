@@ -5464,6 +5464,58 @@ button:disabled {
   font-weight: 900;
 }
 
+.combat-action-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.combat-action-readout article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.combat-action-readout article.counter {
+  border-color: #7aa66d;
+  background: #f3fbef;
+}
+
+.combat-action-readout article.risk {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.combat-action-readout span {
+  color: #8a3524;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.combat-action-readout strong,
+.combat-action-readout small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.combat-action-readout strong {
+  color: #3a2f24;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.combat-action-readout small {
+  color: #765645;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .combat-action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
@@ -6809,6 +6861,7 @@ button:disabled {
   .account-upgrade-row,
   .frontline-grid,
   .combat-threat,
+  .combat-action-readout,
   .journey-command-snapshot,
   .journey-status-grid,
   .route-pacing,
@@ -7448,7 +7501,8 @@ button:disabled {
   }
 
   .combat-mobile-bars,
-  .combat-mobile-intent {
+  .combat-mobile-intent,
+  .combat-action-readout {
     grid-template-columns: 1fr;
   }
 

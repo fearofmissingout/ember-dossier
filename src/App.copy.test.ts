@@ -160,12 +160,18 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("combat-mobile-dashboard");
     expect(source).toContain("combat-mobile-bars");
     expect(source).toContain("combat-mobile-intent");
+    expect(source).toContain("aria-label=\"战斗动作判读\"");
+    expect(source).toContain("combatActionPreviews");
+    expect(source).toContain("反制动作");
+    expect(source).toContain("高风险动作");
+    expect(source).toContain("常规选择");
     expect(source).toContain("latestCombatRound");
     expect(source).toContain("推荐反制");
     expect(styles).toContain(".combat-mobile-dashboard");
     expect(styles).toContain(".combat-mobile-bars");
     expect(styles).toContain(".combat-mobile-intent");
     expect(styles).toContain(".combat-mobile-result");
+    expect(styles).toContain(".combat-action-readout");
   });
 
   test("keeps mobile navigation as an in-app bottom bar instead of page hops", () => {
