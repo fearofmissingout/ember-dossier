@@ -16,6 +16,7 @@ import {
   baseDayPreview,
   baseDevelopmentPlan,
   baseRecoveryPlan,
+  baseTaskList,
   resolvePlaytestExpedition,
   roomMemberSummaries,
   setBaseAssignment,
@@ -322,6 +323,53 @@ describe("playtest room loop", () => {
       materialDeficit: 2
     });
     expect(plan.summary).toContain("当前材料 10");
+  });
+
+  test("summarizes urgent base tasks for supplies recovery shifts and upgrades", () => {
+    const session = createStarterSession("user-a", "Alice", "base-task-room");
+    session.room.base.resources.food = 1;
+    session.room.base.resources.water = 1;
+    session.room.base.resources.materials = 12;
+    session.account.survivors[0].injuries = ["裂伤"];
+    session.account.survivors[0].status = "recovering";
+
+    const tasks = baseTaskList(session);
+
+    expect(tasks.summary).toBe("今日待办：补给、恢复、班次、建设。");
+    expect(tasks.items.map((item) => item.id)).toEqual(["supplies", "recovery", "shifts", "development"]);
+    expect(tasks.items[0]).toMatchObject({
+      actionLabel: "捐入资源",
+      status: "urgent",
+      title: "补足明日口粮"
+    });
+    expect(tasks.items[1].body).toContain("1 名伤员");
+    expect(tasks.items[2].body).toContain("安排搜寻、修理、守卫或护理班");
+    expect(tasks.items[3].body).toContain("可推进");
+  });
+
+  test("summarizes a stable base as ready for expedition", () => {
+    const session = createStarterSession("user-a", "Alice", "base-ready-room");
+    session.room.base.resources.food = 12;
+    session.room.base.resources.water = 12;
+    session.room.base.resources.materials = 0;
+    session.room.baseAssignments.push({
+      roomId: session.room.id,
+      survivorId: session.account.survivors[0].id,
+      type: "guard",
+      userId: session.account.profile.userId
+    });
+
+    const tasks = baseTaskList(session);
+
+    expect(tasks.summary).toBe("基地状态可控，可以准备下一次远征。");
+    expect(tasks.items).toEqual([
+      expect.objectContaining({
+        actionLabel: "准备远征",
+        id: "expedition",
+        status: "ready",
+        title: "准备下一次远征"
+      })
+    ]);
   });
 
   test("settles expedition into room resources, account xp, fatigue, objective progress, and feed", () => {

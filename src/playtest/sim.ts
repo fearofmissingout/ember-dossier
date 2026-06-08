@@ -574,6 +574,18 @@ function facilityEffectSummary(facilityId: string) {
   return facilityEffectSummaries[facilityId] ?? "基地运转得到改善";
 }
 
+function baseTaskShortLabel(id: BaseTaskItem["id"]) {
+  const labels: Record<BaseTaskItem["id"], string> = {
+    development: "建设",
+    expedition: "远征",
+    objective: "目标",
+    recovery: "恢复",
+    shifts: "班次",
+    supplies: "补给"
+  };
+  return labels[id];
+}
+
 function ensureUser(session: PlaytestSession, userId: string) {
   if (session.account.profile.userId !== userId) {
     throw new Error("This session can only mutate the active account.");
@@ -804,6 +816,21 @@ export type RoomMemberSummary = {
   userId: string;
 };
 
+export type BaseTaskStatus = "urgent" | "todo" | "ready";
+
+export type BaseTaskItem = {
+  actionLabel: string;
+  body: string;
+  id: "supplies" | "recovery" | "shifts" | "development" | "objective" | "expedition";
+  status: BaseTaskStatus;
+  title: string;
+};
+
+export type BaseTaskList = {
+  items: BaseTaskItem[];
+  summary: string;
+};
+
 export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary[] {
   return session.room.members
     .map((member) => {
@@ -960,6 +987,83 @@ export function baseDayPreview(session: PlaytestSession): BaseDayPreview {
     waterAvailable,
     waterNeed,
     waterShortage
+  };
+}
+
+export function baseTaskList(session: PlaytestSession): BaseTaskList {
+  const day = baseDayPreview(session);
+  const recovery = baseRecoveryPlan(session);
+  const development = baseDevelopmentPlan(session);
+  const items: BaseTaskItem[] = [];
+
+  if (day.foodShortage > 0 || day.waterShortage > 0) {
+    items.push({
+      actionLabel: "捐入资源",
+      body: `明日预计缺食物 ${day.foodShortage}、饮水 ${day.waterShortage}。先从个人库存捐入资源，或安排搜寻班。`,
+      id: "supplies",
+      status: "urgent",
+      title: "补足明日口粮"
+    });
+  }
+
+  if (recovery.injuredCount > 0 || recovery.recoveringCount > 0) {
+    items.push({
+      actionLabel: recovery.careShifts > 0 ? "查看恢复" : "安排护理",
+      body: `${recovery.injuredCount} 名伤员，${recovery.recoveringCount} 人恢复中；预计清除 ${recovery.likelyInjuryClears} 个伤病。`,
+      id: "recovery",
+      status: recovery.careShifts > 0 ? "todo" : "urgent",
+      title: "处理伤病恢复"
+    });
+  }
+
+  const shiftCount = Object.values(day.shiftCounts).reduce((sum, count) => sum + count, 0);
+  if (shiftCount === 0) {
+    items.push({
+      actionLabel: "安排班次",
+      body: "还没有人留守。安排搜寻、修理、守卫或护理班，日结时会转成补给、目标、危险控制和恢复。",
+      id: "shifts",
+      status: "todo",
+      title: "安排基地班次"
+    });
+  }
+
+  if (development.affordableCount > 0) {
+    const recommended = development.recommended.find((project) => project.canAfford) ?? development.recommended[0];
+    items.push({
+      actionLabel: "升级设施",
+      body: `${recommended?.name ?? "设施"}可推进；设施会同时影响基地日结和出征支援。`,
+      id: "development",
+      status: "todo",
+      title: "推进基地建设"
+    });
+  }
+
+  if (session.room.base.objective.status !== "active") {
+    items.push({
+      actionLabel: "创建房间",
+      body: "当前房间目标已经结算。创建新房间后，可以重新开始一轮共享基地。",
+      id: "objective",
+      status: "urgent",
+      title: "房间目标已结算"
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      actionLabel: "准备远征",
+      body: "水粮、班次和恢复都没有明显阻塞。可以进入远征准备，选择编队和地点。",
+      id: "expedition",
+      status: "ready",
+      title: "准备下一次远征"
+    });
+  }
+
+  return {
+    items,
+    summary:
+      items.length === 1 && items[0].id === "expedition"
+        ? "基地状态可控，可以准备下一次远征。"
+        : `今日待办：${items.map((item) => baseTaskShortLabel(item.id)).join("、")}。`
   };
 }
 

@@ -34,4 +34,26 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"出征行动指引\"");
     expect(source).toContain("actionGuide.primaryAction");
   });
+
+  test("keeps the expedition flow as a mobile-friendly single-page command center", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("aria-label=\"远征行动台\"");
+    expect(source).toContain("journey-command-center");
+    expect(source).toContain("journey-vitals-strip");
+    expect(source).toContain("journey-detail-grid");
+    expect(styles).toContain(".journey-command-center");
+    expect(styles).toContain(".journey-vitals-strip");
+    expect(styles).toContain(".journey-primary-actions");
+    expect(styles).toContain("@media (max-width: 720px)");
+  });
+
+  test("shows a Chinese base task list on the overview", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+
+    expect(source).toContain("baseTaskList");
+    expect(source).toContain("aria-label=\"今日基地待办\"");
+    expect(source).toContain("今日待办");
+  });
 });

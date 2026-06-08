@@ -31,6 +31,7 @@ import {
   accountBaseDevelopmentPlan,
   baseDevelopmentPlan,
   baseRecoveryPlan,
+  baseTaskList,
   resolvePlaytestExpedition,
   roomMemberSummaries,
   setBaseAssignment,
@@ -1186,6 +1187,7 @@ function Overview({
   const objectiveProgress = Math.round((objective.repairedParts / objective.requiredParts) * 100);
   const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
   const dayPreview = baseDayPreview(session);
+  const tasks = baseTaskList(session);
   const accountRooms = [
     { label: "训练室", level: session.account.base.trainingRoomLevel },
     { label: "医务室", level: session.account.base.medicalRoomLevel },
@@ -1267,6 +1269,21 @@ function Overview({
         <div className="metric-pair">
           <span>剩余期限</span>
           <strong>{daysRemaining} 天</strong>
+        </div>
+        <div className="base-task-list" aria-label="今日基地待办">
+          <div className="base-task-heading">
+            <span>今日待办</span>
+            <strong>{tasks.summary}</strong>
+          </div>
+          <div className="base-task-grid">
+            {tasks.items.slice(0, 4).map((task) => (
+              <article className={`base-task-card ${task.status}`} key={task.id}>
+                <span>{task.actionLabel}</span>
+                <strong>{task.title}</strong>
+                <small>{task.body}</small>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="base-day-preview" aria-label="基地日程预报">
           <div>
@@ -2025,14 +2042,36 @@ function JourneyPanel({
 
   return (
     <div className="journey-panel">
-      <div className={`journey-action-guide ${actionGuide.tone}`} aria-label="出征行动指引">
-        <div>
-          <span>{actionGuide.label}</span>
-          <strong>{actionGuide.title}</strong>
-          <small>{actionGuide.body}</small>
+      <section className={`journey-command-center ${actionGuide.tone}`} aria-label="远征行动台">
+        <div className={`journey-action-guide ${actionGuide.tone}`} aria-label="出征行动指引">
+          <div>
+            <span>{actionGuide.label}</span>
+            <strong>{actionGuide.title}</strong>
+            <small>{actionGuide.body}</small>
+          </div>
+          <b>{actionGuide.primaryAction}</b>
         </div>
-        <b>{actionGuide.primaryAction}</b>
-      </div>
+        <div className="journey-command-snapshot">
+          <div>
+            <span>当前位置</span>
+            <strong>{nodeTitle}</strong>
+            <small>{nodeTypeLabel}</small>
+          </div>
+          <div>
+            <span>路线</span>
+            <strong>
+              {routePace.currentStop}/{routePace.totalStops}
+            </strong>
+            <small>{routePace.etaLabel}</small>
+          </div>
+          <div>
+            <span>下一步</span>
+            <strong>{actionGuide.primaryAction}</strong>
+            <small>{routePace.nextTitle}</small>
+          </div>
+        </div>
+      </section>
+      <div className="journey-detail-grid" aria-label="远征详情">
       <div className="route-pacing" aria-label="路线节奏">
         <div>
           <span>路线进度</span>
@@ -2102,7 +2141,8 @@ function JourneyPanel({
           </div>
         </div>
       )}
-      <div className="journey-status-grid">
+      </div>
+      <div className="journey-status-grid journey-vitals-strip" aria-label="远征状态栏">
         <div className="journey-pressure">
           <span>压力</span>
           <strong>{journey.pressure}%</strong>
@@ -2362,7 +2402,7 @@ function JourneyPanel({
           {journey.battleScars > 0 && <strong>战斗伤痕：{journey.battleScars}</strong>}
         </div>
       )}
-      <div className="journey-node">
+      <div className="journey-node journey-primary-actions">
         <span className="subtle-pill">{nodeTypeLabel}</span>
         <h3>{nodeTitle}</h3>
         <p>{nodeBody}</p>
