@@ -778,6 +778,7 @@ export type BaseDevelopmentProjectPreview = {
   category: string;
   cost: number;
   expeditionImpact: string;
+  expeditionStage: string;
   id: string;
   level: number;
   materialDeficit: number;
@@ -1054,6 +1055,7 @@ export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPl
       category: facility.category ?? "core",
       cost,
       expeditionImpact: impact.expedition,
+      expeditionStage: facilityExpeditionStage(facility.id),
       id: facility.id,
       level: facility.level,
       materialDeficit: Math.max(0, cost - materials),
@@ -1849,6 +1851,21 @@ function facilityDevelopmentImpact(facilityId: string): { base: string; expediti
     base: "改善基地运转。",
     expedition: "改善出征支援。"
   };
+}
+
+function facilityExpeditionStage(facilityId: string): string {
+  const stages: Record<string, string> = {
+    barricade: "路上控制",
+    clinic: "战斗医疗",
+    dorm: "出门准备",
+    generator: "战斗医疗",
+    kitchen: "营地交易",
+    radio: "路上控制",
+    training: "出门准备",
+    watchtower: "路上控制",
+    workshop: "战斗医疗"
+  };
+  return stages[facilityId] ?? "后勤支援";
 }
 
 function recoveryPriorityPatients(session: PlaytestSession, excludedIds: Set<string>): BaseRecoveryPatientPreview[] {

@@ -3585,6 +3585,10 @@ function Facilities({
                 <strong>{project.reason}</strong>
                 <small>{project.nextStep}</small>
               </div>
+              <div className="development-expedition-stage" aria-label="出征接入点">
+                <span>出征接入</span>
+                <strong>{project.expeditionStage}</strong>
+              </div>
               <p>基地：{project.baseImpact}</p>
               <p>出征：{project.expeditionImpact}</p>
             </article>

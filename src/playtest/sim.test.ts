@@ -1113,6 +1113,21 @@ describe("playtest room loop", () => {
     });
   });
 
+  test("base development plan explains where upgrades plug into expeditions", () => {
+    const session = createStarterSession("user-a", "Alice", "facility-stage-room");
+    session.room.base.resources.materials = 30;
+
+    const plan = baseDevelopmentPlan(session);
+    const training = plan.projects.find((project) => project.id === "training");
+    const radio = plan.projects.find((project) => project.id === "radio");
+    const kitchen = plan.projects.find((project) => project.id === "kitchen");
+
+    expect(training).toMatchObject({ expeditionStage: "出门准备" });
+    expect(radio).toMatchObject({ expeditionStage: "路上控制" });
+    expect(kitchen).toMatchObject({ expeditionStage: "营地交易" });
+    expect(plan.recommended.every((project) => project.expeditionStage.length > 0)).toBe(true);
+  });
+
   test("kitchen and barricade change daily upkeep and danger", () => {
     const session = createStarterSession("user-a", "Alice", "room-a");
     session.room.base.resources.food = 8;

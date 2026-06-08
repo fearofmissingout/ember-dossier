@@ -4918,6 +4918,33 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.development-project-card .development-expedition-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  justify-content: start;
+  padding: 7px 8px;
+  border: 1px solid #c8d6b8;
+  border-radius: 8px;
+  background: #f3faee;
+}
+
+.development-expedition-stage span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.development-expedition-stage strong {
+  min-width: 0;
+  color: #2f4633;
+  font-size: 12px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .facility-card {
   padding: 16px;
   border: 1px solid #d1c4aa;
