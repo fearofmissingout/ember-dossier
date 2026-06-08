@@ -38,7 +38,8 @@ const requiredChineseAnchors = [
   "英文包待接入",
   "账号成长边界",
   "多人试玩开局检查",
-  "下一轮远征建议"
+  "下一轮远征建议",
+  "发布准入检查"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -50,7 +51,8 @@ const additionalRequiredChineseAnchors = [
   "单页模式",
   "成长上限",
   "开局检查",
-  "复盘建议"
+  "复盘建议",
+  "默认不要频繁发布"
 ];
 
 const bannedVisibleEnglish = [

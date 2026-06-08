@@ -224,6 +224,29 @@ const playtestSettings = {
   releaseStatus: "大功能先跑本地门禁，通过后再发布试玩。"
 };
 
+const releaseReadinessSteps = [
+  {
+    command: "npm run iteration:check",
+    detail: "覆盖工作流契约、中文文案、试玩闭环、测试和生产构建。",
+    label: "本地门禁"
+  },
+  {
+    command: "git status --short",
+    detail: "发布前必须没有未提交改动，避免把半成品带上线。",
+    label: "工作区干净"
+  },
+  {
+    command: "npm run release:preflight",
+    detail: "只在准备发布的大切片或线上阻断修复时运行。",
+    label: "发布预检"
+  },
+  {
+    command: "npm run release:verify",
+    detail: "发布后确认生产页面、注册接口、房间读写和关键文案。",
+    label: "线上验收"
+  }
+];
+
 const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "idle", label: "休息" },
   { key: "forage", label: "搜寻" },
@@ -4234,6 +4257,22 @@ function ArchiveView({ state }: { state: GameState }) {
           <span>npm run copy:check</span>
           <span>npm run playable:check</span>
           <span>npm run iteration:check</span>
+        </div>
+      </div>
+      <div className="release-readiness-card" aria-label="发布准入检查">
+        <div className="release-readiness-heading">
+          <span>发布准入</span>
+          <strong>{playableSmoke.ok ? "本地试玩闭环已通过，仍需按发布预检执行。" : "试玩闭环未通过，不允许发布。"}</strong>
+          <small>默认不要频繁发布；不要用线上部署当测试工具。</small>
+        </div>
+        <div className="release-readiness-grid">
+          {releaseReadinessSteps.map((step) => (
+            <article key={step.label}>
+              <span>{step.label}</span>
+              <strong>{step.command}</strong>
+              <small>{step.detail}</small>
+            </article>
+          ))}
         </div>
       </div>
       <div className="archive-grid">

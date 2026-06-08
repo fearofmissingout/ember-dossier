@@ -337,6 +337,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("playtest-readiness-card");
     expect(source).toContain("playtest-checkpoint-grid");
     expect(source).toContain("aria-label=\"发布前本地门禁\"");
+    expect(source).toContain("aria-label=\"发布准入检查\"");
+    expect(source).toContain("releaseReadinessSteps");
+    expect(source).toContain("默认不要频繁发布");
+    expect(source).toContain("不要用线上部署当测试工具");
+    expect(source).toContain("npm run release:preflight");
+    expect(source).toContain("npm run release:verify");
     expect(source).toContain("npm run copy:check");
     expect(source).toContain("npm run playable:check");
     expect(source).toContain("npm run iteration:check");
@@ -350,6 +356,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".playtest-checkpoint-grid");
     expect(styles).toContain(".playtest-checkpoint");
     expect(styles).toContain(".playtest-gate-strip");
+    expect(styles).toContain(".release-readiness-card");
+    expect(styles).toContain(".release-readiness-grid");
   });
 
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
