@@ -152,11 +152,15 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("report-growth-roadmap");
     expect(source).toContain("report-action-digest");
     expect(source).toContain("report-next-actions");
+    expect(source).toContain("summarizeFeedBaseReturnPlan");
+    expect(source).toContain("aria-label=\"远征回基地处理队列\"");
+    expect(source).toContain("base-return-plan");
     expect(source).toContain("处理伤病");
     expect(source).toContain("准备下一次远征");
     expect(styles).toContain(".report-growth-roadmap");
     expect(styles).toContain(".report-action-digest");
     expect(styles).toContain(".report-next-actions");
+    expect(styles).toContain(".base-return-plan");
   });
 
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {

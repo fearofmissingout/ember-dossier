@@ -974,6 +974,82 @@ button:disabled {
   font-weight: 900;
 }
 
+.base-return-plan {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #b8c99d;
+  border-radius: 8px;
+  background: #f5fbeb;
+}
+
+.base-return-plan-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.base-return-plan-heading span {
+  color: #536c3d;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.base-return-plan-heading strong {
+  color: #253727;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.base-return-plan-heading small {
+  color: #5f6e52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-return-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-return-plan-action {
+  display: grid;
+  gap: 5px;
+  min-height: 84px;
+  padding: 10px;
+  border: 1px solid #cbd8b4;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  text-align: left;
+}
+
+.base-return-plan-action span {
+  color: #526c38;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.base-return-plan-action strong {
+  color: #2f3b35;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.base-return-plan-action.warning {
+  border-color: #d4ba77;
+  background: #fff8df;
+}
+
+.base-return-plan-action.blocked {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
 .report-settlement {
   display: grid;
   gap: 10px;
@@ -5087,6 +5163,7 @@ button:disabled {
     .report-growth-grid,
     .report-action-digest-grid,
   .report-timeline-grid,
+    .base-return-plan-grid,
     .hardship-strip,
     .facility-impact-grid,
     .development-project-strip,

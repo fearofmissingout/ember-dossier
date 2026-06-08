@@ -116,6 +116,7 @@ import {
 import { clearPlaytestSession, createStarterSession, loadPlaytestSession, savePlaytestSession } from "./playtest/state";
 import { expeditionLaunchChecklist, expeditionYieldPreview } from "./playtest/launchChecklist";
 import {
+  summarizeFeedBaseReturnPlan,
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
@@ -3187,6 +3188,8 @@ function Reports({
   latestReportId: string | null;
   onNavigate: (view: ViewKey) => void;
 }) {
+  const latestReport = latestReportId ? feed.find((item) => item.id === latestReportId) : null;
+  const baseReturnPlan = latestReport ? summarizeFeedBaseReturnPlan(latestReport) : null;
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -3211,6 +3214,23 @@ function Reports({
           <button type="button" onClick={() => onNavigate("expedition")}>
             准备下一次远征
           </button>
+        </div>
+      )}
+      {baseReturnPlan?.hasPlan && (
+        <div className="base-return-plan" aria-label="远征回基地处理队列">
+          <div className="base-return-plan-heading">
+            <span>回基地处理</span>
+            <strong>{baseReturnPlan.headline}</strong>
+            <small>{baseReturnPlan.summary}</small>
+          </div>
+          <div className="base-return-plan-grid">
+            {baseReturnPlan.actions.map((action) => (
+              <button className={`base-return-plan-action ${action.tone}`} key={action.id} type="button" onClick={() => onNavigate(action.targetView)}>
+                <span>{action.label}</span>
+                <strong>{action.text}</strong>
+              </button>
+            ))}
+          </div>
         </div>
       )}
       <div className="feed-list large">
