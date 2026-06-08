@@ -631,7 +631,7 @@ function selectFeedProcessLogs(logs: string[]): string[] {
 }
 
 function isPriorityProcessLog(line: string): boolean {
-  return /紧急返程|提前截断路线|提前撤离|撤离：|呼叫基地接应|保住已入袋/.test(line);
+  return /路线决策|紧急返程|提前截断路线|提前撤离|撤离：|呼叫基地接应|保住已入袋/.test(line);
 }
 
 function expeditionXpGain(travelFatigue: number, trainingLevel: number) {

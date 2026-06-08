@@ -58,9 +58,11 @@ import {
   enemyTraitPulse,
   forecastNextSegment,
   journeyExtractionPreview,
+  journeyDecisionSummaryLines,
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
+  recordJourneyDecision,
   resolveCampAction,
   resolveBaseCommand,
   resolveCombatLootChoice,
@@ -900,7 +902,7 @@ export default function App() {
       battleScars: completedJourney.battleScars,
       combatScarSurvivorIds: completedJourney.woundedSurvivorIds,
       extractionStatus: completedJourney.extractionStatus === "early" ? "early" : "complete",
-      journeyLogs: completedJourney.logs,
+      journeyLogs: [...completedJourney.logs, ...journeyDecisionSummaryLines(completedJourney)],
       loadout: completedJourney.loadout,
       locationId: completedJourney.locationId,
       randomRolls: adjustedRolls,
@@ -1987,6 +1989,7 @@ function JourneyPanel({
   const baseCommands = baseCommandOptions(journey);
   const objectivePreview = journeyObjectivePreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
+  const recentDecisions = (journey.decisions ?? []).slice(-4).reverse();
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
@@ -2049,6 +2052,23 @@ function JourneyPanel({
           ))}
         </div>
       </div>
+      {recentDecisions.length > 0 && (
+        <div className="journey-decision-ledger" aria-label="路线决策账本">
+          <div className="journey-decision-heading">
+            <span>路线决策</span>
+            <strong>最近 {recentDecisions.length} 次抉择</strong>
+          </div>
+          <div className="journey-decision-grid">
+            {recentDecisions.map((decision) => (
+              <article className={`journey-decision-card ${decision.tone}`} key={decision.id}>
+                <span>{decision.nodeTitle}</span>
+                <strong>{decision.label}</strong>
+                <small>{decision.impactText}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="journey-status-grid">
         <div className="journey-pressure">
           <span>压力</span>
@@ -3025,6 +3045,14 @@ function applyJourneyChoice(journey: JourneyState, title: string, choice: Journe
         choice.pressure
       )}。`
     );
+    recordJourneyDecision(journey, {
+      category: "event",
+      detail: choice.successLog,
+      impacts: [`${resourceLabels[spentKey]} -1`, formatResourceDelta(choice.reward), `压力 ${formatSignedPercent(choice.pressure)}`],
+      label: choice.label,
+      nodeTitle: title,
+      tone: choice.pressure < 0 || formatResourceDelta(choice.reward) !== "无战利品" ? "safe" : "warning"
+    });
     return;
   }
 
@@ -3032,6 +3060,14 @@ function applyJourneyChoice(journey: JourneyState, title: string, choice: Journe
   journey.pressure = clampPercent(journey.pressure + fallbackPressure);
   journey.rollShift += choice.rollShift < 0 ? choice.rollShift / 2 : choice.rollShift;
   journey.logs.push(`${title}：${choice.fallbackLog} ${formatResourceDelta(choice.reward)}，压力 ${formatSignedPercent(fallbackPressure)}。`);
+  recordJourneyDecision(journey, {
+    category: "event",
+    detail: choice.fallbackLog,
+    impacts: ["补给不足", formatResourceDelta(choice.reward), `压力 ${formatSignedPercent(fallbackPressure)}`],
+    label: choice.label,
+    nodeTitle: title,
+    tone: "danger"
+  });
 }
 
 function travelPlanFromAction(action: JourneyAction): JourneyTravelPlan | null {

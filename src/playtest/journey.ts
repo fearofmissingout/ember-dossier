@@ -190,6 +190,19 @@ export type JourneyProcessDigest = {
   summary: string;
 };
 
+export type JourneyDecisionCategory = "event" | "road" | "shop" | "camp" | "combat-loot" | "base-command";
+export type JourneyDecisionTone = "safe" | "warning" | "danger";
+
+export type JourneyDecisionRecord = {
+  category: JourneyDecisionCategory;
+  detail: string;
+  id: string;
+  impactText: string;
+  label: string;
+  nodeTitle: string;
+  tone: JourneyDecisionTone;
+};
+
 export type JourneyRoadEventRecord = {
   outcome: string;
   segment: number;
@@ -384,6 +397,7 @@ export type JourneyState = {
   locationFamily: LocationFamily;
   locationId: string;
   logs: string[];
+  decisions: JourneyDecisionRecord[];
   nodes: JourneyNode[];
   hardships: JourneyHardshipRecord[];
   pendingCombatLoot: JourneyCombatLoot | null;
@@ -753,6 +767,7 @@ export function journeyProcessDigest(journey: JourneyState): JourneyProcessDiges
   const latestTravel = journey.travelHistory[journey.travelHistory.length - 1] ?? null;
   const latestRoad = journey.roadEvents[journey.roadEvents.length - 1] ?? null;
   const latestCombat = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const latestDecision = (journey.decisions ?? [])[Math.max(0, (journey.decisions ?? []).length - 1)] ?? null;
   const steps: JourneyProcessStep[] = [
     {
       body: journey.pendingRoadEvent?.body ?? activeNode?.body ?? "队伍正在等待下一步指令。",
@@ -815,6 +830,16 @@ export function journeyProcessDigest(journey: JourneyState): JourneyProcessDiges
       label: "最近战斗",
       title: latestCombat.tone === "safe" ? "优势回合" : latestCombat.tone === "danger" ? "危险回合" : "胶着回合",
       tone: latestCombat.tone
+    });
+  }
+
+  if (latestDecision) {
+    steps.push({
+      body: `${latestDecision.nodeTitle}：${latestDecision.detail}。${latestDecision.impactText}`,
+      id: latestDecision.id,
+      label: "最近抉择",
+      title: latestDecision.label,
+      tone: latestDecision.tone
     });
   }
 
@@ -1624,6 +1649,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     combat: null,
     combatHistory: [],
     currentNodeIndex: 0,
+    decisions: [],
     elapsedHours: 0,
     extractionStatus: "in-progress",
     fieldSupplies,
@@ -2424,21 +2450,53 @@ export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCom
     if (next.combat) {
       spreadCombatGuard(next.combat, guardValue);
       next.logs.push(`Base command: Guard relay. The base covers the line and adds ${guardValue} guard across the frontline.`);
+      recordJourneyDecision(next, {
+        category: "base-command",
+        detail: option.text,
+        impacts: [`前线防护 +${guardValue}`],
+        label: option.label,
+        nodeTitle: "基地指令",
+        tone: "safe"
+      });
     } else {
       const pressureDrop = Math.max(4, guardValue * 2);
       next.pressure = clampPercent(next.pressure - pressureDrop);
       next.logs.push(`基地指令：守卫接力。门口小队为出征队伍压住路线，压力 -${pressureDrop}%。`);
+      recordJourneyDecision(next, {
+        category: "base-command",
+        detail: option.text,
+        impacts: [`压力 -${pressureDrop}%`],
+        label: option.label,
+        nodeTitle: "基地指令",
+        tone: "safe"
+      });
     }
   } else if (action === "recon-ping") {
     const reconValue = 1 + Math.floor((next.support.roadSearch + next.support.campScout + next.support.shopIntel) / 2);
     if (next.combat) {
       next.combat.exposed += reconValue;
       next.logs.push(`基地指令：侦察标记。基地标出弱点，暴露 +${reconValue}。`);
+      recordJourneyDecision(next, {
+        category: "base-command",
+        detail: option.text,
+        impacts: [`暴露 +${reconValue}`],
+        label: option.label,
+        nodeTitle: "基地指令",
+        tone: "safe"
+      });
     } else {
       const pressureDrop = 4 + Math.min(4, next.support.pressureRelief + next.support.roadSearch);
       next.pressure = clampPercent(next.pressure - pressureDrop);
       next.objectiveBonus += 1;
       next.logs.push(`基地指令：侦察标记。路线笔记让下一次抉择更清晰，压力 -${pressureDrop}%，目标 +1。`);
+      recordJourneyDecision(next, {
+        category: "base-command",
+        detail: option.text,
+        impacts: [`压力 -${pressureDrop}%`, "目标 +1"],
+        label: option.label,
+        nodeTitle: "基地指令",
+        tone: "safe"
+      });
     }
   } else if (action === "supply-cache") {
     const food = 1 + Math.floor(next.support.shopRations / 2);
@@ -2448,6 +2506,14 @@ export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCom
     next.condition.hunger = clampPercent(next.condition.hunger - 12);
     next.condition.thirst = clampPercent(next.condition.thirst - 12);
     next.logs.push(`基地指令：补给缓存。随身补给恢复食物 +${food}、水 +${water}，饥饿 -12，口渴 -12。`);
+    recordJourneyDecision(next, {
+      category: "base-command",
+      detail: option.text,
+      impacts: [`随身 食物 +${food} / 水 +${water}`, "饥饿 -12", "口渴 -12"],
+      label: option.label,
+      nodeTitle: "基地指令",
+      tone: "safe"
+    });
   }
 
   return next;
@@ -2503,6 +2569,22 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
         option.objectiveBonus > 0 ? `，目标线索 +${option.objectiveBonus}` : ""
       }${option.supportText ? `。${option.supportText}` : ""}。`
     );
+    recordJourneyDecision(next, {
+      category: "camp",
+      detail: option.successLog,
+      impacts: [
+        `${resourceLabels[spentKey]} -1`,
+        `疲劳 ${formatSignedNumber(option.fatigue)}`,
+        `饥饿 ${formatSignedNumber(option.hunger)}`,
+        `口渴 ${formatSignedNumber(option.thirst)}`,
+        `压力 ${formatSignedPercent(option.pressure)}`,
+        option.objectiveBonus > 0 ? `目标 +${option.objectiveBonus}` : "",
+        option.supportText ?? ""
+      ],
+      label: option.label,
+      nodeTitle: node.title,
+      tone: option.pressure < 0 || option.objectiveBonus > 0 ? "safe" : "warning"
+    });
     return next;
   }
 
@@ -2513,6 +2595,14 @@ export function resolveCampAction(journey: JourneyState, action: JourneyCampActi
   next.pressure = clampPercent(next.pressure + fallbackPressure);
   next.rollShift += Math.max(0.03, option.rollShift / 2);
   next.logs.push(`${node.title}：${option.fallbackLog} 压力 ${formatSignedPercent(fallbackPressure)}${option.supportText ? `。${option.supportText}` : ""}。`);
+  recordJourneyDecision(next, {
+    category: "camp",
+    detail: option.fallbackLog,
+    impacts: [`补给不足`, `压力 ${formatSignedPercent(fallbackPressure)}`, `饥饿 +${Math.max(5, option.hunger + 16)}`, `口渴 +${Math.max(5, option.thirst + 16)}`],
+    label: option.label,
+    nodeTitle: node.title,
+    tone: "danger"
+  });
   return next;
 }
 
@@ -2529,6 +2619,14 @@ export function resolveShopAction(journey: JourneyState, action: JourneyShopActi
     next.pressure = clampPercent(next.pressure + offer.pressureFail);
     next.rollShift += offer.rollShiftFail;
     next.logs.push(`${node.title}：${offer.failLog} 压力 ${formatSignedPercent(offer.pressureFail)}${offer.supportText ? `。${offer.supportText}` : ""}。`);
+    recordJourneyDecision(next, {
+      category: "shop",
+      detail: offer.failLog,
+      impacts: [`筹码不足`, `压力 ${formatSignedPercent(offer.pressureFail)}`, offer.supportText ?? ""],
+      label: offer.label,
+      nodeTitle: node.title,
+      tone: "danger"
+    });
     return next;
   }
 
@@ -2549,6 +2647,24 @@ export function resolveShopAction(journey: JourneyState, action: JourneyShopActi
       offer.supportText ? `。${offer.supportText}` : ""
     }。`
   );
+  recordJourneyDecision(next, {
+    category: "shop",
+    detail: offer.successLog,
+    impacts: [
+      `${resourceLabels[spentKey]} -1`,
+      `随身 ${formatBundle(offer.fieldSupplyReward)}`,
+      `入库 ${formatBundle(offer.reward)}`,
+      `疲劳 ${formatSignedNumber(offer.fatigue)}`,
+      `饥饿 ${formatSignedNumber(offer.hunger)}`,
+      `口渴 ${formatSignedNumber(offer.thirst)}`,
+      `压力 ${formatSignedPercent(offer.pressure)}`,
+      offer.objectiveBonus > 0 ? `目标 +${offer.objectiveBonus}` : "",
+      offer.supportText ?? ""
+    ],
+    label: offer.label,
+    nodeTitle: node.title,
+    tone: offer.pressure < 0 || offer.objectiveBonus > 0 || formatBundle(offer.reward) !== "无战利品" ? "safe" : "warning"
+  });
   return next;
 }
 
@@ -2580,6 +2696,22 @@ export function resolveCombatLootChoice(journey: JourneyState, action: JourneyCo
       scarsDelta > 0 ? `，战伤 -${scarsDelta}` : ""
     }${option.supportText ? `，${option.supportText}` : ""}。战利品已记录：${pending.trophy}。`
   );
+  recordJourneyDecision(next, {
+    category: "combat-loot",
+    detail: option.text,
+    impacts: [
+      formatBundle(option.reward),
+      `疲劳 ${formatSignedNumber(option.fatigue)}`,
+      `压力 ${formatSignedPercent(option.pressure)}`,
+      option.objectiveBonus > 0 ? `目标 +${option.objectiveBonus}` : "",
+      scarsDelta > 0 ? `伤痕 -${scarsDelta}` : "",
+      `战利标记：${pending.trophy}`,
+      option.supportText ?? ""
+    ],
+    label: option.label,
+    nodeTitle: pending.enemyName,
+    tone: option.pressure < 0 || option.objectiveBonus > 0 || scarsDelta > 0 || formatBundle(option.reward) !== "无战利品" ? "safe" : "warning"
+  });
   next.pendingCombatLoot = null;
   return next;
 }
@@ -2588,6 +2720,44 @@ export function addResources(target: ResourceBundle, source: ResourceBundle) {
   for (const key of resourceKeys) {
     target[key] += source[key];
   }
+}
+
+export function recordJourneyDecision(
+  journey: JourneyState,
+  decision: {
+    category: JourneyDecisionCategory;
+    detail: string;
+    impacts: string[];
+    label: string;
+    nodeTitle: string;
+    tone?: JourneyDecisionTone;
+  }
+) {
+  const decisions = journey.decisions ?? [];
+  const impactText = compactDecisionImpacts(decision.impacts).join(" / ") || "无明显变化";
+  journey.decisions = [
+    ...decisions,
+    {
+      category: decision.category,
+      detail: withoutTerminalPunctuation(decision.detail),
+      id: `decision-${decisions.length + 1}-${decision.category}`,
+      impactText,
+      label: decision.label,
+      nodeTitle: decision.nodeTitle,
+      tone: decision.tone ?? decisionToneFromImpact(impactText)
+    }
+  ];
+}
+
+export function journeyDecisionSummaryLines(journey: Pick<JourneyState, "decisions">, limit = 5): string[] {
+  const decisions = (journey.decisions ?? []).slice(-limit);
+  if (!decisions.length) {
+    return [];
+  }
+
+  return [
+    `路线决策：${decisions.map((decision) => `${decision.nodeTitle}选择${decision.label}（${decision.impactText}）`).join("；")}。`
+  ];
 }
 
 export function createEmptyResourceBundle(): ResourceBundle {
@@ -4321,6 +4491,8 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
 
   const spentKey = choice.supplyPriority.length > 0 ? spendFieldSupplyFromPriority(next, choice.supplyPriority, 1) : null;
   let outcome: string;
+  let decisionImpacts: string[] = [];
+  let decisionTone: JourneyDecisionTone = "warning";
   if (choice.supplyPriority.length > 0 && !spentKey) {
     const fallbackPressure = Math.max(4, choice.pressure + 6);
     const fallbackFatigue = choice.fatigue + 2;
@@ -4328,6 +4500,8 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     next.pressure = clampPercent(next.pressure + fallbackPressure);
     next.rollShift += Math.max(0.04, choice.rollShift);
     outcome = `${withoutTerminalPunctuation(choice.fallbackLog ?? choice.successLog)}。疲劳 +${fallbackFatigue}，压力 ${formatSignedPercent(fallbackPressure)}。`;
+    decisionImpacts = [`疲劳 +${fallbackFatigue}`, `压力 ${formatSignedPercent(fallbackPressure)}`, "可能触发伏击"];
+    decisionTone = "danger";
     queueRoadAmbush(next, pending, squad, readiness);
   } else {
     addResources(next.bonusReward, choice.reward);
@@ -4342,11 +4516,28 @@ export function resolveRoadEncounterChoice(journey: JourneyState, action: Journe
     }，疲劳 ${formatSignedNumber(choice.fatigue)}，饥饿 ${formatSignedNumber(choice.hunger)}，口渴 ${formatSignedNumber(
       choice.thirst
     )}，压力 ${formatSignedPercent(choice.pressure)}。`;
+    decisionImpacts = [
+      spentKey ? `${resourceLabels[spentKey]} -1` : "无消耗",
+      rewardText,
+      `疲劳 ${formatSignedNumber(choice.fatigue)}`,
+      `饥饿 ${formatSignedNumber(choice.hunger)}`,
+      `口渴 ${formatSignedNumber(choice.thirst)}`,
+      `压力 ${formatSignedPercent(choice.pressure)}`
+    ];
+    decisionTone = choice.id === "support" || choice.pressure < 0 || rewardText !== "无战利品" ? "safe" : pending.tone === "hazard" ? "danger" : "warning";
     if (pending.tone === "hazard" && choice.id === "push") {
       queueRoadAmbush(next, pending, squad, readiness);
     }
   }
 
+  recordJourneyDecision(next, {
+    category: "road",
+    detail: outcome,
+    impacts: decisionImpacts,
+    label: choice.label,
+    nodeTitle: pending.title,
+    tone: decisionTone
+  });
   pushRoadEvent(next, pending.title, pending.tone, outcome, pending.segment);
   next.pendingRoadEvent = null;
   if (!next.combat) {
@@ -4702,6 +4893,22 @@ function formatResourceCounts(resources: ResourceBundle | Partial<ResourceBundle
   }
 
   return entries.map((key) => `${resourceLabels[key]} ${resources[key] ?? 0}`).join(" / ");
+}
+
+function compactDecisionImpacts(impacts: string[]) {
+  return impacts.map((impact) => impact.trim()).filter((impact) => impact && !/无战利品|无消耗/.test(impact));
+}
+
+function decisionToneFromImpact(impactText: string): JourneyDecisionTone {
+  if (/伏击|伤痕|\+\d+%|压力 \+\d|疲劳 \+\d|饥饿 \+\d|口渴 \+\d|不足/.test(impactText)) {
+    return "danger";
+  }
+
+  if (/压力 -|目标|入库|随身|战利|回收|伤痕 -/.test(impactText)) {
+    return "safe";
+  }
+
+  return "warning";
 }
 
 function familyLabelFor(family: LocationFamily) {

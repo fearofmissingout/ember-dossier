@@ -10,6 +10,7 @@ import {
   createCombatForNode,
   forecastNextSegment,
   journeyExtractionPreview,
+  journeyDecisionSummaryLines,
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
@@ -258,6 +259,122 @@ describe("journey route generation", () => {
     expect(roadDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["最近行军", "待处理路口"]));
     expect(combatDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["当前战斗", "最近战斗"]));
     expect(combatDigest.steps.find((step) => step.label === "最近战斗")?.body).toContain("第 1 回合");
+  });
+
+  test("records player route choices as a decision ledger and exposes the latest decision in the process digest", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.9);
+    const session = createStarterSession("user-a", "Alice", "decision-ledger-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const road = advanceJourneyTravel(journey, squad, 60);
+    const pendingTitle = road.pendingRoadEvent?.title ?? "";
+    const searchChoice = road.pendingRoadEvent?.choices.find((choice) => choice.id === "search");
+    expect(searchChoice).toBeDefined();
+
+    const resolved = resolveRoadEncounterChoice(road, "search", squad, 60) as typeof road & {
+      decisions?: Array<{ category: string; impactText: string; label: string; nodeTitle: string }>;
+    };
+    const digest = journeyProcessDigest(resolved);
+
+    expect(resolved.decisions?.at(-1)).toMatchObject({
+      category: "road",
+      label: searchChoice?.label,
+      nodeTitle: pendingTitle
+    });
+    expect(resolved.decisions?.at(-1)?.impactText).toContain("压力");
+    expect(digest.steps.some((step) => step.label === "最近抉择" && step.title === searchChoice?.label)).toBe(true);
+  });
+
+  test("records camp shop and combat loot choices in the route decision summary", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "decision-summary-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    journey.currentNodeIndex = 2;
+    const camped = resolveCampAction(journey, "scout");
+    camped.currentNodeIndex = 3;
+    const shopped = resolveShopAction(camped, "intel");
+    const looted = {
+      ...shopped,
+      pendingCombatLoot: {
+        enemyName: "测试敌人",
+        trophy: "测试战利",
+        trait: "armored" as const
+      }
+    };
+    const salvaged = resolveCombatLootChoice(looted, "salvage");
+    const summary = journeyDecisionSummaryLines(salvaged).join("\n");
+
+    expect(salvaged.decisions.map((decision) => decision.category)).toEqual(expect.arrayContaining(["camp", "shop", "combat-loot"]));
+    expect(summary).toContain("路线决策");
+    expect(summary).toContain("目标");
+    expect(summary).toContain("材料 +");
+  });
+
+  test("records base commands as route decisions", () => {
+    const session = createStarterSession("user-a", "Alice", "base-command-decision-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support: {
+          ammoDamage: 0,
+          campCook: 0,
+          campRest: 0,
+          campScout: 0,
+          guardBlock: 1,
+          lootEvade: 0,
+          lootIntel: 0,
+          lootMedicine: 0,
+          lootSalvage: 0,
+          maxHp: 0,
+          openingExpose: 0,
+          openingGuard: 0,
+          patchHeal: 0,
+          pressureRelief: 0,
+          roadPush: 0,
+          roadSearch: 0,
+          roadSecure: 1,
+          shopIntel: 0,
+          shopRations: 0,
+          shopService: 0,
+          startingSupplies: {}
+        }
+      },
+      "water-plant",
+      60
+    );
+
+    const resolved = resolveBaseCommand(journey, "guard-relay");
+
+    expect(resolved.decisions.at(-1)).toMatchObject({
+      category: "base-command",
+      label: "守卫接力"
+    });
+    expect(resolved.decisions.at(-1)?.impactText).toContain("压力 -");
   });
 
   test("combat inherits enemy stats and salvage rewards from the route node", () => {

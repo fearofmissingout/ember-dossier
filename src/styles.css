@@ -1791,6 +1791,83 @@ button:disabled {
   background: #fff0ea;
 }
 
+.journey-decision-ledger {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #a9b68f;
+  border-radius: 8px;
+  background: #f7faef;
+}
+
+.journey-decision-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.journey-decision-heading span,
+.journey-decision-card span {
+  color: #526c38;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-decision-heading strong {
+  color: #263727;
+  font-size: 15px;
+}
+
+.journey-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.journey-decision-card {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #c9d4ad;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.journey-decision-card strong,
+.journey-decision-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-decision-card strong {
+  color: #2d382f;
+  font-size: 13px;
+}
+
+.journey-decision-card small {
+  color: #5d654e;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.journey-decision-card.safe {
+  border-color: #8fb58d;
+  background: #eef7e9;
+}
+
+.journey-decision-card.warning {
+  border-color: #d4a948;
+  background: #fff5d8;
+}
+
+.journey-decision-card.danger {
+  border-color: #c9725c;
+  background: #fff0ea;
+}
+
 .journey-status-grid {
   display: grid;
   grid-template-columns: minmax(130px, 0.8fr) repeat(4, minmax(150px, 1fr));

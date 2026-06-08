@@ -425,6 +425,40 @@ describe("playtest room loop", () => {
     expect(result.session.room.feed[0]?.body).toContain("路线：Close Quarters");
   });
 
+  test("expedition feed keeps route decision summaries when process logs are long", () => {
+    let session = createStarterSession("user-a", "Alice", "route-decision-feed-room");
+    const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
+
+    for (const survivorId of squad) {
+      session = assignSurvivorToRoom(session, "user-a", survivorId);
+    }
+
+    const result = resolvePlaytestExpedition(session, {
+      extractionStatus: "early",
+      journeyLogs: [
+        "路线开启：北区水处理厂，3 名幸存者出发。",
+        "携带物资已转为随身补给。",
+        "背包负重：5/15，轻装。",
+        "闸门绕行：队伍标出更安全的回撤线。",
+        "行军记录：队伍穿过积水走廊。",
+        "路口：冷沟。水声盖住脚步。",
+        "路上事件：冷沟。队伍搜索边缘。",
+        "战斗回合：队伍压住敌人。",
+        "营地：前出侦察。",
+        "路线决策：闸门绕行选择测绘闸门（水 -1 / 水 +1 / 材料 +1 / 压力 -11%）。"
+      ],
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+      locationId: "water-plant",
+      randomRolls: [0.2, 0.3, 0.4, 0.5, 0.6],
+      risk: "standard",
+      survivorIds: squad,
+      userId: "user-a"
+    });
+
+    expect(result.report.logs.join("\n")).toContain("路线决策");
+    expect(result.session.room.feed[0]?.body).toContain("路线决策");
+  });
+
   test("route objective bonus contributes to room objective progress", () => {
     let session = createStarterSession("user-a", "Alice", "route-objective-room");
     const squad = session.account.survivors.slice(0, 3).map((survivor) => survivor.id);
