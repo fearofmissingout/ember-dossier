@@ -507,6 +507,67 @@ button:disabled {
   font-size: 18px;
 }
 
+.account-growth-boundary {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #b8c49d;
+  border-radius: 8px;
+  background: #f4f9ea;
+}
+
+.account-growth-boundary > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.account-growth-boundary span,
+.account-growth-boundary small {
+  color: #60704c;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.account-growth-boundary > div:first-child > span {
+  color: #60723a;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.account-growth-boundary strong,
+.account-growth-boundary b {
+  min-width: 0;
+  color: #2d3427;
+  overflow-wrap: anywhere;
+}
+
+.account-growth-boundary strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.account-growth-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.account-growth-metrics span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #d3ddba;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.account-growth-metrics b {
+  font-size: 13px;
+}
+
 .account-base-plan {
   display: grid;
   gap: 10px;

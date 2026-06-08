@@ -35,7 +35,8 @@ const requiredChineseAnchors = [
   "战后复盘",
   "试玩登录",
   "试玩设置",
-  "英文包待接入"
+  "英文包待接入",
+  "账号成长边界"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -44,7 +45,8 @@ const additionalRequiredChineseAnchors = [
   "房间协作缺口",
   "试玩完整性检查",
   "核心试玩闭环已通过",
-  "单页模式"
+  "单页模式",
+  "成长上限"
 ];
 
 const bannedVisibleEnglish = [

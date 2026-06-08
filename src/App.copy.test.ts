@@ -42,8 +42,14 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("survivorGrowthPlan");
     expect(source).toContain("aria-label=\"幸存者培养队列\"");
+    expect(source).toContain("accountGrowthBoundary");
+    expect(source).toContain("aria-label=\"账号成长边界\"");
+    expect(source).toContain("growthBoundary.survivorProgressLabel");
+    expect(source).toContain("growthBoundary.baseCapLabel");
     expect(source).toContain("培养队列");
     expect(source).toContain("按顺序处理，下一次出征更稳。");
+    expect(styles).toContain(".account-growth-boundary");
+    expect(styles).toContain(".account-growth-metrics");
     expect(styles).toContain(".growth-plan-card");
     expect(styles).toContain(".growth-plan-grid");
     expect(styles).toContain(".growth-plan-item.ready");

@@ -1,7 +1,14 @@
 import { resolveExpedition } from "../game/sim";
 import type { ExpeditionReport, ExpeditionRequest, ResourceBundle, ResourceKey } from "../game/types";
 import { facilityActionCost, facilityActionLabel, facilityBaseEffect, isFacilityBuilt, isFacilityMaxed } from "../game/facilities";
-import { advanceSurvivorExperience, hasSurvivorPerk, type SurvivorAdvancement } from "./progression";
+import {
+  advanceSurvivorExperience,
+  hasSurvivorPerk,
+  isSurvivorAtLevelCap,
+  survivorLevelCap,
+  xpForNextLevel,
+  type SurvivorAdvancement
+} from "./progression";
 import { emptyLoadout, roomToGameState } from "./state";
 import type { AccountState, BaseWorkType, PlaytestSession } from "./types";
 
@@ -40,6 +47,18 @@ export type AccountBaseDevelopmentPlan = {
   projects: AccountBaseProject[];
   resources: Pick<AccountState["resources"], "intel" | "materials" | "rareParts">;
   summary: string;
+};
+
+export type AccountGrowthBoundary = {
+  baseCapLabel: string;
+  cappedSurvivors: number;
+  maxedRooms: number;
+  nearLevelSurvivors: number;
+  nextAction: string;
+  remainingRoomUpgrades: number;
+  summary: string;
+  survivorCapLabel: string;
+  survivorProgressLabel: string;
 };
 
 type AccountBaseLevelKey = "medicalRoomLevel" | "radioBenchLevel" | "trainingRoomLevel" | "warehouseLevel";
@@ -116,6 +135,50 @@ export function accountBaseDevelopmentPlan(account: AccountState): AccountBaseDe
     },
     summary: `个人基地有 ${activeProjects.length} 项可发展，可立即升级 ${affordableCount} 项，受限 ${blockedCount} 项。`
   };
+}
+
+export function accountGrowthBoundary(account: AccountState): AccountGrowthBoundary {
+  const plan = accountBaseDevelopmentPlan(account);
+  const currentRoomLevelTotal = accountBaseFacilities.reduce((sum, facility) => sum + account.base[facility.key], 0);
+  const roomLevelCapTotal = accountBaseFacilities.length * accountBaseLevelCap;
+  const remainingRoomUpgrades = Math.max(0, roomLevelCapTotal - currentRoomLevelTotal);
+  const maxedRooms = plan.projects.filter((project) => project.status === "maxed").length;
+  const cappedSurvivors = account.survivors.filter(isSurvivorAtLevelCap).length;
+  const nearLevelSurvivors = account.survivors.filter((survivor) => {
+    if (isSurvivorAtLevelCap(survivor)) {
+      return false;
+    }
+
+    return xpForNextLevel(survivor) - survivor.xp <= 10;
+  }).length;
+
+  return {
+    baseCapLabel: `${currentRoomLevelTotal}/${roomLevelCapTotal} 房间等级，剩余 ${remainingRoomUpgrades} 级`,
+    cappedSurvivors,
+    maxedRooms,
+    nearLevelSurvivors,
+    nextAction: accountGrowthNextAction(plan, nearLevelSurvivors, remainingRoomUpgrades),
+    remainingRoomUpgrades,
+    summary: `成长上限：幸存者最高 Lv.${survivorLevelCap}，个人基地房间最高 Lv.${accountBaseLevelCap}。`,
+    survivorCapLabel: `幸存者最高 Lv.${survivorLevelCap}`,
+    survivorProgressLabel: `${cappedSurvivors}/${account.survivors.length} 名到顶，${nearLevelSurvivors} 名接近升级`
+  };
+}
+
+function accountGrowthNextAction(plan: AccountBaseDevelopmentPlan, nearLevelSurvivors: number, remainingRoomUpgrades: number) {
+  if (plan.affordableCount > 0) {
+    return `可立即升级 ${plan.affordableCount} 个个人基地房间，优先补出征短板。`;
+  }
+
+  if (nearLevelSurvivors > 0) {
+    return `${nearLevelSurvivors} 名幸存者接近升级，安排完整撤离收益最高。`;
+  }
+
+  if (remainingRoomUpgrades > 0) {
+    return "继续远征回收材料、稀有零件和情报，推进个人基地。";
+  }
+
+  return "账号纵向成长已接近上限，改用轮换编队和房间协作追求更稳路线。";
 }
 
 export function upgradeAccountBase(session: PlaytestSession, userId: string, facilityId: AccountBaseFacilityId): PlaytestSession {

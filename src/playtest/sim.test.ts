@@ -10,6 +10,7 @@ import {
 } from "./state";
 import {
   accountBaseDevelopmentPlan,
+  accountGrowthBoundary,
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
@@ -259,6 +260,25 @@ describe("playtest room loop", () => {
     expect(next.account.resources.rareParts).toBe(2);
     expect(next.room.feed[0]?.title).toContain("个人基地升级");
     expect(next.room.feed[0]?.body).toContain("训练室升级到 Lv.2");
+  });
+
+  test("summarizes account growth ceilings without implying endless power growth", () => {
+    const session = createStarterSession("user-a", "Alice", "account-growth-room");
+    session.account.resources.materials = 20;
+    session.account.survivors[0].xp = 16;
+    session.account.survivors[1].level = 5;
+    session.account.survivors[1].xp = 100;
+    session.account.base.trainingRoomLevel = 3;
+
+    const boundary = accountGrowthBoundary(session.account);
+
+    expect(boundary.summary).toContain("幸存者最高 Lv.5");
+    expect(boundary.summary).toContain("个人基地房间最高 Lv.3");
+    expect(boundary.survivorProgressLabel).toContain("1/6 名到顶");
+    expect(boundary.survivorProgressLabel).toContain("1 名接近升级");
+    expect(boundary.baseCapLabel).toContain("5/12 房间等级");
+    expect(boundary.maxedRooms).toBe(1);
+    expect(boundary.nextAction).toContain("可立即升级");
   });
 
   test("assigns an account survivor to the room without transferring ownership", () => {

@@ -29,6 +29,7 @@ import {
   baseDayPreview,
   assignSurvivorToRoom,
   accountBaseDevelopmentPlan,
+  accountGrowthBoundary,
   baseDevelopmentPlan,
   baseRecoveryPlan,
   baseTaskList,
@@ -1282,6 +1283,7 @@ function Overview({
   const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
   const dayPreview = baseDayPreview(session);
   const tasks = baseTaskList(session);
+  const growthBoundary = accountGrowthBoundary(session.account);
   const accountRooms = [
     { label: "训练室", level: session.account.base.trainingRoomLevel },
     { label: "医务室", level: session.account.base.medicalRoomLevel },
@@ -1332,6 +1334,25 @@ function Overview({
               <b>Lv.{room.level}</b>
             </span>
           ))}
+        </div>
+        <div className="account-growth-boundary" aria-label="账号成长边界">
+          <div>
+            <span>成长上限</span>
+            <strong>{growthBoundary.summary}</strong>
+            <small>{growthBoundary.nextAction}</small>
+          </div>
+          <div className="account-growth-metrics">
+            <span>
+              幸存者
+              <b>{growthBoundary.survivorProgressLabel}</b>
+              <small>{growthBoundary.survivorCapLabel}</small>
+            </span>
+            <span>
+              个人基地
+              <b>{growthBoundary.baseCapLabel}</b>
+              <small>{growthBoundary.maxedRooms} 个房间已达上限</small>
+            </span>
+          </div>
         </div>
         <div className="account-base-plan" aria-label="个人基地发展计划">
           <div>
