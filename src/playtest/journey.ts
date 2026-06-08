@@ -1783,23 +1783,63 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
   ]
 };
 
-const familyCamps: Record<LocationFamily, { body: string; title: string }> = {
-  resources: {
-    body: "干燥的检修凹室给了队伍十分钟安静，直到管道重新开始敲响。",
-    title: "泵站休整点"
-  },
-  urban: {
-    body: "锁上的教室里还有桌椅、窗帘，以及一扇能顶住的门。",
-    title: "教室营地"
-  },
-  weird: {
-    body: "一圈冷瓷砖拒绝产生回声。它可能安全，也可能只是礼貌地听着。",
-    title: "静瓷营地"
-  },
-  wilds: {
-    body: "旧篷布搭出的防风处能把队伍藏离道路，但烟很容易被看见。",
-    title: "田野挡风处"
-  }
+const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>> = {
+  resources: [
+    {
+      body: "干燥的检修凹室给了队伍十分钟安静，直到管道重新开始敲响。",
+      title: "泵站休整点"
+    },
+    {
+      body: "备用滤芯仓还保留着完整门锁，空气里只有塑料布和旧消毒水的味道。",
+      title: "滤芯仓"
+    },
+    {
+      body: "高架管廊下有一段干燥平台，能看见来路，也能听见泵房深处的回声。",
+      title: "高架管廊"
+    }
+  ],
+  urban: [
+    {
+      body: "锁上的教室里还有桌椅、窗帘，以及一扇能顶住的门。",
+      title: "教室营地"
+    },
+    {
+      body: "屋顶洗衣棚挡住大半夜风，晾衣杆能临时挂上雨布和警戒线。",
+      title: "屋顶洗衣棚"
+    },
+    {
+      body: "地下车库收费亭里还有一张窄椅和半卷胶带，只要不碰道闸就很安静。",
+      title: "收费亭"
+    }
+  ],
+  weird: [
+    {
+      body: "一圈冷瓷砖拒绝产生回声。它可能安全，也可能只是礼貌地听着。",
+      title: "静瓷营地"
+    },
+    {
+      body: "候诊区背后的杂物间只在关灯后存在，门缝里透出没有来源的白光。",
+      title: "关灯杂物间"
+    },
+    {
+      body: "倒影天井里看不见天空，却能看见队伍休息时应该有的样子。",
+      title: "倒影天井"
+    }
+  ],
+  wilds: [
+    {
+      body: "旧篷布搭出的防风处能把队伍藏离道路，但烟很容易被看见。",
+      title: "田野挡风处"
+    },
+    {
+      body: "干井旁堆着石板和旧水桶，井底没有水声，只有一点稳定的冷气。",
+      title: "干井边"
+    },
+    {
+      body: "半塌谷仓的阁楼还能承重，麦草厚到能压住脚步，也能藏住疲劳。",
+      title: "谷仓阁楼"
+    }
+  ]
 };
 
 const familyTravelMoods: Record<LocationFamily, Array<{ body: string; title: string }>> = {
@@ -2158,7 +2198,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
   const event = materializeEvent(pick(familyEvents[family]));
   const enemy = materializeEnemy(pick(familyEnemies[family]));
   const shop = materializeShop(pick(familyShops[family]), family);
-  const camp = familyCamps[family];
+  const camp = pick(familyCamps[family]);
 
   const nodes: JourneyNode[] = [
     {
@@ -2256,7 +2296,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
 export function journeyContentBreadth() {
   const families = Object.keys(familyEvents) as LocationFamily[];
   return families.map((family) => ({
-    camps: familyCamps[family] ? 1 : 0,
+    camps: familyCamps[family]?.length ?? 0,
     enemies: familyEnemies[family]?.length ?? 0,
     events: familyEvents[family]?.length ?? 0,
     family,

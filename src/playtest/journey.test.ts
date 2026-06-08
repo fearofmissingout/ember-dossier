@@ -65,10 +65,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 1, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 4 })
+        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 4 })
       ])
     );
   });
@@ -132,6 +132,24 @@ describe("journey route generation", () => {
     expect(urbanShop?.offers.resupply.label).toBe("购买路上口粮");
     expect(shopOfferOutcome("intel", urbanShop!.offers.intel, urbanRoute.support).text).toContain("路线");
     expect(Object.values(shopOfferOutcome("service", wildShop!.offers.service, wildRoute.support).reward).reduce((sum, value) => sum + value, 0)).toBeGreaterThan(0);
+  });
+
+  test("can roll into the expanded camp pools", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "expanded-camp-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const resourceRoute = createJourney(session, draft, "water-plant", 60);
+    const weirdRoute = createJourney(session, draft, "greenhouse", 60);
+
+    expect(resourceRoute.nodes[2]).toMatchObject({ title: "高架管廊", type: "camp" });
+    expect(resourceRoute.nodes[2].body).toContain("干燥平台");
+    expect(weirdRoute.nodes[2]).toMatchObject({ title: "倒影天井", type: "camp" });
+    expect(weirdRoute.nodes[2].camp?.rest.label).toBe("处理伤口");
   });
 
   test("can roll into the expanded combat enemy pools", () => {
