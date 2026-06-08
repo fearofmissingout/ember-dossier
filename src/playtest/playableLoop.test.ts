@@ -9,11 +9,14 @@ describe("playable loop smoke", () => {
     expect(smoke.checkpoints.map((checkpoint) => checkpoint.id)).toEqual([
       "base-command",
       "squad-assigned",
+      "combat-round",
       "expedition-settled",
       "report-readable",
       "next-base-action"
     ]);
     expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
+    expect(smoke.combatRound?.actionLabel).toBeTruthy();
+    expect(smoke.combatRound?.outcomeText).toContain("防");
     expect(smoke.reportDigest.settlement.hasSettlement).toBe(true);
     expect(smoke.reportDigest.ledger.hasLedger).toBe(true);
     expect(smoke.nextBaseTasks.items.length).toBeGreaterThan(0);

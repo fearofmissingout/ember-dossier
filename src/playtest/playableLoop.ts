@@ -1,4 +1,5 @@
 import type { FeedItem } from "../game/types";
+import { createCombatForNode, createJourney, resolveCombatRound, type JourneyCombatRoundRecord } from "./journey";
 import { assignSurvivorToRoom, baseTaskList, resolvePlaytestExpedition, setBaseAssignment, type BaseTaskList } from "./sim";
 import { createStarterSession } from "./state";
 import { summarizeFeedReportSettlement, summarizeFeedReturnLedger, type FeedReportSettlement, type FeedReturnLedger } from "./reports";
@@ -6,6 +7,7 @@ import { summarizeFeedReportSettlement, summarizeFeedReturnLedger, type FeedRepo
 export type PlayableLoopCheckpointId =
   | "base-command"
   | "squad-assigned"
+  | "combat-round"
   | "expedition-settled"
   | "report-readable"
   | "next-base-action";
@@ -20,6 +22,7 @@ export type PlayableLoopSmoke = {
   checkpoints: PlayableLoopCheckpoint[];
   nextBaseTasks: BaseTaskList;
   ok: boolean;
+  combatRound: JourneyCombatRoundRecord | null;
   reportDigest: {
     ledger: FeedReturnLedger;
     settlement: FeedReportSettlement;
@@ -38,6 +41,31 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   for (const survivor of squad) {
     session = assignSurvivorToRoom(session, userId, survivor.id);
   }
+
+  const journey = createJourney(
+    session,
+    {
+      loadout: {
+        ammo: 1,
+        food: 1,
+        fuel: 1,
+        materials: 0,
+        medicine: 1,
+        water: 1
+      },
+      risk: "cautious",
+      squadIds: squad.map((survivor) => survivor.id)
+    },
+    "water-plant",
+    60
+  );
+  const combatJourney = {
+    ...journey,
+    combat: createCombatForNode(journey.nodes[1], squad, 60, journey.support),
+    currentNodeIndex: 1
+  };
+  const foughtJourney = resolveCombatRound(combatJourney, "guard", squad, 60);
+  const combatRound = foughtJourney.combatHistory[foughtJourney.combatHistory.length - 1] ?? null;
 
   const expedition = resolvePlaytestExpedition(session, {
     extractionStatus: "complete",
@@ -74,6 +102,11 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: session.room.assignedSurvivors.filter((assignment) => assignment.userId === userId).length === squad.length
     },
     {
+      detail: combatRound ? `${combatRound.actionLabel}：${combatRound.outcomeText}` : "未记录回合战斗",
+      id: "combat-round",
+      ok: Boolean(combatRound && foughtJourney.combatHistory.length > 0 && foughtJourney.logs.length > journey.logs.length)
+    },
+    {
       detail: expedition.report.outcome,
       id: "expedition-settled",
       ok: Boolean(report && report.kind === "report" && expedition.session.room.base.objective.repairedParts > session.room.base.objective.repairedParts)
@@ -91,6 +124,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   ];
 
   return {
+    combatRound,
     checkpoints,
     nextBaseTasks,
     ok: checkpoints.every((checkpoint) => checkpoint.ok),

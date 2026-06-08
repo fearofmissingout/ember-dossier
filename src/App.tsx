@@ -3754,6 +3754,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
   const labels: Record<ReturnType<typeof runPlayableLoopSmoke>["checkpoints"][number]["id"], string> = {
     "base-command": "基地待办",
     "squad-assigned": "出征编队",
+    "combat-round": "回合战斗",
     "expedition-settled": "出征结算",
     "report-readable": "战报可读",
     "next-base-action": "回基地行动"
