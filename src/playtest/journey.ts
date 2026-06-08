@@ -1728,6 +1728,34 @@ const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
       supplyPriority: ["ammo", "fuel"],
       thirst: 4,
       title: "回声水池"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "过滤塔里积满灰白絮团，呼吸声会把它们从滤网上震下来。",
+      hunger: 1,
+      mitigationLog: "队伍先封住通风格栅，再让过滤塔慢慢沉回安静。",
+      neutralLog: "过滤塔像一只没睡醒的肺，隔几秒就吸一次冷风。",
+      opportunityLog: "维护夹层里还挂着几包干净滤芯。",
+      pressure: 10,
+      rewardKeys: ["medicine", "materials"],
+      rollShift: 0.08,
+      supplyPriority: ["medicine", "materials", "water"],
+      thirst: 6,
+      title: "滤塔白絮"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "备用发电间突然亮起，所有影子都被拖到同一个方向。",
+      hunger: 2,
+      mitigationLog: "队伍按顺序拔掉负载，让灯光熄灭得像一次正常检修。",
+      neutralLog: "发电机低声转着，地上散着标号褪色的保险丝。",
+      opportunityLog: "电柜底部还有一罐没挥发完的燃料。",
+      pressure: 9,
+      rewardKeys: ["fuel", "ammo"],
+      rollShift: 0.07,
+      supplyPriority: ["fuel", "materials"],
+      thirst: 4,
+      title: "备用发电间"
     }
   ],
   urban: [
@@ -1772,6 +1800,34 @@ const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
       supplyPriority: ["medicine", "fuel"],
       thirst: 5,
       title: "密封公寓"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "地下商场的卷帘门一扇接一扇抖动，像有人在里面试钥匙。",
+      hunger: 5,
+      mitigationLog: "队伍用支架固定门片，把整条通道变成一段可控噪音。",
+      neutralLog: "商场导视牌还亮着半行字，箭头全指向已经封住的扶梯。",
+      opportunityLog: "收银台下的应急箱还没被翻空。",
+      pressure: 10,
+      rewardKeys: ["food", "materials"],
+      rollShift: 0.08,
+      supplyPriority: ["materials", "fuel"],
+      thirst: 3,
+      title: "地下商场"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "公交总站的报站器突然开始倒数，站台深处有脚步跟着变快。",
+      hunger: 3,
+      mitigationLog: "队伍剪断报站器电源，把追来的节奏掐在广播里。",
+      neutralLog: "废弃公交横在站台间，车窗里贴着褪色路线图。",
+      opportunityLog: "调度室抽屉里压着一张还能用的油卡。",
+      pressure: 12,
+      rewardKeys: ["fuel", "ammo"],
+      rollShift: 0.09,
+      supplyPriority: ["ammo", "fuel"],
+      thirst: 4,
+      title: "倒计时站台"
     }
   ],
   weird: [
@@ -1816,6 +1872,34 @@ const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
       supplyPriority: ["water", "medicine"],
       thirst: 8,
       title: "玻璃孢子"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "墙上画出的门忽然变深，队伍有人开始相信自己能推开它。",
+      hunger: 2,
+      mitigationLog: "队伍用胶带封住门缝，直到墙重新只是一面墙。",
+      neutralLog: "涂鸦门安静地画在走廊尽头，门把手的位置被摸得发亮。",
+      opportunityLog: "门框阴影里卡着一只写满号码的药盒。",
+      pressure: 11,
+      rewardKeys: ["medicine", "ammo"],
+      rollShift: 0.1,
+      supplyPriority: ["materials", "medicine"],
+      thirst: 4,
+      title: "画出来的门"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "一排空病床自己排成队形，轮子在地砖上划出湿痕。",
+      hunger: 3,
+      mitigationLog: "队伍把床轮锁死，再从床底绕过那段移动的走廊。",
+      neutralLog: "病床之间留着刚好一人宽的缝，白床单像在缓慢呼吸。",
+      opportunityLog: "床头柜里留着一卷未拆封的纱布和几颗子弹。",
+      pressure: 12,
+      rewardKeys: ["medicine", "ammo"],
+      rollShift: 0.11,
+      supplyPriority: ["ammo", "medicine"],
+      thirst: 5,
+      title: "排队病床"
     }
   ],
   wilds: [
@@ -1860,6 +1944,34 @@ const familyRoadBeats: Record<LocationFamily, JourneyRoadBeatTemplate[]> = {
       supplyPriority: ["materials", "water"],
       thirst: 9,
       title: "冷溪"
+    },
+    {
+      fatigue: 5,
+      hazardLog: "倒下的谷仓梁木互相支着，稍微碰错一根就会整片塌响。",
+      hunger: 4,
+      mitigationLog: "队伍先垫稳主梁，再把谷仓拆成可走的短通道。",
+      neutralLog: "谷仓里堆着潮湿麦草和几台生锈农具。",
+      opportunityLog: "梁木夹层里藏着一袋干粮和旧钉包。",
+      pressure: 10,
+      rewardKeys: ["food", "materials"],
+      rollShift: 0.08,
+      supplyPriority: ["materials", "food"],
+      thirst: 3,
+      title: "倒梁谷仓"
+    },
+    {
+      fatigue: 4,
+      hazardLog: "林边蜂箱传出不该有的低语，蜂群先于风发现了队伍。",
+      hunger: 2,
+      mitigationLog: "烟雾把蜂箱压回低语，队伍从林线边缘绕过。",
+      neutralLog: "蜂箱一排排立在树影里，木牌上的字被爪痕刮掉。",
+      opportunityLog: "养蜂人的工具箱里还剩一瓶药酒和几包糖块。",
+      pressure: 11,
+      rewardKeys: ["medicine", "food"],
+      rollShift: 0.09,
+      supplyPriority: ["fuel", "water"],
+      thirst: 5,
+      title: "低语蜂箱"
     }
   ]
 };

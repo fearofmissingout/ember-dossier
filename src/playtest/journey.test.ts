@@ -65,12 +65,34 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "resources", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "urban", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "weird", roadBeats: 3, shops: 2 }),
-        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "wilds", roadBeats: 3, shops: 2 })
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "resources", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "urban", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "weird", roadBeats: 5, shops: 2 }),
+        expect.objectContaining({ camps: 1, enemies: 3, events: 3, family: "wilds", roadBeats: 5, shops: 2 })
       ])
     );
+  });
+
+  test("previews the deeper road beat pool on later route segments", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "deep-road-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: squad.map((survivor) => survivor.id)
+    };
+
+    const resourceRoute = createJourney(session, draft, "water-plant", 60);
+    resourceRoute.condition.distance = 3;
+    const resourceForecast = forecastNextSegment(resourceRoute, squad, 60);
+
+    const weirdRoute = createJourney(session, draft, "greenhouse", 60);
+    weirdRoute.condition.distance = 4;
+    const weirdForecast = forecastNextSegment(weirdRoute, squad, 60);
+
+    expect(resourceForecast.roadEventForecast.beatTitle).toBe("滤塔白絮");
+    expect(weirdForecast.roadEventForecast.beatTitle).toBe("排队病床");
   });
 
   test("can roll into the expanded route event and shop pools", () => {
