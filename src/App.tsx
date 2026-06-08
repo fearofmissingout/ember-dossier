@@ -1237,6 +1237,8 @@ function Overview({
   };
   const primaryTask = tasks.items[0];
   const primaryTaskAction = baseTaskNavigation(primaryTask.id);
+  const latestReport = session.room.feed.find((item) => item.kind === "report") ?? null;
+  const latestReturnPlan = latestReport ? summarizeFeedBaseReturnPlan(latestReport) : null;
   const commandActions = [
     { icon: Send, label: "准备远征", text: "编队、地点、补给", view: "expedition" as ViewKey },
     { icon: Users, label: "处理伤病", text: "治疗与班次", view: "survivors" as ViewKey },
@@ -1352,6 +1354,27 @@ function Overview({
               })}
             </div>
           </div>
+          {latestReturnPlan?.hasPlan && (
+            <div className="overview-return-card" aria-label="基地归队承接">
+              <div className="overview-return-heading">
+                <span>归队承接</span>
+                <strong>{latestReturnPlan.headline}</strong>
+                <small>{latestReturnPlan.summary}</small>
+              </div>
+              <div className="overview-return-actions">
+                {latestReturnPlan.actions.map((action) => (
+                  <button className={action.tone} key={`overview-return-${action.id}`} type="button" onClick={() => onNavigate(action.targetView)}>
+                    <span>{action.label}</span>
+                    <strong>{action.text}</strong>
+                  </button>
+                ))}
+                <button type="button" onClick={() => onNavigate("reports")}>
+                  <span>查看战报</span>
+                  <strong>打开完整过程回放和结算细节。</strong>
+                </button>
+              </div>
+            </div>
+          )}
           <div className="base-task-heading">
             <span>今日待办</span>
             <strong>{tasks.summary}</strong>
