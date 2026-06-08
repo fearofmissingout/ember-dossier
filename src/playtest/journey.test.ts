@@ -377,6 +377,39 @@ describe("journey route generation", () => {
     expect(resolved.decisions.at(-1)?.impactText).toContain("压力 -");
   });
 
+  test("guard base command combat log stays player-facing Chinese", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-command-copy-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id),
+        support: {
+          ...supportFromFacilities([]),
+          guardBlock: 1,
+          roadSecure: 1
+        }
+      },
+      "water-plant",
+      60
+    );
+    const combat = createCombatForNode(journey.nodes[1], squad, 60, journey.support)!;
+    const withCombat = { ...journey, combat, currentNodeIndex: 1 };
+
+    const resolved = resolveBaseCommand(withCombat, "guard-relay");
+    const combatLog = resolved.logs.join("\n");
+
+    expect(combatLog).toContain("基地指令：守卫接力");
+    expect(combatLog).not.toMatch(/Base command|Guard relay|frontline/);
+    expect(resolved.decisions.at(-1)).toMatchObject({
+      category: "base-command",
+      nodeTitle: "基地指令"
+    });
+  });
+
   test("combat inherits enemy stats and salvage rewards from the route node", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "combat-room");

@@ -2449,7 +2449,7 @@ export function resolveBaseCommand(journey: JourneyState, action: JourneyBaseCom
     const guardValue = 3 + next.support.guardBlock + next.support.roadSecure;
     if (next.combat) {
       spreadCombatGuard(next.combat, guardValue);
-      next.logs.push(`Base command: Guard relay. The base covers the line and adds ${guardValue} guard across the frontline.`);
+      next.logs.push(`基地指令：守卫接力。基地守卫线掩护前排，队伍前线防护 +${guardValue}。`);
       recordJourneyDecision(next, {
         category: "base-command",
         detail: option.text,
