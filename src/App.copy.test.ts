@@ -60,6 +60,8 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("baseTaskList");
     expect(source).toContain("aria-label=\"今日基地待办\"");
+    expect(source).toContain("aria-label=\"今日待办操作\"");
+    expect(source).toContain("base-task-actions");
     expect(source).toContain("今日待办");
   });
 });

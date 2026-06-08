@@ -40,6 +40,7 @@ import {
   upgradeFacility,
   type AccountBaseDevelopmentPlan,
   type AccountBaseFacilityId,
+  type BaseTaskItem,
   type BaseDevelopmentPlan,
   type BaseRecoveryPlan,
   type RoomMemberSummary
@@ -1089,6 +1090,7 @@ export default function App() {
             accountBasePlan={accountBaseDevelopmentPlan(session.account)}
             contributionDraft={contributionDraft}
             goExpedition={() => setView("expedition")}
+            onNavigate={setView}
             onAccountBaseUpgrade={upgradePersonalBase}
             onContributionChange={updateContribution}
             onContribute={submitContribution}
@@ -1168,6 +1170,7 @@ function Overview({
   accountBasePlan,
   contributionDraft,
   goExpedition,
+  onNavigate,
   onAccountBaseUpgrade,
   onContributionChange,
   onContribute,
@@ -1178,6 +1181,7 @@ function Overview({
   accountBasePlan: AccountBaseDevelopmentPlan;
   contributionDraft: ResourceBundle;
   goExpedition: () => void;
+  onNavigate: (view: ViewKey) => void;
   onAccountBaseUpgrade: (id: AccountBaseFacilityId) => void;
   onContributionChange: (key: ResourceKey, delta: number) => void;
   onContribute: () => void;
@@ -1194,6 +1198,17 @@ function Overview({
     { label: "仓库", level: session.account.base.warehouseLevel },
     { label: "电台", level: session.account.base.radioBenchLevel }
   ];
+  const handleTaskAction = (taskId: BaseTaskItem["id"]) => {
+    const action = baseTaskNavigation(taskId);
+    if (action.view) {
+      onNavigate(action.view);
+      return;
+    }
+
+    if (action.sectionId) {
+      document.getElementById(action.sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <div className="view-grid">
@@ -1281,6 +1296,11 @@ function Overview({
                 <span>{task.actionLabel}</span>
                 <strong>{task.title}</strong>
                 <small>{task.body}</small>
+                <div className="base-task-actions" aria-label="今日待办操作">
+                  <button type="button" onClick={() => handleTaskAction(task.id)}>
+                    {baseTaskNavigation(task.id).label}
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -1351,7 +1371,7 @@ function Overview({
         </div>
       </section>
 
-      <section className="panel wide">
+      <section className="panel wide" id="contribution-panel">
         <div className="panel-heading">
           <div>
             <p className="eyebrow">捐入资源</p>
@@ -1424,6 +1444,19 @@ function Overview({
       </section>
     </div>
   );
+}
+
+function baseTaskNavigation(taskId: BaseTaskItem["id"]): { label: string; sectionId?: string; view?: ViewKey } {
+  const actions: Record<BaseTaskItem["id"], { label: string; sectionId?: string; view?: ViewKey }> = {
+    development: { label: "查看设施", view: "facilities" },
+    expedition: { label: "准备远征", view: "expedition" },
+    objective: { label: "查看房间", view: "members" },
+    recovery: { label: "查看伤病", view: "survivors" },
+    shifts: { label: "安排班次", view: "survivors" },
+    supplies: { label: "处理捐入", sectionId: "contribution-panel" }
+  };
+
+  return actions[taskId];
 }
 
 function Survivors({

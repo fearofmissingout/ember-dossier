@@ -604,6 +604,28 @@ button:disabled {
   line-height: 1.35;
 }
 
+.base-task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.base-task-actions button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #c9b08a;
+  border-radius: 7px;
+  background: #fffdf6;
+  color: #5b3d22;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.base-task-actions button:hover {
+  border-color: #8d6a3c;
+  background: #fff7df;
+}
+
 .base-day-preview {
   display: grid;
   gap: 8px;
@@ -4205,6 +4227,11 @@ button:disabled {
   .journey-command-button {
     min-height: 52px;
     padding: 9px;
+  }
+
+  .base-task-actions button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .journey-primary-actions {
