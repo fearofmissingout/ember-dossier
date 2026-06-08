@@ -2346,6 +2346,7 @@ function JourneyPanel({
   const routePace = routePaceFor(journey);
   const processDigest = journeyProcessDigest(journey);
   const actionGuide = journeyActionGuide(journey);
+  const routeIntel = journeyRouteIntel(journey, routePace);
   const latestActionResult = journey.logs[journey.logs.length - 1] ?? nodeBody;
   const activeRouteStop = routePace.forecast.find((stop) => stop.state === "active") ?? routePace.forecast[0];
   const compactRouteStops = routePace.forecast.slice(0, 5);
@@ -2415,6 +2416,11 @@ function JourneyPanel({
               补给 <b>{extractionPreview.fieldSupplySummary}</b>
             </span>
           </div>
+          <div className="journey-mobile-intel" aria-label="手机端路线预告">
+            <span>路线预告</span>
+            <strong>{routeIntel.headline}</strong>
+            <small>{routeIntel.body}</small>
+          </div>
         </div>
         <div className={`journey-mobile-command-card ${actionGuide.tone}`} aria-label="手机端单页行动摘要">
           <div>
@@ -2463,6 +2469,23 @@ function JourneyPanel({
             <strong>{actionGuide.primaryAction}</strong>
             <small>{routePace.nextTitle}</small>
           </div>
+        </div>
+        <div className="journey-route-intel" aria-label="路线预告">
+          <article>
+            <span>当前阻塞</span>
+            <strong>{routeIntel.blocker}</strong>
+            <small>{routeIntel.blockerHint}</small>
+          </article>
+          <article>
+            <span>下一站</span>
+            <strong>{routeIntel.nextStop}</strong>
+            <small>{routeIntel.nextHint}</small>
+          </article>
+          <article>
+            <span>余下路线</span>
+            <strong>{routeIntel.remainingSummary}</strong>
+            <small>{routeIntel.priorityHint}</small>
+          </article>
         </div>
         <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
           <div className="journey-command-dock-heading" aria-label="当前行动栏说明">
@@ -3255,6 +3278,128 @@ function journeyNodeTypeLabel(type: JourneyNode["type"]) {
     shop: "商店"
   };
   return labels[type];
+}
+
+function journeyRouteIntel(journey: JourneyState, pace: ReturnType<typeof routePaceFor>) {
+  const safeIndex = Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, journey.nodes.length - 1)));
+  const activeNode = journey.nodes[safeIndex];
+  const nextNode = journey.nodes[safeIndex + 1] ?? null;
+  const aheadNodes = journey.nodes.slice(safeIndex + 1);
+  const counts = countJourneyNodeTypes(aheadNodes);
+  const remainingSummary = summarizeRemainingRoute(counts, pace.remainingStops);
+  const priorityHint = routePriorityHint(counts, pace.remainingStops);
+
+  if (journey.pendingRoadEvent) {
+    return {
+      blocker: journey.pendingRoadEvent.title,
+      blockerHint: "路上抉择会挡住队伍推进，先选一个处理方式。",
+      body: `先处理${roadToneLabel(journey.pendingRoadEvent.tone)}，之后前往${pace.nextLabel}：${pace.nextTitle}。`,
+      headline: `${roadToneLabel(journey.pendingRoadEvent.tone)}挡路`,
+      nextHint: nextNode ? routeNodeHint(nextNode) : "处理完成后就能返程。",
+      nextStop: pace.nextTitle,
+      priorityHint,
+      remainingSummary
+    };
+  }
+
+  if (journey.combat) {
+    return {
+      blocker: `${journey.combat.enemyName} 第 ${journey.combat.round} 回合`,
+      blockerHint: "先打完本回合，观察敌人意图再推进路线。",
+      body: `战斗结束后会继续前往${pace.nextLabel}：${pace.nextTitle}。`,
+      headline: "战斗中",
+      nextHint: nextNode ? routeNodeHint(nextNode) : "胜利后可以撤离结算。",
+      nextStop: pace.nextTitle,
+      priorityHint,
+      remainingSummary
+    };
+  }
+
+  if (journey.pendingCombatLoot) {
+    return {
+      blocker: "战利品待分配",
+      blockerHint: "先决定战斗收益要补给、医疗、情报还是规避风险。",
+      body: `分配战利品后继续前往${pace.nextLabel}：${pace.nextTitle}。`,
+      headline: "战后整理",
+      nextHint: nextNode ? routeNodeHint(nextNode) : "拿稳收益后返程。",
+      nextStop: pace.nextTitle,
+      priorityHint,
+      remainingSummary
+    };
+  }
+
+  return {
+    blocker: activeNode ? activeNode.title : "路线等待指令",
+    blockerHint: activeNode ? routeNodeHint(activeNode) : "队伍正在等待下一步。",
+    body: nextNode ? `下一站是${journeyNodeTypeLabel(nextNode.type)}：${nextNode.title}。` : "已经抵达撤离点，可以结算回基地。",
+    headline: nextNode ? `下一站：${journeyNodeTypeLabel(nextNode.type)}` : "准备撤离",
+    nextHint: nextNode ? routeNodeHint(nextNode) : "带回资源、线索和伤病结果。",
+    nextStop: nextNode?.title ?? "返回基地",
+    priorityHint,
+    remainingSummary
+  };
+}
+
+function countJourneyNodeTypes(nodes: JourneyNode[]) {
+  return nodes.reduce(
+    (counts, node) => ({
+      ...counts,
+      [node.type]: counts[node.type] + 1
+    }),
+    {
+      camp: 0,
+      combat: 0,
+      event: 0,
+      extraction: 0,
+      shop: 0
+    } satisfies Record<JourneyNode["type"], number>
+  );
+}
+
+function summarizeRemainingRoute(counts: Record<JourneyNode["type"], number>, remainingStops: number) {
+  if (remainingStops <= 0) {
+    return "可以撤离";
+  }
+
+  const parts = [
+    counts.combat > 0 ? `战斗 ${counts.combat}` : "",
+    counts.shop > 0 ? `商店 ${counts.shop}` : "",
+    counts.camp > 0 ? `营地 ${counts.camp}` : "",
+    counts.event > 0 ? `事件 ${counts.event}` : ""
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : `还剩 ${remainingStops} 站`;
+}
+
+function routePriorityHint(counts: Record<JourneyNode["type"], number>, remainingStops: number) {
+  if (remainingStops <= 0) {
+    return "现在的重点是安全结算，把资源带回基地。";
+  }
+
+  if (counts.combat > 0) {
+    return "前方仍有战斗，优先保留弹药、医疗和队伍体力。";
+  }
+
+  if (counts.shop > 0) {
+    return "前方有商店，保留一点随身补给可以换回更多收益。";
+  }
+
+  if (counts.camp > 0) {
+    return "前方有营地，可以用休整或侦察降低后续压力。";
+  }
+
+  return "前方多为事件节点，控制压力比贪收益更重要。";
+}
+
+function routeNodeHint(node: JourneyNode) {
+  const hints: Record<JourneyNode["type"], string> = {
+    camp: "营地可以休整、烹饪或侦察，适合修正状态。",
+    combat: "战斗会消耗体力和医疗，留意敌人意图。",
+    event: "事件通常在稳妥收益和冒险推进之间取舍。",
+    extraction: "撤离会把战利品、线索和伤病结算回基地。",
+    shop: "商店能把随身补给转换成资源、情报或服务。"
+  };
+  return hints[node.type];
 }
 
 function roadToneLabel(tone: "find" | "hazard" | "road") {

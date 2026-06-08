@@ -142,13 +142,21 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("aria-label=\"当前可执行操作\"");
     expect(source).toContain("aria-label=\"当前行动栏说明\"");
+    expect(source).toContain("aria-label=\"路线预告\"");
+    expect(source).toContain("aria-label=\"手机端路线预告\"");
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-command-dock-heading");
+    expect(source).toContain("journeyRouteIntel");
+    expect(source).toContain("journey-route-intel");
+    expect(source).toContain("journey-mobile-intel");
+    expect(source).toContain("前方仍有战斗，优先保留弹药、医疗和队伍体力。");
     expect(source).toContain("outcome.supportText && <small className=\"facility-support-note\"");
     expect(source).toContain("formatSignedPercent(outcome.pressure)");
     expect(source).toContain("目标 +${outcome.objectiveBonus}");
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-command-dock-heading");
+    expect(styles).toContain(".journey-route-intel");
+    expect(styles).toContain(".journey-mobile-intel");
     expect(styles).toContain(".facility-support-note");
     expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
     expect(styles).toContain("max-height: 42vh");

@@ -2838,6 +2838,10 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.journey-mobile-intel {
+  display: none;
+}
+
 .journey-mobile-command-card {
   display: none;
 }
@@ -2904,6 +2908,47 @@ button:disabled {
   color: #675a47;
   font-size: 11px;
   line-height: 1.3;
+}
+
+.journey-route-intel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.journey-route-intel article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid rgba(126, 98, 57, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.72);
+}
+
+.journey-route-intel span {
+  color: #7a5d3f;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.journey-route-intel strong,
+.journey-route-intel small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-route-intel strong {
+  color: #34281a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.journey-route-intel small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .journey-command-actions {
@@ -5976,6 +6021,54 @@ button:disabled {
 
   .journey-command-snapshot {
     display: none;
+  }
+
+  .journey-route-intel {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-route-intel article {
+    padding: 9px;
+  }
+
+  .journey-route-intel article:nth-child(2),
+  .journey-route-intel article:nth-child(3) {
+    display: none;
+  }
+
+  .journey-mobile-intel {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+    padding: 8px;
+    border: 1px solid #d8c4a0;
+    border-radius: 8px;
+    background: #fff8e8;
+  }
+
+  .journey-mobile-intel span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .journey-mobile-intel strong,
+  .journey-mobile-intel small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .journey-mobile-intel strong {
+    color: #30251b;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .journey-mobile-intel small {
+    color: #625547;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
   }
 
   .journey-command-actions {
