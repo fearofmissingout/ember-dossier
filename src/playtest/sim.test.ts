@@ -273,6 +273,29 @@ describe("playtest room loop", () => {
     expect(plan.summary).toContain("清除 1 个伤病");
   });
 
+  test("care shifts clear patient injuries during day advance and explain the recovery", () => {
+    let session = createStarterSession("user-a", "Alice", "care-recovery-room");
+    const patient = session.account.survivors[0];
+    const medic = session.account.survivors[1];
+    patient.injuries = ["裂伤"];
+    patient.fatigue = 66;
+    patient.status = "recovering";
+    medic.attributes.medical = 10;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+
+    session = setBaseAssignment(session, "user-a", medic.id, "care");
+    const next = advanceRoomDay(session, "user-a");
+    const recoveredPatient = next.account.survivors.find((survivor) => survivor.id === patient.id);
+
+    expect(recoveredPatient?.injuries).toEqual([]);
+    expect(recoveredPatient?.status).toBe("available");
+    expect(recoveredPatient?.fatigue).toBeLessThan(66);
+    expect(next.room.feed[0]?.body).toContain("护理");
+    expect(next.room.feed[0]?.body).toContain("裂伤");
+    expect(next.room.feed[0]?.body).toContain("清除 1 个伤病");
+  });
+
   test("previews base development priorities and material gates", () => {
     const session = createStarterSession("user-a", "Alice", "development-plan-room");
     session.room.base.resources.materials = 10;

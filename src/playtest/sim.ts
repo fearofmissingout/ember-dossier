@@ -1418,12 +1418,17 @@ function resolveBaseAssignments(session: PlaytestSession) {
       const healScore = careHealScore(session, survivor);
       const patient = recoveryPrioritySurvivors(session, new Set([survivor.id]))[0];
       if (patient) {
+        const clearedInjury = patient.injuries.length > 0 && healScore >= 10 ? patient.injuries[0] : "";
         patient.fatigue = clamp(patient.fatigue - healScore, 0, 100);
-        if (patient.injuries.length > 0 && healScore >= 10) {
+        if (clearedInjury) {
           patient.injuries = patient.injuries.slice(1);
         }
         patient.status = patient.injuries.length > 0 ? "recovering" : "available";
-        logs.push(`${survivor.name} 执行护理：${patient.name} 疲劳 -${healScore}${healScore >= 10 ? "，若有伤病则清除 1 个" : ""}。`);
+        logs.push(
+          `${survivor.name} 执行护理：${patient.name} 疲劳 -${healScore}${
+            clearedInjury ? `，处理${clearedInjury}，清除 1 个伤病` : healScore >= 10 ? "，没有需要清除的伤病" : ""
+          }。`
+        );
       } else {
         logs.push(`${survivor.name} 执行护理，但当前没有需要处理的患者。`);
       }
