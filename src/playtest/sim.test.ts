@@ -147,6 +147,8 @@ describe("playtest room loop", () => {
     const zhou = summaries.find((member) => member.userId === "user-b");
 
     expect(alice).toMatchObject({
+      collaborationHint: expect.stringContaining("派 1 名幸存者"),
+      collaborationStatus: "todo",
       contributionText: expect.stringContaining("食物 +2"),
       displayName: "Alice",
       roleLabel: "房主"
@@ -154,6 +156,8 @@ describe("playtest room loop", () => {
     expect(zhou).toMatchObject({
       assignedCount: 1,
       baseShiftText: "守卫 1",
+      collaborationHint: expect.stringContaining("都已覆盖"),
+      collaborationStatus: "ready",
       contributionText: expect.stringContaining("材料 +4"),
       displayName: "阿周",
       roleLabel: "成员"
@@ -178,6 +182,25 @@ describe("playtest room loop", () => {
       nextNeed: expect.any(String)
     });
     expect(["blocked", "building", "ready"]).toContain(cooperation.readiness);
+  });
+
+  test("member cooperation hints point inactive room members to the next useful action", () => {
+    const session = createStarterSession("user-a", "Alice", "member-hint-room");
+    session.room.members.push({
+      displayName: "阿白",
+      joinedAt: "2026-06-06T09:00:00.000Z",
+      lastSeenAt: "2026-06-06T10:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+
+    const summaries = roomMemberSummaries(session);
+    const inactive = summaries.find((member) => member.userId === "user-b");
+
+    expect(inactive).toMatchObject({
+      collaborationHint: expect.stringContaining("先捐入"),
+      collaborationStatus: "urgent"
+    });
   });
 
   test("room cooperation summary points players at urgent shared gaps", () => {

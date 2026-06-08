@@ -5198,6 +5198,27 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.member-collaboration-hint {
+  display: block;
+  padding: 7px 8px;
+  border: 1px solid #c8d3ad;
+  border-radius: 8px;
+  background: #f5faef;
+  color: #405c31;
+}
+
+.member-collaboration-hint.todo {
+  border-color: #d5bd80;
+  background: #fff7df;
+  color: #6c5120;
+}
+
+.member-collaboration-hint.urgent {
+  border-color: #d29a83;
+  background: #fff0ea;
+  color: #8b3a28;
+}
+
 .member-metrics span {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr);

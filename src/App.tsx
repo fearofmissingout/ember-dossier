@@ -3706,6 +3706,7 @@ function RoomMembers({
               <span>{member.roleLabel}</span>
               <strong>{member.displayName}</strong>
               <small>最近在线 {formatLastSeen(member.lastSeenAt)}</small>
+              <small className={`member-collaboration-hint ${member.collaborationStatus}`}>协作建议：{member.collaborationHint}</small>
             </div>
             <div className="member-metrics">
               <span>

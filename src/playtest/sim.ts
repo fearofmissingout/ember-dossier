@@ -823,6 +823,8 @@ export type BaseDayPreview = {
 export type RoomMemberSummary = {
   assignedCount: number;
   baseShiftText: string;
+  collaborationHint: string;
+  collaborationStatus: "ready" | "todo" | "urgent";
   contributionCount: number;
   contributionText: string;
   displayName: string;
@@ -884,6 +886,8 @@ export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary
       return {
         assignedCount,
         baseShiftText: formatBaseShiftCounts(shiftCounts),
+        collaborationHint: roomMemberCollaborationHint(contributionCount, assignedCount, shiftCounts),
+        collaborationStatus: roomMemberCollaborationStatus(contributionCount, assignedCount, shiftCounts),
         contributionCount,
         contributionText: formatResources(contributionTotals),
         displayName: member.displayName,
@@ -899,6 +903,40 @@ export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary
           ? -1
           : 1
     );
+}
+
+function roomMemberCollaborationHint(contributionCount: number, assignedCount: number, shiftCounts: BaseShiftCoverage) {
+  const shiftCount = Object.values(shiftCounts).reduce((sum, count) => sum + count, 0);
+  if (contributionCount === 0) {
+    return "先捐入一批口粮、水或材料，让房间基地有操作空间。";
+  }
+
+  if (assignedCount === 0) {
+    return "派 1 名幸存者进入远征编队，补足下一次出征人数。";
+  }
+
+  if (shiftCount === 0) {
+    return "安排 1 名留守幸存者执行守卫、护理、修理或搜寻班。";
+  }
+
+  return "捐入、编队和留守都已覆盖，可以等待队友补缺或准备远征。";
+}
+
+function roomMemberCollaborationStatus(
+  contributionCount: number,
+  assignedCount: number,
+  shiftCounts: BaseShiftCoverage
+): RoomMemberSummary["collaborationStatus"] {
+  const shiftCount = Object.values(shiftCounts).reduce((sum, count) => sum + count, 0);
+  if (contributionCount === 0) {
+    return "urgent";
+  }
+
+  if (assignedCount === 0 || shiftCount === 0) {
+    return "todo";
+  }
+
+  return "ready";
 }
 
 export function roomCooperationSummary(session: PlaytestSession): RoomCooperationSummary {
