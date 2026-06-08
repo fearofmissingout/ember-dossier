@@ -21,6 +21,7 @@ export const requiredProductionStrings = [
   "基地行动中枢",
   "出征开局预案",
   "战后复盘",
+  "单页行动",
   "当前可执行操作"
 ];
 

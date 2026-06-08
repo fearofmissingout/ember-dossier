@@ -2775,6 +2775,10 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.journey-mobile-command-card {
+  display: none;
+}
+
 .journey-section-nav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -5864,6 +5868,83 @@ button:disabled {
   .journey-mobile-meters span {
     grid-template-columns: 72px minmax(0, 1fr);
     align-items: baseline;
+  }
+
+  .journey-mobile-command-card {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #d1bd98;
+    border-radius: 8px;
+    background: #fffaf0;
+  }
+
+  .journey-mobile-command-card.warning {
+    border-color: #d0a24b;
+    background: #fff4d5;
+  }
+
+  .journey-mobile-command-card.danger {
+    border-color: #c97963;
+    background: #fff0ea;
+  }
+
+  .journey-mobile-command-card.safe {
+    border-color: #83a77f;
+    background: #edf7eb;
+  }
+
+  .journey-mobile-command-card div:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .journey-mobile-command-card span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .journey-mobile-command-card strong,
+  .journey-mobile-command-card small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .journey-mobile-command-card strong {
+    color: #30251b;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .journey-mobile-command-card small {
+    color: #675747;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .journey-mobile-command-card div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .journey-mobile-command-card button {
+    min-width: 0;
+    min-height: 40px;
+    border: 1px solid #b8945f;
+    border-radius: 8px;
+    background: #3b2a1b;
+    color: #fff7e9;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .journey-mobile-command-card button:last-child {
+    background: #fffaf0;
+    color: #463727;
   }
 
   .journey-section-nav {

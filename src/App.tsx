@@ -2389,6 +2389,21 @@ function JourneyPanel({
             </span>
           </div>
         </div>
+        <div className={`journey-mobile-command-card ${actionGuide.tone}`} aria-label="手机端单页行动摘要">
+          <div>
+            <span>单页行动</span>
+            <strong>{actionGuide.primaryAction}</strong>
+            <small>{nextCommandHint}</small>
+          </div>
+          <div>
+            <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
+              去操作
+            </button>
+            <button type="button" onClick={() => scrollToJourneySection("journey-process")}>
+              看过程
+            </button>
+          </div>
+        </div>
         <div className="journey-section-nav" aria-label="手机端远征页内导航">
           <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
             操作
