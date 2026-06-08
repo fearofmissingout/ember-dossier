@@ -20,6 +20,9 @@ npm run release:preflight
 npm run release:verify
 ### 2.7 Rollback
 git revert
+### 2.8 Release cadence
+默认不要频繁发布
+不要用线上部署当测试工具
 Cloudflare Token
 Supabase
 ## 4. Copy
@@ -51,6 +54,8 @@ if (productionMode) {
       }
     }),
     workflow: `
+- name: Local iteration gates
+  run: npm run iteration:check
 - run: npm test
 - run: npm run build
 - name: Deploy to Cloudflare Pages
@@ -95,6 +100,7 @@ describe("playtest iteration workflow contract", () => {
         "release gate: playable loop smoke",
         "release gate: workflow contract",
         "release gate: production playtest smoke",
+        "GitHub Actions: local iteration gates",
         "GitHub Actions: production playtest smoke"
       ])
     );

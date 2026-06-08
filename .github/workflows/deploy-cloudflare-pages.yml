@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Local iteration gates
+        run: npm run iteration:check
+
       - name: Test
         run: npm test
 

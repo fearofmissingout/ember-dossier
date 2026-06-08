@@ -42,6 +42,10 @@ const requiredChecks = [
     test: ({ docs }) => docs.includes("### 2.7") && docs.includes("git revert")
   },
   {
+    id: "doc stage: release cadence",
+    test: ({ docs }) => docs.includes("### 2.8") && docs.includes("默认不要频繁发布") && docs.includes("不要用线上部署当测试工具")
+  },
+  {
     id: "doc safety: secrets",
     test: ({ docs }) => docs.includes("Cloudflare Token") && docs.includes("Supabase")
   },
@@ -112,6 +116,10 @@ const requiredChecks = [
   {
     id: "release gate: production playtest smoke",
     test: ({ gates }) => gates.includes("productionMode") && gates.includes('["run", "playtest:check"]')
+  },
+  {
+    id: "GitHub Actions: local iteration gates",
+    test: ({ workflow }) => workflow.includes("Local iteration gates") && workflow.includes("npm run iteration:check")
   },
   {
     id: "GitHub Actions: unit tests",
