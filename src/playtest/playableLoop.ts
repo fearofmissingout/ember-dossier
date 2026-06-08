@@ -19,6 +19,7 @@ import {
   roomCooperationSummary,
   roomContributionPlan,
   roomMemberSummaries,
+  roomPlaytestReadiness,
   setBaseAssignment,
   treatSurvivor,
   upgradeFacility,
@@ -38,6 +39,7 @@ export type PlayableLoopCheckpointId =
   | "survivor-growth-plan"
   | "squad-assigned"
   | "multiplayer-cooperation"
+  | "room-playtest-readiness"
   | "room-contribution-plan"
   | "player-cooperation-task"
   | "member-guidance"
@@ -159,6 +161,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     session = assignSurvivorToRoom(session, userId, survivor.id);
   }
   const cooperation = roomCooperationSummary(session);
+  const readiness = roomPlaytestReadiness(session);
   const contributionPlan = roomContributionPlan(session);
   const roomContributionPlanDetail = contributionPlan.summary;
   const memberGuidance = roomMemberSummaries(session);
@@ -202,6 +205,12 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     combatJourney.combat.intent = "windup";
     combatJourney.combat.intentLabel = "蓄力";
     combatJourney.combat.intentText = "重击正在积蓄。防守可以反制。";
+    combatJourney.combat.traitPulse = {
+      counterActions: ["guard"],
+      label: "蓄力窗口",
+      text: "这次重击只看队伍能否稳住阵线。",
+      warning: "没有防守会吃下完整重击。"
+    };
   }
   const combatTurnPlan = combatRoundPlan(combatJourney);
   const foughtJourney = resolveCombatRound(combatJourney, "guard", squad, 60);
@@ -288,6 +297,15 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
         cooperation.assignedSurvivors >= squad.length + 1 &&
         cooperation.baseShifts >= 3 &&
         cooperation.gaps.length > 0
+    },
+    {
+      detail: readiness.nextAction,
+      id: "room-playtest-readiness",
+      ok:
+        readiness.items.length === 5 &&
+        readiness.summary.includes("开局检查") &&
+        readiness.items.some((item) => item.id === "invite" && item.status === "ready") &&
+        readiness.items.some((item) => item.id === "squad" && item.status === "ready")
     },
     {
       detail: roomContributionPlanDetail,

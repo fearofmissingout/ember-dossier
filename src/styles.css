@@ -5748,6 +5748,124 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.room-playtest-readiness {
+  display: grid;
+  gap: 11px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.room-playtest-readiness.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.room-playtest-readiness.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.room-playtest-readiness-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-playtest-readiness-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.room-playtest-readiness-heading span,
+.room-playtest-check-grid span,
+.room-playtest-next {
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.room-playtest-readiness-heading span,
+.room-playtest-check-grid span {
+  color: #8c4b32;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.room-playtest-readiness-heading strong {
+  color: #2d342f;
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.room-playtest-readiness-heading small,
+.room-playtest-check-grid small {
+  color: #5f6b62;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.room-playtest-readiness-heading button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #8a3c2a;
+  border-radius: 8px;
+  background: #8a3c2a;
+  color: #fff9ef;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.room-playtest-check-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-playtest-check-grid article {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 9px;
+  border: 1px solid #d7cab0;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.84);
+}
+
+.room-playtest-check-grid article.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.room-playtest-check-grid article.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.room-playtest-check-grid strong {
+  color: #2d342f;
+  font-size: 13px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.room-playtest-next {
+  display: block;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.84);
+  color: #604733;
+}
+
 .your-room-task {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -6440,6 +6558,7 @@ button:disabled {
     .development-project-strip,
     .member-summary-row,
     .playtest-checkpoint-grid,
+    .room-playtest-check-grid,
     .location-choice-grid,
     .room-cooperation-board,
     .room-cooperation-gaps,
@@ -6532,6 +6651,15 @@ button:disabled {
 
   .room-cooperation-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-playtest-readiness-heading {
+    display: grid;
+  }
+
+  .room-playtest-readiness-heading button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .your-room-task button {

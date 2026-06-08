@@ -352,16 +352,23 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("roomCooperationSummary");
+    expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
+    expect(source).toContain("aria-label=\"多人试玩开局检查\"");
     expect(source).toContain("协作状态");
     expect(source).toContain("下一步：");
     expect(source).toContain("summary.actionHint");
+    expect(source).toContain("playtestReadiness.items.map");
+    expect(source).toContain("roomReadinessTargetView(playtestReadiness)");
+    expect(source).toContain("开局检查");
     expect(source).toContain("summary.gaps.map");
     expect(source).toContain("aria-label=\"房间协作缺口\"");
     expect(source).toContain("room-cooperation-board");
     expect(source).toContain("room-cooperation-metrics");
     expect(source).toContain("room-cooperation-gaps");
     expect(source).toContain("room-gap-card");
+    expect(source).toContain("room-playtest-readiness");
+    expect(source).toContain("room-playtest-check-grid");
     expect(source).toContain("member.collaborationHint");
     expect(source).toContain("member-collaboration-hint");
     expect(source).toContain("协作建议：");
@@ -369,6 +376,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".room-cooperation-metrics");
     expect(styles).toContain(".room-cooperation-gaps");
     expect(styles).toContain(".room-gap-card");
+    expect(styles).toContain(".room-playtest-readiness");
+    expect(styles).toContain(".room-playtest-check-grid");
     expect(styles).toContain(".member-collaboration-hint");
   });
 });

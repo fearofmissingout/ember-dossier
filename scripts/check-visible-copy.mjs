@@ -36,7 +36,8 @@ const requiredChineseAnchors = [
   "试玩登录",
   "试玩设置",
   "英文包待接入",
-  "账号成长边界"
+  "账号成长边界",
+  "多人试玩开局检查"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -46,7 +47,8 @@ const additionalRequiredChineseAnchors = [
   "试玩完整性检查",
   "核心试玩闭环已通过",
   "单页模式",
-  "成长上限"
+  "成长上限",
+  "开局检查"
 ];
 
 const bannedVisibleEnglish = [

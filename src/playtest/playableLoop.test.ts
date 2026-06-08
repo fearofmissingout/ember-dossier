@@ -17,6 +17,7 @@ describe("playable loop smoke", () => {
       "survivor-growth-plan",
       "squad-assigned",
       "multiplayer-cooperation",
+      "room-playtest-readiness",
       "room-contribution-plan",
       "player-cooperation-task",
       "member-guidance",

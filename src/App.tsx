@@ -37,6 +37,7 @@ import {
   roomCooperationSummary,
   roomContributionPlan,
   roomMemberSummaries,
+  roomPlaytestReadiness,
   setBaseAssignment,
   treatSurvivor,
   upgradeAccountBase,
@@ -1239,6 +1240,7 @@ export default function App() {
             player={player}
             players={roomPlayers}
             memberSummaries={roomMemberSummaries(session)}
+            playtestReadiness={roomPlaytestReadiness(session)}
             roomSlug={roomSlug}
             summary={roomCooperationSummary(session)}
             copyStatus={copyStatus}
@@ -3958,6 +3960,7 @@ function RoomMembers({
   player,
   players,
   memberSummaries,
+  playtestReadiness,
   roomSlug,
   summary,
   copyStatus,
@@ -3971,6 +3974,7 @@ function RoomMembers({
   player: RoomPlayer;
   players: RoomPlayer[];
   memberSummaries: RoomMemberSummary[];
+  playtestReadiness: ReturnType<typeof roomPlaytestReadiness>;
   roomSlug: string;
   summary: RoomCooperationSummary;
   copyStatus: "idle" | "copied" | "failed";
@@ -4023,6 +4027,29 @@ function RoomMembers({
             </article>
           ))}
         </div>
+      </div>
+
+      <div className={`room-playtest-readiness ${playtestReadiness.status}`} aria-label="多人试玩开局检查">
+        <div className="room-playtest-readiness-heading">
+          <div>
+            <span>开局检查</span>
+            <strong>{playtestReadiness.headline}</strong>
+            <small>{playtestReadiness.summary}</small>
+          </div>
+          <button type="button" onClick={() => onNavigate(roomReadinessTargetView(playtestReadiness))}>
+            处理下一步
+          </button>
+        </div>
+        <div className="room-playtest-check-grid">
+          {playtestReadiness.items.map((item) => (
+            <article className={item.status} key={item.id}>
+              <span>{item.status === "ready" ? "就绪" : item.status === "blocked" ? "阻塞" : "待办"}</span>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
+        <small className="room-playtest-next">{playtestReadiness.nextAction}</small>
       </div>
 
       <div className="room-contribution-plan" aria-label="房间捐入优先级">
@@ -4133,6 +4160,23 @@ function roomMemberPrimaryAction(member: RoomMemberSummary): { label: string; ti
   return { label: "准备远征", title: "你的协作项已覆盖", view: "expedition" };
 }
 
+function roomReadinessTargetView(readiness: ReturnType<typeof roomPlaytestReadiness>): ViewKey {
+  const nextItem = readiness.items.find((item) => item.status === "blocked") ?? readiness.items.find((item) => item.status === "todo");
+  if (!nextItem) {
+    return "expedition";
+  }
+
+  const targets: Record<typeof nextItem.id, ViewKey> = {
+    contribution: "overview",
+    expedition: "expedition",
+    invite: "members",
+    shifts: "survivors",
+    squad: "survivors"
+  };
+
+  return targets[nextItem.id];
+}
+
 function ArchiveView({ state }: { state: GameState }) {
   const playableSmoke = useMemo(() => runPlayableLoopSmoke(), []);
 
@@ -4200,6 +4244,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "survivor-treated": "伤病治疗",
     "squad-assigned": "出征编队",
     "multiplayer-cooperation": "多人协作",
+    "room-playtest-readiness": "开局检查",
     "room-contribution-plan": "捐入优先",
     "combat-turn-plan": "战斗建议",
     "combat-round": "回合战斗",

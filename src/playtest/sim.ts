@@ -914,6 +914,22 @@ export type RoomCooperationSummary = {
   readiness: "blocked" | "building" | "ready";
 };
 
+export type RoomPlaytestReadinessItem = {
+  detail: string;
+  id: "invite" | "contribution" | "squad" | "shifts" | "expedition";
+  label: string;
+  status: "blocked" | "todo" | "ready";
+};
+
+export type RoomPlaytestReadiness = {
+  headline: string;
+  items: RoomPlaytestReadinessItem[];
+  nextAction: string;
+  readyCount: number;
+  status: "blocked" | "building" | "ready";
+  summary: string;
+};
+
 export type RoomContributionPlanItem = {
   detail: string;
   key: ResourceKey;
@@ -1070,6 +1086,92 @@ export function roomCooperationSummary(session: PlaytestSession): RoomCooperatio
     nextNeed: primaryTask.title,
     readiness
   };
+}
+
+export function roomPlaytestReadiness(session: PlaytestSession): RoomPlaytestReadiness {
+  const cooperation = roomCooperationSummary(session);
+  const contributionPlan = roomContributionPlan(session);
+  const canLaunch = cooperation.readiness === "ready";
+  const items: RoomPlaytestReadinessItem[] = [
+    {
+      detail:
+        cooperation.memberCount >= 2
+          ? `${cooperation.memberCount} 名成员已在房间，可以分工建设和出征。`
+          : "先复制邀请链接，让至少 1 位好友进入同一个房间。",
+      id: "invite",
+      label: "邀请好友",
+      status: cooperation.memberCount >= 2 ? "ready" : "todo"
+    },
+    {
+      detail:
+        cooperation.contributionCount > 0
+          ? `${cooperation.contributionCount} 次捐入已进入共享基地。`
+          : contributionPlan.summary,
+      id: "contribution",
+      label: "共享库存",
+      status: contributionPlan.items.some((item) => item.priority === "urgent")
+        ? "blocked"
+        : cooperation.contributionCount > 0
+          ? "ready"
+          : "todo"
+    },
+    {
+      detail:
+        cooperation.assignedSurvivors >= 3
+          ? `远征编队已有 ${cooperation.assignedSurvivors} 名幸存者。`
+          : `还需要 ${Math.max(0, 3 - cooperation.assignedSurvivors)} 名幸存者加入远征编队。`,
+      id: "squad",
+      label: "远征编队",
+      status: cooperation.assignedSurvivors >= 3 ? "ready" : "blocked"
+    },
+    {
+      detail:
+        cooperation.baseShifts > 0
+          ? `${cooperation.baseShifts} 个留守班次正在支撑基地。`
+          : "至少安排 1 个搜寻、修理、守卫或护理班，避免基地空转。",
+      id: "shifts",
+      label: "留守班次",
+      status: cooperation.baseShifts > 0 ? "ready" : "todo"
+    },
+    {
+      detail: canLaunch ? "房间可以进入出征准备，确认地点、补给和风险策略。" : cooperation.actionHint,
+      id: "expedition",
+      label: "开局远征",
+      status: canLaunch ? "ready" : cooperation.readiness === "blocked" ? "blocked" : "todo"
+    }
+  ];
+  const readyCount = items.filter((item) => item.status === "ready").length;
+  const blockedCount = items.filter((item) => item.status === "blocked").length;
+  const status: RoomPlaytestReadiness["status"] =
+    canLaunch && readyCount >= 4 ? "ready" : blockedCount > 0 ? "blocked" : "building";
+
+  return {
+    headline:
+      status === "ready"
+        ? "房间已经具备多人试玩开局条件。"
+        : status === "blocked"
+          ? "房间还有关键开局项未补齐。"
+          : "房间正在接近可试玩状态。",
+    items,
+    nextAction: roomPlaytestNextAction(items),
+    readyCount,
+    status,
+    summary: `开局检查 ${readyCount}/${items.length} 项就绪。`
+  };
+}
+
+function roomPlaytestNextAction(items: RoomPlaytestReadinessItem[]) {
+  const blocked = items.find((item) => item.status === "blocked");
+  if (blocked) {
+    return `优先处理：${blocked.label}。${blocked.detail}`;
+  }
+
+  const todo = items.find((item) => item.status === "todo");
+  if (todo) {
+    return `下一步：${todo.label}。${todo.detail}`;
+  }
+
+  return "可以进入远征准备，开始一次完整多人试玩。";
 }
 
 export function roomContributionPlan(session: PlaytestSession): RoomContributionPlan {
