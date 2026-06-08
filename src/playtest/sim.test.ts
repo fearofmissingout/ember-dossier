@@ -275,8 +275,10 @@ describe("playtest room loop", () => {
       careShifts: 1,
       clinicLevel: 2,
       dailyRecovery: 13,
+      immediateTreatments: 1,
       injuredCount: 1,
-      likelyInjuryClears: 1
+      likelyInjuryClears: 1,
+      medicineShortage: 0
     });
     expect(plan.priorityPatients[0]).toMatchObject({
       fatigue: 72,
@@ -284,6 +286,27 @@ describe("playtest room loop", () => {
       name: session.account.survivors[0].name
     });
     expect(plan.summary).toContain("清除 1 个伤病");
+    expect(plan.nextAction).toContain(session.account.survivors[0].name);
+    expect(plan.nextAction).toContain("手动治疗");
+  });
+
+  test("base recovery plan warns when medicine cannot cover injured survivors", () => {
+    const session = createStarterSession("user-a", "Alice", "recovery-shortage-room");
+    session.room.base.resources.medicine = 0;
+    session.account.survivors[0].injuries = ["裂伤"];
+    session.account.survivors[0].fatigue = 70;
+    session.account.survivors[1].injuries = ["感染"];
+    session.account.survivors[1].fatigue = 52;
+
+    const plan = baseRecoveryPlan(session);
+
+    expect(plan).toMatchObject({
+      immediateTreatments: 0,
+      injuredCount: 2,
+      medicineAvailable: 0,
+      medicineShortage: 2
+    });
+    expect(plan.nextAction).toContain("药品不足 2");
   });
 
   test("care shifts clear patient injuries during day advance and explain the recovery", () => {

@@ -1606,11 +1606,18 @@ function Survivors({
             护理班 <b>{recoveryPlan.careShifts}</b>
           </span>
           <span>
+            可治疗 <b>{recoveryPlan.immediateTreatments}/{recoveryPlan.medicineAvailable}</b>
+          </span>
+          <span>
             伤病恢复 <b>{recoveryPlan.likelyInjuryClears}/{recoveryPlan.injuredCount}</b>
           </span>
           <span>
             每日休息 <b>-{recoveryPlan.dailyRecovery}</b>
           </span>
+        </div>
+        <div className={recoveryPlan.medicineShortage > 0 ? "recovery-next-action warning" : "recovery-next-action"}>
+          <span>下一步</span>
+          <strong>{recoveryPlan.nextAction}</strong>
         </div>
         {recoveryPlan.priorityPatients.length > 0 && (
           <div className="recovery-patient-row">

@@ -165,6 +165,21 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("今日待办");
   });
 
+  test("shows post-expedition recovery priority in the survivor view", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("recoveryPlan.immediateTreatments");
+    expect(source).toContain("recoveryPlan.medicineAvailable");
+    expect(source).toContain("recoveryPlan.medicineShortage");
+    expect(source).toContain("recoveryPlan.nextAction");
+    expect(source).toContain("recovery-next-action");
+    expect(source).toContain("可治疗");
+    expect(source).toContain("下一步");
+    expect(styles).toContain(".recovery-next-action");
+    expect(styles).toContain("repeat(auto-fit, minmax(120px, 1fr))");
+  });
+
   test("shows Chinese next-step actions after expedition reports", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

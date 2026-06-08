@@ -760,8 +760,12 @@ export type BaseRecoveryPlan = {
   clinicLevel: number;
   dailyRecovery: number;
   dormLevel: number;
+  immediateTreatments: number;
   injuredCount: number;
   likelyInjuryClears: number;
+  medicineAvailable: number;
+  medicineShortage: number;
+  nextAction: string;
   priorityPatients: BaseRecoveryPatientPreview[];
   recoveringCount: number;
   summary: string;
@@ -932,21 +936,39 @@ export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {
   const injuryClearCapacity = careWorkers.filter((survivor) => careHealScore(session, survivor) >= 10).length;
   const injuredCount = session.account.survivors.filter((survivor) => survivor.injuries.length > 0).length;
   const recoveringCount = session.account.survivors.filter((survivor) => survivor.status === "recovering").length;
+  const medicineAvailable = session.room.base.resources.medicine;
+  const immediatePatientCount = priorityPatients.filter((patient) => patient.injuries > 0).length;
+  const immediateTreatments = Math.min(medicineAvailable, immediatePatientCount);
+  const medicineShortage = Math.max(0, immediatePatientCount - medicineAvailable);
   const likelyInjuryClears = Math.min(
     priorityPatients.filter((patient) => patient.injuries > 0).length,
     injuryClearCapacity
   );
+  const nextAction =
+    injuredCount === 0 && recoveringCount === 0
+      ? "队伍状态稳定，可以把班次转向搜寻、守卫或修理。"
+      : immediateTreatments > 0
+        ? `先手动治疗 ${priorityPatients.find((patient) => patient.injuries > 0)?.name ?? "伤员"}，再安排护理班过夜。`
+        : medicineShortage > 0
+          ? `药品不足 ${medicineShortage}，先补药品或安排护理班压住疲劳。`
+          : careWorkers.length > 0
+            ? "护理班已安排，可以结束当天等待恢复结算。"
+            : "先安排护理班，否则伤病会拖慢下一次出征。";
 
   return {
     careShifts: careWorkers.length,
     clinicLevel,
     dailyRecovery,
     dormLevel,
+    immediateTreatments,
     injuredCount,
     likelyInjuryClears,
+    medicineAvailable,
+    medicineShortage,
+    nextAction,
     priorityPatients,
     recoveringCount,
-    summary: `${careWorkers.length} 个护理班，预计清除 ${likelyInjuryClears} 个伤病，基础疲劳恢复 -${dailyRecovery}。`
+    summary: `${careWorkers.length} 个护理班，立即可治疗 ${immediateTreatments} 人，预计清除 ${likelyInjuryClears} 个伤病，基础疲劳恢复 -${dailyRecovery}。`
   };
 }
 
