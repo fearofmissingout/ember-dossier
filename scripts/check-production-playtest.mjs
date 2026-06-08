@@ -1,17 +1,44 @@
 import { existsSync, readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const productionUrl = process.env.PLAYTEST_URL ?? "https://ember-dossier.pages.dev/?room=playtest-smoke";
 const defaultRoomSlug = "ember-demo";
+let supabaseUrl = "";
+let publishableKey = "";
+export const requiredProductionStrings = [
+  "游客继续",
+  "创建试玩账号",
+  "/api/auth/register",
+  "/rest/v1/demo_snapshots",
+  "房间目标",
+  "撤离预案",
+  "后勤预案",
+  "成长：",
+  "个人基地升级",
+  "训练生命",
+  "账号战利",
+  "捐入",
+  "基地行动中枢",
+  "出征开局预案",
+  "战后复盘",
+  "当前可执行操作"
+];
 
-loadEnvFile(".env.local");
-loadEnvFile("../../.env.local");
+if (isMainModule()) {
+  loadEnvFile(".env.local");
+  loadEnvFile("../../.env.local");
 
-const supabaseUrl = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
-const publishableKey = cleanEnvValue(process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY);
+  supabaseUrl = normalizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
+  publishableKey = cleanEnvValue(process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY);
 
-await checkProductionBundle();
-await checkPlaytestSignupEndpoint();
-await checkGuestRoomRoundTrip();
+  await checkProductionBundle();
+  await checkPlaytestSignupEndpoint();
+  await checkGuestRoomRoundTrip();
+}
+
+function isMainModule() {
+  return import.meta.url === pathToFileURL(process.argv[1]).href;
+}
 
 function loadEnvFile(path) {
   if (!existsSync(path)) {
@@ -84,21 +111,7 @@ async function checkProductionBundle() {
   }
 
   const asset = await assetResponse.text();
-  const requiredStrings = [
-    "游客继续",
-    "创建试玩账号",
-    "/api/auth/register",
-    "/rest/v1/demo_snapshots",
-    "房间目标",
-    "撤离预案",
-    "后勤预案",
-    "成长：",
-    "个人基地升级",
-    "训练生命",
-    "账号战利",
-    "捐入"
-  ];
-  const missingStrings = requiredStrings.filter((text) => !asset.includes(text));
+  const missingStrings = requiredProductionStrings.filter((text) => !asset.includes(text));
 
   if (missingStrings.length > 0) {
     throw new Error(`Production bundle is missing required playtest strings: ${missingStrings.join(", ")}`);
