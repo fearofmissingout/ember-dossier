@@ -13,6 +13,7 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseDayEventBreadth,
   baseDayPreview,
   baseDevelopmentPlan,
   baseRecoveryPlan,
@@ -1087,6 +1088,13 @@ describe("playtest room loop", () => {
     expect(preview.recoverySummary).toContain("疲劳恢复");
   });
 
+  test("keeps base day events stocked with enough variety", () => {
+    expect(baseDayEventBreadth()).toMatchObject({
+      count: 6,
+      titles: expect.arrayContaining(["围栏缺口", "库存变质", "医务高峰", "信号窗口", "净水滤芯堵塞", "夜间求救信号"])
+    });
+  });
+
   test("base day events punish uncovered perimeter breaches", () => {
     const session = createStarterSession("user-a", "Alice", "event-breach-room");
     session.room.base.resources.food = 8;
@@ -1182,6 +1190,49 @@ describe("playtest room loop", () => {
     expect(next.room.feed[0]?.title).toContain("信号窗口");
     expect(next.room.feed[0]?.body).toContain("基地事件：信号窗口");
     expect(next.room.base.objective.repairedParts).toBeGreaterThan(1);
+  });
+
+  test("repair and forage coverage turn clogged filters into water and materials", () => {
+    let session = createStarterSession("user-a", "Alice", "event-filter-room");
+    session.room.base.day = 5;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 4;
+    session.room.base.resources.materials = 2;
+    const generator = session.room.base.facilities.find((facility) => facility.id === "generator");
+    if (generator) {
+      generator.level = 1;
+    }
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "repair");
+    session = setBaseAssignment(session, "user-a", session.account.survivors[1].id, "forage");
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("净水滤芯堵塞");
+    expect(next.room.feed[0]?.body).toContain("水 +");
+    expect(next.room.feed[0]?.body).toContain("材料 +1");
+    expect(next.room.base.resources.water).toBeGreaterThanOrEqual(4);
+    expect(next.room.base.resources.materials).toBeGreaterThanOrEqual(2);
+  });
+
+  test("unguarded night distress signals add danger and hurt morale", () => {
+    const session = createStarterSession("user-a", "Alice", "event-distress-room");
+    session.room.base.day = 6;
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    session.room.base.danger = 16;
+    session.room.base.morale = 62;
+    session.room.base.objective.deadlineDay = 12;
+    const radio = session.room.base.facilities.find((facility) => facility.id === "radio");
+    if (radio) {
+      radio.level = 0;
+    }
+
+    const next = advanceRoomDay(session, "user-a");
+
+    expect(next.room.feed[0]?.title).toContain("夜间求救信号");
+    expect(next.room.feed[0]?.body).toContain("危险 +5");
+    expect(next.room.base.danger).toBeGreaterThan(session.room.base.danger);
+    expect(next.room.feed[0]?.body).toContain("士气 -2");
   });
 
   test("advances a room day with upkeep, recovery, pressure, and feed", () => {

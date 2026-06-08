@@ -739,6 +739,15 @@ type BaseDayEventResult = {
   title: string;
 };
 
+const baseDayEventTitles = ["围栏缺口", "库存变质", "医务高峰", "信号窗口", "净水滤芯堵塞", "夜间求救信号"] as const;
+
+export function baseDayEventBreadth() {
+  return {
+    count: baseDayEventTitles.length,
+    titles: [...baseDayEventTitles]
+  };
+}
+
 export type BaseRecoveryPatientPreview = {
   fatigue: number;
   injuries: number;
@@ -1400,7 +1409,7 @@ function previewBaseAssignments(session: PlaytestSession) {
 }
 
 function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage: BaseShiftCoverage): BaseDayEventResult {
-  const eventIndex = Math.max(0, nextDay - 2) % 4;
+  const eventIndex = Math.max(0, nextDay - 2) % baseDayEventTitles.length;
   const logs: string[] = [];
 
   if (eventIndex === 0) {
@@ -1480,22 +1489,66 @@ function resolveBaseDayEvent(session: PlaytestSession, nextDay: number, coverage
     return { logs, title };
   }
 
-  const title = "信号窗口";
-  const support = coverage.repair + facilityLevel(session, "radio") + Math.floor(facilityLevel(session, "workshop") / 2);
-  if (support >= 2) {
+  if (eventIndex === 3) {
+    const title = "信号窗口";
+    const support = coverage.repair + facilityLevel(session, "radio") + Math.floor(facilityLevel(session, "workshop") / 2);
+    if (support >= 2) {
+      const objective = Math.min(2, Math.max(1, Math.floor(support / 2)));
+      session.room.base.objective.repairedParts = Math.min(
+        session.room.base.objective.requiredParts,
+        session.room.base.objective.repairedParts + objective
+      );
+      session.room.base.resources.materials += 1;
+      logs.push(`基地事件：${title}。房间捕捉到一次干净的塔台回波，并快速行动。目标 +${objective}，材料 +1。`);
+    } else if (support > 0) {
+      session.room.base.objective.repairedParts = Math.min(session.room.base.objective.requiredParts, session.room.base.objective.repairedParts + 1);
+      logs.push(`基地事件：${title}。粗糙信号仍给修理队一条可用塔台笔记。目标 +1。`);
+    } else {
+      session.room.base.danger = clamp(session.room.base.danger + 3, 0, 100);
+      logs.push(`基地事件：${title}。塔台在无人应答的频段里咔哒作响。危险 +3。`);
+    }
+    return { logs, title };
+  }
+
+  if (eventIndex === 4) {
+    const title = "净水滤芯堵塞";
+    const support = coverage.repair + coverage.forage + facilityLevel(session, "generator");
+    if (support >= 3) {
+      const water = Math.min(4, support);
+      session.room.base.resources.water += water;
+      session.room.base.resources.materials += 1;
+      logs.push(`基地事件：${title}。维修班和搜寻班拆下堵塞滤芯，顺手补齐一段管路。水 +${water}，材料 +1。`);
+    } else if (support > 0) {
+      session.room.base.resources.water += 1;
+      logs.push(`基地事件：${title}。临时冲洗保住了夜间用水。水 +1。`);
+    } else {
+      const waterShortage = spendWithShortage(session.room.base.resources, "water", 2);
+      const materialShortage = spendWithShortage(session.room.base.resources, "materials", 1);
+      const pressure = waterShortage + materialShortage;
+      session.room.base.morale = clamp(session.room.base.morale - 2 - pressure * 2, 0, 100);
+      logs.push(`基地事件：${title}。无人处理的滤芯拖慢供水。水 -${2 - waterShortage}/2，材料 -${1 - materialShortage}/1，士气 -${2 + pressure * 2}。`);
+    }
+    return { logs, title };
+  }
+
+  const title = "夜间求救信号";
+  const support = coverage.guard + coverage.care + facilityLevel(session, "radio");
+  if (support >= 3) {
     const objective = Math.min(2, Math.max(1, Math.floor(support / 2)));
     session.room.base.objective.repairedParts = Math.min(
       session.room.base.objective.requiredParts,
       session.room.base.objective.repairedParts + objective
     );
-    session.room.base.resources.materials += 1;
-    logs.push(`基地事件：${title}。房间捕捉到一次干净的塔台回波，并快速行动。目标 +${objective}，材料 +1。`);
+    session.room.base.morale = clamp(session.room.base.morale + 2, 0, 100);
+    logs.push(`基地事件：${title}。守卫确认来源，护理班安抚幸存者，电台留下可追踪坐标。目标 +${objective}，士气 +2。`);
   } else if (support > 0) {
-    session.room.base.objective.repairedParts = Math.min(session.room.base.objective.requiredParts, session.room.base.objective.repairedParts + 1);
-    logs.push(`基地事件：${title}。粗糙信号仍给修理队一条可用塔台笔记。目标 +1。`);
+    session.room.base.danger = clamp(session.room.base.danger + 1, 0, 100);
+    session.room.base.morale = clamp(session.room.base.morale + 1, 0, 100);
+    logs.push(`基地事件：${title}。值班人员没有贸然开门，只把坐标记入明早路线。危险 +1，士气 +1。`);
   } else {
-    session.room.base.danger = clamp(session.room.base.danger + 3, 0, 100);
-    logs.push(`基地事件：${title}。塔台在无人应答的频段里咔哒作响。危险 +3。`);
+    session.room.base.danger = clamp(session.room.base.danger + 5, 0, 100);
+    session.room.base.morale = clamp(session.room.base.morale - 2, 0, 100);
+    logs.push(`基地事件：${title}。整夜无人分辨信号真假，基地被噪声和猜疑拖住。危险 +5，士气 -2。`);
   }
   return { logs, title };
 }
