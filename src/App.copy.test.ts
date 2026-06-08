@@ -119,4 +119,18 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".report-action-digest");
     expect(styles).toContain(".report-next-actions");
   });
+
+  test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("roomCooperationSummary");
+    expect(source).toContain("aria-label=\"房间协作总览\"");
+    expect(source).toContain("协作状态");
+    expect(source).toContain("下一步：");
+    expect(source).toContain("room-cooperation-board");
+    expect(source).toContain("room-cooperation-metrics");
+    expect(styles).toContain(".room-cooperation-board");
+    expect(styles).toContain(".room-cooperation-metrics");
+  });
 });

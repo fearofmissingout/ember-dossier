@@ -4418,6 +4418,78 @@ button:disabled {
   color: #7d3f2d;
 }
 
+.room-cooperation-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.85fr);
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.room-cooperation-board.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.room-cooperation-board.blocked {
+  border-color: #d3974a;
+  background: #fff5de;
+}
+
+.room-cooperation-board > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.room-cooperation-board span,
+.room-cooperation-board small {
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.room-cooperation-board > div:first-child span {
+  color: #8c4b32;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.room-cooperation-board strong {
+  min-width: 0;
+  color: #2d342f;
+  font-size: 16px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.room-cooperation-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-cooperation-metrics span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid #d7cab0;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.82);
+}
+
+.room-cooperation-metrics b {
+  color: #7d3f2d;
+  font-size: 18px;
+}
+
 .room-settings {
   display: grid;
   gap: 12px;
@@ -4724,10 +4796,11 @@ button:disabled {
     .report-growth-grid,
     .report-action-digest-grid,
   .report-timeline-grid,
-  .hardship-strip,
-  .development-project-strip,
-  .member-summary-row,
-  .resource-grid {
+    .hardship-strip,
+    .development-project-strip,
+    .member-summary-row,
+    .room-cooperation-board,
+    .resource-grid {
     grid-template-columns: 1fr;
   }
 
@@ -4741,6 +4814,10 @@ button:disabled {
 
   .recovery-plan-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .room-cooperation-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .journey-action-guide {

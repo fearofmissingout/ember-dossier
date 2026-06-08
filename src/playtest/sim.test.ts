@@ -18,6 +18,7 @@ import {
   baseRecoveryPlan,
   baseTaskList,
   resolvePlaytestExpedition,
+  roomCooperationSummary,
   roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
@@ -157,6 +158,16 @@ describe("playtest room loop", () => {
       roleLabel: "成员"
     });
     expect(zhou?.contributionText).toContain("药品 +1");
+
+    const cooperation = roomCooperationSummary(session);
+    expect(cooperation).toMatchObject({
+      assignedSurvivors: 1,
+      baseShifts: 1,
+      contributionCount: 2,
+      memberCount: 2,
+      nextNeed: expect.any(String)
+    });
+    expect(["blocked", "building", "ready"]).toContain(cooperation.readiness);
   });
 
   test("upgrades account base rooms with account resources and readable planning", () => {

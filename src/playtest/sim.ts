@@ -816,6 +816,16 @@ export type RoomMemberSummary = {
   userId: string;
 };
 
+export type RoomCooperationSummary = {
+  assignedSurvivors: number;
+  baseShifts: number;
+  contributionCount: number;
+  headline: string;
+  memberCount: number;
+  nextNeed: string;
+  readiness: "blocked" | "building" | "ready";
+};
+
 export type BaseTaskStatus = "urgent" | "todo" | "ready";
 
 export type BaseTaskItem = {
@@ -867,6 +877,33 @@ export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary
           ? -1
           : 1
     );
+}
+
+export function roomCooperationSummary(session: PlaytestSession): RoomCooperationSummary {
+  const memberCount = session.room.members.length;
+  const contributionCount = session.room.contributions.length;
+  const assignedSurvivors = session.room.assignedSurvivors.length;
+  const baseShifts = session.room.baseAssignments.length;
+  const tasks = baseTaskList(session);
+  const primaryTask = tasks.items[0];
+  const urgentCount = tasks.items.filter((task) => task.status === "urgent").length;
+  const readiness: RoomCooperationSummary["readiness"] =
+    primaryTask.id === "expedition" ? "ready" : urgentCount > 0 ? "blocked" : "building";
+
+  return {
+    assignedSurvivors,
+    baseShifts,
+    contributionCount,
+    headline:
+      readiness === "ready"
+        ? "房间已经可以准备下一次远征。"
+        : readiness === "blocked"
+          ? `房间还有 ${urgentCount} 个紧急缺口。`
+          : "房间正在补齐建设和班次。",
+    memberCount,
+    nextNeed: primaryTask.title,
+    readiness
+  };
 }
 
 export function baseRecoveryPlan(session: PlaytestSession): BaseRecoveryPlan {

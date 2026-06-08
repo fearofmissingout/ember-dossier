@@ -33,6 +33,7 @@ import {
   baseRecoveryPlan,
   baseTaskList,
   resolvePlaytestExpedition,
+  roomCooperationSummary,
   roomMemberSummaries,
   setBaseAssignment,
   treatSurvivor,
@@ -43,6 +44,7 @@ import {
   type BaseTaskItem,
   type BaseDevelopmentPlan,
   type BaseRecoveryPlan,
+  type RoomCooperationSummary,
   type RoomMemberSummary
 } from "./playtest/sim";
 import {
@@ -1157,6 +1159,7 @@ export default function App() {
             players={roomPlayers}
             memberSummaries={roomMemberSummaries(session)}
             roomSlug={roomSlug}
+            summary={roomCooperationSummary(session)}
             copyStatus={copyStatus}
             onCopyRoomLink={copyRoomLink}
             onCreateRoom={createNewRoom}
@@ -3373,6 +3376,7 @@ function RoomMembers({
   players,
   memberSummaries,
   roomSlug,
+  summary,
   copyStatus,
   onCopyRoomLink,
   onCreateRoom,
@@ -3382,6 +3386,7 @@ function RoomMembers({
   players: RoomPlayer[];
   memberSummaries: RoomMemberSummary[];
   roomSlug: string;
+  summary: RoomCooperationSummary;
   copyStatus: "idle" | "copied" | "failed";
   onCopyRoomLink: () => void;
   onCreateRoom: () => void;
@@ -3396,6 +3401,28 @@ function RoomMembers({
           <p className="muted-copy">同一个房间链接会共享基地、远征结果和动态流。</p>
         </div>
         <span className="subtle-pill">{roomSlug}</span>
+      </div>
+
+      <div className={`room-cooperation-board ${summary.readiness}`} aria-label="房间协作总览">
+        <div>
+          <span>协作状态</span>
+          <strong>{summary.headline}</strong>
+          <small>下一步：{summary.nextNeed}</small>
+        </div>
+        <div className="room-cooperation-metrics">
+          <span>
+            成员 <b>{summary.memberCount}</b>
+          </span>
+          <span>
+            捐入 <b>{summary.contributionCount}</b>
+          </span>
+          <span>
+            编队 <b>{summary.assignedSurvivors}</b>
+          </span>
+          <span>
+            班次 <b>{summary.baseShifts}</b>
+          </span>
+        </div>
       </div>
 
       <div className="room-settings">
