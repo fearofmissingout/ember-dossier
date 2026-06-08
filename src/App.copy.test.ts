@@ -118,6 +118,7 @@ describe("hosted playtest copy", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");
 
+    expect(source).toContain("data-app-mode=\"single-page\"");
     expect(source).toContain("onClick={() => setView(item.key)}");
     expect(source).toContain("className={view === item.key ? \"nav-item active\" : \"nav-item\"}");
     expect(source).toContain("aria-label=\"手机端单页行动栏\"");
@@ -128,6 +129,18 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("grid-auto-flow: column");
     expect(styles).toContain("overscroll-behavior-x: contain");
     expect(styles).toContain("padding-bottom: calc(76px + env(safe-area-inset-bottom))");
+  });
+
+  test("keeps expedition actions reachable as a mobile bottom command dock", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("aria-label=\"当前可执行操作\"");
+    expect(source).toContain("journey-command-actions");
+    expect(styles).toContain(".journey-command-actions");
+    expect(styles).toContain("bottom: calc(76px + max(10px, env(safe-area-inset-bottom)))");
+    expect(styles).toContain("max-height: 42vh");
+    expect(styles).toContain("overscroll-behavior: contain");
   });
 
   test("shows facility upgrade value as base and expedition impact", () => {

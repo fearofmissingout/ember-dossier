@@ -1016,7 +1016,7 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" data-app-mode="single-page">
       <aside className="side-rail">
         <div className="brand-lockup">
           <span className="stamp">ED-12</span>
