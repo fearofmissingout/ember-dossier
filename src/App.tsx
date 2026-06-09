@@ -5594,6 +5594,8 @@ function Reports({
   const returnPulse = latestReport ? summarizeFeedReturnPulse(latestReport) : null;
   const nextRunPlan = latestReport ? summarizeFeedNextRunPlan(latestReport) : null;
   const primaryReturnAction = baseReturnPlan?.primaryAction ?? null;
+  const reportCount = feed.filter((item) => item.kind === "report").length;
+  const reportStatusTitle = latestReport ? latestReport.title : reportCount > 0 ? "已有战报，等待选择复盘" : "还没有完成远征";
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -5602,6 +5604,31 @@ function Reports({
           <h2>战报与动态流</h2>
         </div>
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
+      </div>
+      <div className="report-mobile-command" aria-label="手机端战报总控">
+        <div>
+          <span>战报状态</span>
+          <strong>{reportStatusTitle}</strong>
+          <small>
+            战报 {reportCount} / 动态 {feed.length} / {primaryReturnAction ? `优先：${primaryReturnAction.label}` : "先完成一次出征"}
+          </small>
+        </div>
+        <div className="report-mobile-command-actions">
+          {primaryReturnAction && (
+            <button className={primaryReturnAction.tone} type="button" onClick={() => onNavigate(primaryReturnAction.targetView)}>
+              <Activity size={16} aria-hidden="true" />
+              {primaryReturnAction.label}
+            </button>
+          )}
+          <button type="button" onClick={() => onNavigate("overview")}>
+            <Home size={16} aria-hidden="true" />
+            回基地
+          </button>
+          <button type="button" onClick={() => onNavigate("expedition")}>
+            <Send size={16} aria-hidden="true" />
+            再出征
+          </button>
+        </div>
       </div>
       <ReportReturnPulse onNavigate={onNavigate} pulse={returnPulse} />
       <ReportNextRunPlan onNavigate={onNavigate} plan={nextRunPlan} />
@@ -6226,6 +6253,40 @@ function RoomMembers({
           <p className="muted-copy">同一个房间链接会共享基地、远征结果和动态流。</p>
         </div>
         <span className="subtle-pill">{roomSlug}</span>
+      </div>
+
+      <div className={`member-mobile-command ${summary.readiness}`} aria-label="手机端成员总控">
+        <div>
+          <span>协作状态</span>
+          <strong>{summary.headline}</strong>
+          <small>
+            成员 {summary.memberCount} / 捐入 {summary.contributionCount} / 编队 {summary.assignedSurvivors} / 班次 {summary.baseShifts}
+          </small>
+        </div>
+        <div className="member-mobile-command-primary">
+          <span>我的下一步</span>
+          <strong>{currentAction ? currentAction.title : summary.nextNeed}</strong>
+          {currentAction && (
+            <button type="button" onClick={() => onNavigate(currentAction.view)}>
+              <Activity size={16} aria-hidden="true" />
+              {currentAction.label}
+            </button>
+          )}
+        </div>
+        <div className="member-mobile-command-actions">
+          <button type="button" onClick={onCopyRoomLink}>
+            <Copy size={16} aria-hidden="true" />
+            邀请
+          </button>
+          <button type="button" onClick={() => onNavigate(launchTarget)}>
+            <Send size={16} aria-hidden="true" />
+            开局
+          </button>
+          <button type="button" onClick={onCreateRoom}>
+            <Link size={16} aria-hidden="true" />
+            新房
+          </button>
+        </div>
       </div>
 
       <div className={`room-launch-briefing ${launchBriefing.tone}`} aria-label="多人开局指挥">

@@ -617,6 +617,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("report-return-pulse");
     expect(source).toContain("report-action-digest");
     expect(source).toContain("report-next-actions");
+    expect(source).toContain("report-mobile-command");
+    expect(source).toContain("report-mobile-command-actions");
+    expect(source).toContain("aria-label=\"手机端战报总控\"");
     expect(source).toContain("summarizeFeedBaseReturnPlan");
     expect(source).toContain("aria-label=\"远征回基地处理队列\"");
     expect(source).toContain("base-return-plan");
@@ -631,6 +634,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".report-return-pulse-grid");
     expect(styles).toContain(".report-action-digest");
     expect(styles).toContain(".report-next-actions");
+    expect(styles).toContain(".report-mobile-command");
+    expect(styles).toContain(".report-mobile-command-actions");
     expect(styles).toContain(".base-return-plan");
   });
 
@@ -764,6 +769,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("cooperationLanes.map");
     expect(source).toContain("memberActionPlan");
     expect(source).toContain("roomMemberActionPlan");
+    expect(source).toContain("member-mobile-command");
+    expect(source).toContain("member-mobile-command-primary");
+    expect(source).toContain("member-mobile-command-actions");
+    expect(source).toContain("aria-label=\"手机端成员总控\"");
     expect(source).toContain("aria-label=\"成员行动队列\"");
     expect(source).toContain("每个人下一步做什么，一眼能分清。");
     expect(source).toContain("roomMemberReadinessMatrix");
@@ -814,6 +823,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".member-readiness-cells i.ready");
     expect(styles).toContain(".member-action-plan");
     expect(styles).toContain(".member-action-plan-grid");
+    expect(styles).toContain(".member-mobile-command");
+    expect(styles).toContain(".member-mobile-command-primary");
+    expect(styles).toContain(".member-mobile-command-actions");
     expect(styles).toContain(".room-gap-card");
     expect(styles).toContain(".room-playtest-readiness");
     expect(styles).toContain(".room-playtest-check-grid");
