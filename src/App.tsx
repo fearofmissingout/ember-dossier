@@ -6025,6 +6025,7 @@ function RoomMembers({
   }));
   const launchTarget = roomReadinessItemTargetView(launchBriefing.primaryItemId);
   const cooperationRequests = roomCooperationRequests(playtestReadiness, contributionPlan, summary);
+  const memberReadinessMatrix = roomMemberReadinessMatrix(memberSummaries, currentUserId);
 
   return (
     <section className="panel">
@@ -6224,6 +6225,30 @@ function RoomMembers({
         ))}
       </div>
 
+      <div className="member-readiness-matrix" aria-label="成员准备矩阵">
+        <div className="member-readiness-heading">
+          <span>成员准备矩阵</span>
+          <strong>先看谁缺哪一格，再分配行动。</strong>
+          <small>三格都亮起后，这名成员已经完成多人开局的基础协作。</small>
+        </div>
+        <div className="member-readiness-grid">
+          {memberReadinessMatrix.map((member) => (
+            <button className={member.status} key={member.userId} type="button" onClick={() => onNavigate(member.targetView)}>
+              <span>{member.badge}</span>
+              <strong>{member.displayName}</strong>
+              <div className="member-readiness-cells" aria-label={`${member.displayName} 准备状态`}>
+                {member.cells.map((cell) => (
+                  <i className={cell.ready ? "ready" : "todo"} key={cell.label}>
+                    {cell.label}
+                  </i>
+                ))}
+              </div>
+              <small>{member.nextAction}</small>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="room-contribution-plan" aria-label="房间捐入优先级">
         <div className="room-contribution-heading">
           <div>
@@ -6389,6 +6414,28 @@ function roomMemberActionPlan(members: RoomMemberSummary[], currentUserId: strin
         view: action.view
       };
     });
+}
+
+function roomMemberReadinessMatrix(members: RoomMemberSummary[], currentUserId: string) {
+  return roomMemberActionPlan(members, currentUserId).map((member) => {
+    const summary = members.find((item) => item.userId === member.userId);
+    const contributionReady = (summary?.contributionCount ?? 0) > 0;
+    const squadReady = (summary?.assignedCount ?? 0) > 0;
+    const shiftReady = !!summary && summary.baseShiftText !== "未安排";
+    return {
+      badge: member.badge,
+      cells: [
+        { label: "捐入", ready: contributionReady },
+        { label: "编队", ready: squadReady },
+        { label: "班次", ready: shiftReady }
+      ],
+      displayName: member.displayName,
+      nextAction: member.title,
+      status: member.status,
+      targetView: member.view,
+      userId: member.userId
+    };
+  });
 }
 
 function roomCooperationRequests(

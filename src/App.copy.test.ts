@@ -713,6 +713,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("roomMemberActionPlan");
     expect(source).toContain("aria-label=\"成员行动队列\"");
     expect(source).toContain("每个人下一步做什么，一眼能分清。");
+    expect(source).toContain("roomMemberReadinessMatrix");
+    expect(source).toContain("aria-label=\"成员准备矩阵\"");
+    expect(source).toContain("先看谁缺哪一格，再分配行动。");
+    expect(source).toContain("三格都亮起后，这名成员已经完成多人开局的基础协作。");
+    expect(source).toContain("memberReadinessMatrix.map");
+    expect(source).toContain("member-readiness-cells");
     expect(source).toContain("捐入补给");
     expect(source).toContain("出征编队");
     expect(source).toContain("留守班次");
@@ -749,6 +755,10 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".room-cooperation-metrics");
     expect(styles).toContain(".room-cooperation-gaps");
     expect(styles).toContain(".room-duty-board");
+    expect(styles).toContain(".member-readiness-matrix");
+    expect(styles).toContain(".member-readiness-grid");
+    expect(styles).toContain(".member-readiness-cells");
+    expect(styles).toContain(".member-readiness-cells i.ready");
     expect(styles).toContain(".member-action-plan");
     expect(styles).toContain(".member-action-plan-grid");
     expect(styles).toContain(".room-gap-card");

@@ -10439,6 +10439,135 @@ button:disabled {
   line-height: 1.35;
 }
 
+.member-readiness-matrix {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid #bfcda7;
+  border-radius: 8px;
+  background: #f7fbf1;
+}
+
+.member-readiness-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.member-readiness-heading span,
+.member-readiness-grid button > span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.member-readiness-heading strong,
+.member-readiness-heading small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-readiness-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.member-readiness-heading small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.member-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.member-readiness-grid button {
+  display: grid;
+  min-width: 0;
+  min-height: 116px;
+  align-content: start;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.9);
+  color: #304226;
+  text-align: left;
+}
+
+.member-readiness-grid button.urgent {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.member-readiness-grid button.todo {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.member-readiness-grid button.ready {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.member-readiness-grid strong,
+.member-readiness-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-readiness-grid strong {
+  color: #2f3d27;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.member-readiness-grid small {
+  color: #5f684e;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.member-readiness-cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.member-readiness-cells i {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid #d6c59d;
+  border-radius: 7px;
+  background: #fff8e8;
+  color: #6c5120;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-align: center;
+}
+
+.member-readiness-cells i.ready {
+  border-color: #8fb58d;
+  background: #eef8ea;
+  color: #315f2e;
+}
+
+.member-readiness-cells i.todo {
+  border-color: #d29a83;
+  background: #fff0ea;
+  color: #8b3a28;
+}
+
 .member-action-plan {
   display: grid;
   gap: 10px;
