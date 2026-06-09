@@ -247,6 +247,24 @@ const languagePackChecklist = [
   }
 ];
 
+const languageSwitchReadiness = [
+  {
+    detail: "所有玩家可见按钮、状态、确认提示和错误提示必须进入同一套语言表。",
+    label: "界面包",
+    status: "中文可用"
+  },
+  {
+    detail: "远征事件、战斗意图、商店、营地和结算日志需要整包翻译后才能切换。",
+    label: "玩法包",
+    status: "英文待接入"
+  },
+  {
+    detail: "本地门禁会继续禁止未豁免的中英文混写，发布前必须重新跑完整检查。",
+    label: "发布门禁",
+    status: "混写拦截"
+  }
+];
+
 const releaseReadinessSteps = [
   {
     command: "npm run iteration:check",
@@ -1212,6 +1230,21 @@ export default function App() {
             <button disabled type="button">
               英文包待完整
             </button>
+          </div>
+          <div className="language-switch-readiness" aria-label="语言切换准入">
+            <div className="language-switch-heading">
+              <span>切换准入</span>
+              <strong>英文模式未解锁，避免半中文半英文进入试玩。</strong>
+            </div>
+            <div className="language-switch-grid">
+              {languageSwitchReadiness.map((item) => (
+                <article key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.status}</strong>
+                  <small>{item.detail}</small>
+                </article>
+              ))}
+            </div>
           </div>
           <div className="language-pack-grid" aria-label="语言包覆盖范围">
             {languagePackChecklist.map((item) => (
