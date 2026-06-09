@@ -138,7 +138,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-command-center");
     expect(source).toContain("journey-turn-summary");
     expect(source).toContain("journey-command-actions");
-    expect(source).toContain("journey-action-queue");
+    expect(source).toContain("journey-action-deck");
     expect(source).toContain("commandActionItems");
     expect(source).toContain("currentActionQueue");
     expect(source).toContain("onClick={item.onSelect}");
@@ -161,9 +161,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("当前阻碍");
     expect(source).toContain("推荐动作");
     expect(source).toContain("撤离收益");
-    expect(source).toContain("aria-label=\"当前操作清单\"");
-    expect(source).toContain("操作清单");
-    expect(source).toContain("先看代价和收益，再点下方动作。");
+    expect(source).toContain("aria-label=\"手机端当前行动面板\"");
+    expect(source).toContain("本回合行动");
+    expect(source).toContain("直接选择下一步");
+    expect(source).toContain("每个选项都会推进旅途");
     expect(source).toContain("journey-mobile-flow");
     expect(source).toContain("aria-label=\"手机端远征页内导航\"");
     expect(source).toContain("aria-label=\"手机端单页行动摘要\"");
@@ -185,8 +186,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-command-center");
     expect(styles).toContain(".journey-turn-summary");
     expect(styles).toContain(".journey-command-actions");
-    expect(styles).toContain(".journey-action-queue");
+    expect(styles).toContain(".journey-action-deck");
     expect(styles).toContain(".journey-action-queue-list");
+    expect(styles).toContain(".journey-action-queue-list button");
     expect(styles).toContain(".journey-command-button strong b");
     expect(styles).toContain(".journey-node-command-note");
     expect(styles).toContain(".journey-primary-actions .combat-action-grid");
@@ -318,7 +320,7 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("aria-label=\"当前可执行操作\"");
     expect(source).toContain("aria-label=\"当前行动栏说明\"");
-    expect(source).toContain("aria-label=\"当前操作清单\"");
+    expect(source).toContain("aria-label=\"手机端当前行动面板\"");
     expect(source).toContain("aria-label=\"路线预告\"");
     expect(source).toContain("aria-label=\"手机端路线预告\"");
     expect(source).toContain("journey-command-actions");
@@ -336,16 +338,15 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("formatSignedPercent(outcome.pressure)");
     expect(source).toContain("目标 +${outcome.objectiveBonus}");
     expect(styles).toContain(".journey-command-actions");
-    expect(styles).toContain(".journey-action-queue");
+    expect(styles).toContain(".journey-action-deck");
+    expect(styles).toContain(".journey-action-queue-list button");
     expect(styles).toContain(".journey-command-dock-heading");
     expect(styles).toContain(".journey-route-intel");
     expect(styles).toContain(".journey-mobile-intel");
     expect(styles).toContain(".support-diagnosis-card");
     expect(styles).toContain(".support-source-grid");
     expect(styles).toContain(".facility-support-note");
-    expect(styles).toContain("top: 48px");
-    expect(styles).toContain("max-height: none");
-    expect(styles).toContain("overscroll-behavior: contain");
+    expect(styles).toContain(".journey-command-actions {\n    display: none;");
     expect(styles).not.toContain("max-height: 42vh");
   });
 

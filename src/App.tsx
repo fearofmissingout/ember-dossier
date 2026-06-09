@@ -3428,25 +3428,27 @@ function JourneyPanel({
             <small>{routeIntel.priorityHint}</small>
           </article>
         </div>
-        <div className="journey-action-queue" aria-label="当前操作清单">
+        <div className="journey-action-deck" id="journey-action-options" aria-label="手机端当前行动面板">
           <div className="journey-action-queue-heading">
-            <span>操作清单</span>
-            <strong>先看代价和收益，再点下方动作。</strong>
+            <span>本回合行动</span>
+            <strong>直接选择下一步</strong>
+            <small>每个选项都会推进旅途；先看结果和代价，再点动作。</small>
           </div>
           <div className="journey-action-queue-list">
-            {currentActionQueue.slice(0, 4).map((item, index) => (
-              <article className={item.tone} key={item.id}>
+            {currentActionQueue.map((item, index) => (
+              <button className={item.tone} key={item.id} type="button" onClick={item.onSelect}>
                 <b>{index + 1}</b>
                 <div>
                   <span>{item.result}</span>
                   <strong>{item.label}</strong>
                   <small>{item.detail}</small>
+                  <em>{item.body}</em>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </div>
-        <div className="journey-command-actions" id="journey-action-options" aria-label="当前可执行操作">
+        <div className="journey-command-actions" aria-label="当前可执行操作">
           <div className="journey-command-dock-heading" aria-label="当前行动栏说明">
             <span>本回合可选</span>
             <strong>{actionGuide.primaryAction}</strong>

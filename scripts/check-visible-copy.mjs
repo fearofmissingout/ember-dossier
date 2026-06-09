@@ -55,7 +55,7 @@ const requiredChineseAnchors = [
   "发布准入检查",
   "浏览器冒烟清单",
   "本回合指挥摘要",
-  "当前操作清单"
+  "手机端当前行动面板"
 ];
 
 const additionalRequiredChineseAnchors = [
@@ -82,7 +82,7 @@ const additionalRequiredChineseAnchors = [
   "游客房间",
   "房间共享",
   "按顺序补齐邀请",
-  "先看代价和收益"
+  "直接选择下一步"
 ];
 
 const bannedVisibleEnglish = [
