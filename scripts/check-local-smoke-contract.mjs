@@ -4,6 +4,7 @@ import { localSmokeChecklist } from "./print-local-smoke.mjs";
 const requiredCoverage = [
   "auth",
   "baseOverview",
+  "baseEventForecast",
   "facilityDevelopment",
   "memberCooperation",
   "expeditionPrep",

@@ -172,6 +172,7 @@ const requiredChecks = [
     id: "smoke contract: complete local acceptance",
     test: ({ smokeContract }) =>
       smokeContract.includes("requiredCoverage") &&
+      smokeContract.includes("baseEventForecast") &&
       smokeContract.includes("facilityDevelopment") &&
       smokeContract.includes("memberCooperation") &&
       smokeContract.includes("combatOrEvent") &&

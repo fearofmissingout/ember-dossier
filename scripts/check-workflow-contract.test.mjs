@@ -96,7 +96,7 @@ http://localhost:5173/?room=playtest-smoke
 数据库不可用
 `,
     smokeContract: `
-const requiredCoverage = ["facilityDevelopment", "memberCooperation", "combatOrEvent", "databaseFallback"];
+const requiredCoverage = ["baseEventForecast", "facilityDevelopment", "memberCooperation", "combatOrEvent", "databaseFallback"];
 `,
     workflow: `
 - name: Local iteration gates

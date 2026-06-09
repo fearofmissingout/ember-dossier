@@ -4,6 +4,7 @@ export const localSmokeChecklist = {
   coverage: [
     "auth",
     "baseOverview",
+    "baseEventForecast",
     "facilityDevelopment",
     "memberCooperation",
     "expeditionPrep",
@@ -15,6 +16,7 @@ export const localSmokeChecklist = {
   ],
   paths: [
     "登录或游客进入 -> 基地总览",
+    "基地事件预判 -> 下一事件、推荐反制、预计结果和去安排反制",
     "基地经营优先级 -> 处理补给、伤病或建设",
     "设施发展 -> 建设路线、升级收益、恢复支援",
     "多人协作 -> 成员页、房间协作计划、捐入优先级和邀请链接",
@@ -29,7 +31,7 @@ export const localSmokeChecklist = {
     "本地浏览器冒烟：",
     "- 地址：",
     "- 视口：桌面 / 手机",
-    "- 路径：登录或游客进入 -> 基地 -> 成员协作 -> 设施发展 -> 出征准备 -> 出征过程 -> 战斗或事件 -> 结算 -> 回基地",
+    "- 路径：登录或游客进入 -> 基地事件预判 -> 基地 -> 成员协作 -> 设施发展 -> 出征准备 -> 出征过程 -> 战斗或事件 -> 结算 -> 回基地",
     "- 结果：",
     "- 发现问题："
   ]

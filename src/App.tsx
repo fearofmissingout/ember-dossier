@@ -1837,6 +1837,10 @@ function Overview({
                 <span>预计结果</span>
                 <strong>{dayPreview.event.likelyOutcome}</strong>
                 <small>{dayPreview.event.advice}</small>
+                <button type="button" onClick={() => handleTaskAction("shifts")}>
+                  <Shield size={16} aria-hidden="true" />
+                  去安排反制
+                </button>
               </div>
             </div>
           </div>

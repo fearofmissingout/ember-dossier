@@ -20,6 +20,16 @@ describe("local smoke contract", () => {
     expect(report.missing).toContain("coverage: combatOrEvent");
   });
 
+  test("reports drift when base event forecasting drops out of local smoke coverage", () => {
+    const report = createLocalSmokeContractReport({
+      ...localSmokeChecklist,
+      coverage: localSmokeChecklist.coverage.filter((item) => item !== "baseEventForecast")
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toContain("coverage: baseEventForecast");
+  });
+
   test("reports drift when mobile acceptance is removed from the report template", () => {
     const report = createLocalSmokeContractReport({
       ...localSmokeChecklist,

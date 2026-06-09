@@ -1636,6 +1636,25 @@ button:disabled {
   line-height: 1.35;
 }
 
+.base-event-preview button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  padding: 7px 9px;
+  border: 1px solid #7e6030;
+  border-radius: 7px;
+  background: #3a2b1a;
+  color: #fff8e8;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.base-event-preview button:hover {
+  transform: translateY(-1px);
+}
+
 .base-expedition-briefing {
   display: grid;
   gap: 10px;
