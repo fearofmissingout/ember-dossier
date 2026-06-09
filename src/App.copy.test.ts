@@ -142,6 +142,8 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("aria-label=\"远征行动台\"");
+    expect(source).toContain("aria-label=\"远征总控条\"");
+    expect(source).toContain("commandHudItems");
     expect(source).toContain("aria-label=\"本回合指挥摘要\"");
     expect(source).toContain("aria-label=\"当前可执行操作\"");
     expect(source).toContain("aria-label=\"最近行动结果\"");
@@ -204,6 +206,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-vitals-strip");
     expect(source).toContain("journey-detail-grid");
     expect(styles).toContain(".journey-command-center");
+    expect(styles).toContain(".journey-command-hud");
+    expect(styles).toContain(".journey-command-hud article.danger");
     expect(styles).toContain(".journey-turn-summary");
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-action-deck");

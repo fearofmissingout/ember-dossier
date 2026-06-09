@@ -4562,6 +4562,64 @@ button:disabled {
   background: #fff0ea;
 }
 
+.journey-command-hud {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 1fr 1.1fr;
+  gap: 8px;
+}
+
+.journey-command-hud article {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid rgba(126, 98, 57, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.82);
+}
+
+.journey-command-hud article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.journey-command-hud article.warning,
+.journey-command-hud article.standard {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.journey-command-hud article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.journey-command-hud span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-command-hud strong,
+.journey-command-hud small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-command-hud strong {
+  color: #34281a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.journey-command-hud small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .journey-action-guide {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -9971,6 +10029,17 @@ button:disabled {
 
   .journey-action-guide {
     grid-template-columns: 1fr;
+  }
+
+  .journey-command-hud {
+    grid-template-columns: repeat(4, minmax(118px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 2px;
+    overscroll-behavior-x: contain;
+  }
+
+  .journey-command-hud article {
+    min-height: 72px;
   }
 
   .journey-action-guide b {

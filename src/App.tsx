@@ -3563,10 +3563,45 @@ function JourneyPanel({
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  const commandHudItems = [
+    {
+      detail: nodeTypeLabel,
+      label: "当前",
+      tone: pendingRoad || journey.combat ? "warning" : "safe",
+      value: nodeTitle
+    },
+    {
+      detail: routePace.etaLabel,
+      label: "路线",
+      tone: routePace.remainingStops <= 1 ? "safe" : "standard",
+      value: `${routePace.progressPercent}%`
+    },
+    {
+      detail: outlook.text,
+      label: "队伍",
+      tone: outlook.tone,
+      value: outlook.label
+    },
+    {
+      detail: nextCommandHint,
+      label: "下一步",
+      tone: actionGuide.tone,
+      value: actionGuide.primaryAction
+    }
+  ];
 
   return (
     <div className="journey-panel">
       <section className={`journey-command-center ${actionGuide.tone}`} aria-label="远征行动台">
+        <div className="journey-command-hud" aria-label="远征总控条">
+          {commandHudItems.map((item) => (
+            <article className={item.tone} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
         <div className={`journey-action-guide ${actionGuide.tone}`} aria-label="出征行动指引">
           <div>
             <span>{actionGuide.label}</span>
