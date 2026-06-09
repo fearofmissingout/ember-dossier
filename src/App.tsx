@@ -1727,6 +1727,7 @@ function Overview({
           </div>
           <strong>{objective.repairedParts}/{objective.requiredParts}</strong>
         </div>
+        <BaseVistaArtwork danger={session.room.base.danger} day={session.room.base.day} morale={session.room.base.morale} />
         <div className="metric-pair">
           <span>剩余期限</span>
           <strong>{daysRemaining} 天</strong>
@@ -3089,6 +3090,7 @@ function ExpeditionPrep({
                 type="button"
                 onClick={() => onLocationChange(location.id)}
               >
+                <LocationArtwork compact family={location.family} risk={location.risk} selected={selected} />
                 <div className="location-choice-heading">
                   <div>
                     <span>{locationFamilyLabels[location.family]}</span>
@@ -3188,6 +3190,7 @@ function ExpeditionPrep({
           </div>
           <Activity size={24} aria-hidden="true" />
         </div>
+        <LocationArtwork family={selectedLocation.family} risk={selectedLocation.risk} selected />
         <p>{selectedLocation.dossier}</p>
         <div
           className={`route-briefing-card ${
@@ -5070,6 +5073,52 @@ function roadToneLabel(tone: "find" | "hazard" | "road") {
     road: "路口"
   };
   return labels[tone];
+}
+
+function BaseVistaArtwork({ danger, day, morale }: { danger: number; day: number; morale: number }) {
+  const dangerTone = danger >= 62 ? "danger" : danger >= 34 ? "warning" : "safe";
+  const moraleTone = morale >= 62 ? "high" : morale >= 36 ? "steady" : "low";
+  const dayTone = `day-${day % 3}`;
+
+  return (
+    <div className={`base-vista-art ${dangerTone} ${moraleTone} ${dayTone}`} aria-hidden="true">
+      <i className="base-vista-sky" />
+      <i className="base-vista-haze" />
+      <i className="base-vista-wall" />
+      <i className="base-vista-gate" />
+      <i className="base-vista-tower left" />
+      <i className="base-vista-tower right" />
+      <i className="base-vista-dish" />
+      <i className="base-vista-beacon" />
+      <i className="base-vista-ground" />
+    </div>
+  );
+}
+
+function LocationArtwork({
+  compact = false,
+  family,
+  risk,
+  selected = false
+}: {
+  compact?: boolean;
+  family: LocationFamily;
+  risk: number;
+  selected?: boolean;
+}) {
+  const riskTone = risk >= 62 ? "high-risk" : risk >= 34 ? "mid-risk" : "low-risk";
+
+  return (
+    <div className={`location-art ${family} ${riskTone} ${selected ? "selected" : ""} ${compact ? "compact" : ""}`} aria-hidden="true">
+      <i className="location-art-sky" />
+      <i className="location-art-glow" />
+      <i className="location-art-backdrop" />
+      <i className="location-art-silhouette" />
+      <i className="location-art-prop" />
+      <i className="location-art-foreground" />
+      <i className="location-art-signal" />
+    </div>
+  );
 }
 
 function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {
