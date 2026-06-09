@@ -5,6 +5,7 @@ import {
   calculateCarryBurden,
   campOptionOutcome,
   combatActionPreview,
+  combatLootPlan,
   combatRoundPlan,
   combatThreatPreview,
   createJourney,
@@ -2319,6 +2320,37 @@ describe("journey route generation", () => {
     expect(dressed.battleScars).toBeLessThan(won.battleScars);
     expect(dressed.bonusReward.medicine).toBeGreaterThan(won.bonusReward.medicine);
     expect(dressed.logs.join("\n")).toContain("战伤 -1");
+  });
+
+  test("combat loot plan recommends treatment or evacuation from current risk", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "loot-plan-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 3, food: 1, fuel: 0, materials: 0, medicine: 0, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      75
+    );
+    journey.currentNodeIndex = 1;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 75);
+    if (journey.combat) {
+      journey.combat.enemyHp = 3;
+      journey.combat.squadHp = Math.floor(journey.combat.squadMaxHp * 0.25);
+    }
+
+    const won = resolveCombatRound(journey, "strike", squad, 75);
+    const treatmentPlan = combatLootPlan(won);
+    const pressurePlan = combatLootPlan({ ...won, battleScars: 0, pressure: 82, condition: { ...won.condition, fatigue: 70 } });
+
+    expect(treatmentPlan.items[0].id).toBe("medicine");
+    expect(treatmentPlan.summary).toContain("先处理战伤");
+    expect(pressurePlan.items[0].id).toBe("evade");
+    expect(pressurePlan.summary).toContain("先保住返程安全");
   });
 
   test("extraction preview compares early return with full extraction rewards and objective progress", () => {

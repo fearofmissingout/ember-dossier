@@ -502,6 +502,21 @@ export type JourneyCombatLootOption = {
   text: string;
 };
 
+export type JourneyCombatLootPlanItem = {
+  detail: string;
+  id: JourneyCombatLootAction;
+  label: string;
+  priority: "recommended" | "situational" | "risky";
+  score: number;
+  value: string;
+};
+
+export type JourneyCombatLootPlan = {
+  headline: string;
+  items: JourneyCombatLootPlanItem[];
+  summary: string;
+};
+
 export type JourneyBaseCommandOption = {
   canUse: boolean;
   effect: string;
@@ -4353,6 +4368,70 @@ export function combatLootOutcome(option: JourneyCombatLootOption, support: Expe
     reward,
     rollShift,
     supportText: notes.join(", ")
+  };
+}
+
+export function combatLootPlan(journey: JourneyState): JourneyCombatLootPlan {
+  const pending = journey.pendingCombatLoot;
+  const pressureUrgency = journey.pressure >= 70 ? 8 : journey.pressure >= 55 ? 4 : 0;
+  const scarUrgency = journey.battleScars > 1 ? 9 : journey.battleScars > 0 ? 5 : 0;
+  const objectiveUrgency = journey.objectiveBonus <= 0 ? 5 : journey.objectiveBonus < 3 ? 3 : 0;
+  const rewardWeight = journey.locationFamily === "resources" ? 2 : 1;
+  const items = combatLootList
+    .map((option) => {
+      const outcome = combatLootOutcome(option, journey.support);
+      const rewardScore = resourceKeys.reduce((sum, key) => sum + outcome.reward[key], 0) * rewardWeight;
+      const supportScore = outcome.supportText ? 2 : 0;
+      const score =
+        rewardScore +
+        supportScore +
+        outcome.objectiveBonus * (4 + objectiveUrgency) +
+        outcome.battleScarRelief * (3 + scarUrgency) +
+        Math.max(0, -outcome.pressure) * (journey.pressure >= 55 ? 1.4 : 0.7) +
+        Math.max(0, -outcome.fatigue) * (journey.condition.fatigue >= 45 ? 0.8 : 0.35) -
+        Math.max(0, outcome.pressure) * (journey.pressure >= 65 ? 1.2 : 0.45) -
+        Math.max(0, outcome.fatigue) * (journey.condition.fatigue >= 60 ? 0.7 : 0.25);
+      const valueParts = [
+        formatBundle(outcome.reward),
+        outcome.objectiveBonus > 0 ? `目标 +${outcome.objectiveBonus}` : "",
+        outcome.battleScarRelief > 0 ? `伤痕 -${outcome.battleScarRelief}` : "",
+        outcome.pressure !== 0 ? `压力 ${formatSignedPercent(outcome.pressure)}` : "",
+        outcome.fatigue !== 0 ? `疲劳 ${formatSignedNumber(outcome.fatigue)}` : ""
+      ].filter(Boolean);
+      const riskNotes = [
+        outcome.pressure > 0 && journey.pressure >= 65 ? "当前压力偏高，这个选择会让返程更危险。" : "",
+        outcome.fatigue > 0 && journey.condition.fatigue >= 60 ? "队伍疲劳偏高，继续搜刮可能拖垮状态。" : "",
+        outcome.battleScarRelief > 0 && journey.battleScars > 0 ? "能立刻压低战斗伤痕，减少回基地治疗压力。" : "",
+        outcome.objectiveBonus > 0 ? "能把战斗结果转化为房间目标线索。" : "",
+        outcome.supportText ? `设施支援：${outcome.supportText}。` : ""
+      ].filter(Boolean);
+
+      return {
+        detail: riskNotes.join(" ") || option.text,
+        id: option.id,
+        label: option.label,
+        priority: "situational" as JourneyCombatLootPlanItem["priority"],
+        score,
+        value: valueParts.join(" / ") || "保持现状"
+      };
+    })
+    .sort((left, right) => right.score - left.score)
+    .map((item, index, sorted) => ({
+      ...item,
+      priority:
+        index === 0
+          ? ("recommended" as const)
+          : item.score < sorted[0].score - 8 || (journey.pressure >= 70 && item.value.includes("压力 +"))
+            ? ("risky" as const)
+            : ("situational" as const)
+    }));
+  const top = items[0];
+  const reason = scarUrgency > 0 ? "先处理战伤" : pressureUrgency > 0 ? "先保住返程安全" : objectiveUrgency > 0 ? "优先补目标线索" : "按当前路线收益最大化";
+
+  return {
+    headline: pending ? `${pending.enemyName} 战后处置：${top?.label ?? "整理战场"}` : "战后处置未触发",
+    items,
+    summary: `${reason}。${top ? top.detail : "击败敌人后会在这里比较四种战利品处理方式。"}`
   };
 }
 

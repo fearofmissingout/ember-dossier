@@ -59,6 +59,7 @@ import {
   combatActionPreview,
   combatRoundPlan,
   combatThreatPreview,
+  combatLootPlan,
   combatLootOutcome,
   combatLootList,
   createCombatForNode,
@@ -3065,6 +3066,7 @@ function JourneyPanel({
   const objectivePreview = journeyObjectivePreview(journey, objective);
   const threatPreview = combatThreatPreview(journey);
   const roundPlan = combatRoundPlan(journey);
+  const lootPlan = journey.pendingCombatLoot ? combatLootPlan(journey) : null;
   const combatActionPreviews = journey.combat
     ? combatActionList.flatMap((action) => {
         const preview = combatActionPreview(journey, action, squad, readiness);
@@ -3792,6 +3794,25 @@ function JourneyPanel({
               <strong>{journey.pendingCombatLoot.enemyName} 已倒下</strong>
               <span>获得战利标记：{journey.pendingCombatLoot.trophy}</span>
             </div>
+            {lootPlan && (
+              <div className="combat-loot-plan" aria-label="战后处置建议">
+                <div className="combat-loot-plan-heading">
+                  <span>处置建议</span>
+                  <strong>{lootPlan.headline}</strong>
+                  <small>{lootPlan.summary}</small>
+                </div>
+                <div className="combat-loot-plan-grid">
+                  {lootPlan.items.map((item) => (
+                    <article className={item.priority} key={`loot-plan-${item.id}`}>
+                      <span>{item.priority === "recommended" ? "推荐" : item.priority === "risky" ? "高风险" : "可选"}</span>
+                      <strong>{item.label}</strong>
+                      <small>{item.value}</small>
+                      <small>{item.detail}</small>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
             <CombatReplayStrip records={journey.combatHistory} />
             <div className="combat-loot-grid">
               {combatLootList.map((option) => {

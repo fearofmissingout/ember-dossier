@@ -6090,6 +6090,91 @@ button:disabled {
   font-size: 12px;
 }
 
+.combat-loot-plan {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.combat-loot-plan-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.combat-loot-plan-heading span,
+.combat-loot-plan-grid span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.combat-loot-plan-heading strong,
+.combat-loot-plan-heading small,
+.combat-loot-plan-grid strong,
+.combat-loot-plan-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.combat-loot-plan-heading strong {
+  color: #3d3024;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.combat-loot-plan-heading small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.combat-loot-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.combat-loot-plan-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 96px;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #d6c4a3;
+  border-radius: 8px;
+  background: #fffdf7;
+}
+
+.combat-loot-plan-grid article.recommended {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.combat-loot-plan-grid article.risky {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.combat-loot-plan-grid strong {
+  color: #34281a;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.combat-loot-plan-grid small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.32;
+}
+
 .combat-loot-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8534,7 +8619,8 @@ button:disabled {
 
   .combat-mobile-bars,
   .combat-mobile-intent,
-  .combat-action-readout {
+  .combat-action-readout,
+  .combat-loot-plan-grid {
     grid-template-columns: 1fr;
   }
 
