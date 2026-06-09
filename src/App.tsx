@@ -28,6 +28,7 @@ import {
   applyContribution,
   baseDayPreview,
   baseCommandBriefing,
+  baseDevelopmentBriefing,
   assignSurvivorToRoom,
   accountBaseDevelopmentPlan,
   accountGrowthBoundary,
@@ -1462,6 +1463,7 @@ export default function App() {
             state={state}
             baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, "facilities")}
             developmentPlan={baseDevelopmentPlan(session)}
+            developmentBriefing={baseDevelopmentBriefing(session)}
             developmentRoute={baseDevelopmentRoute(session)}
             onUpgrade={upgradeRoomFacility}
           />
@@ -5470,12 +5472,14 @@ function Facilities({
   state,
   baseFeedback,
   developmentPlan,
+  developmentBriefing,
   developmentRoute,
   onUpgrade
 }: {
   state: GameState;
   baseFeedback: BaseActionFeedback | null;
   developmentPlan: BaseDevelopmentPlan;
+  developmentBriefing: ReturnType<typeof baseDevelopmentBriefing>;
   developmentRoute: BaseDevelopmentRoute;
   onUpgrade: (id: string) => void;
 }) {
@@ -5493,6 +5497,16 @@ function Facilities({
               ? "下一轮建造周期推荐项目"
               : "所有设施已经完全发展"}
           </small>
+        </div>
+        <div className="development-briefing-grid" aria-label="基地发展作战简报">
+          {developmentBriefing.map((item) => (
+            <article className={item.tone} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <b>{item.value}</b>
+              <small>{item.body}</small>
+            </article>
+          ))}
         </div>
         <div className="development-route-board" aria-label="基地建设路线板">
           <div className="development-route-heading">

@@ -876,6 +876,15 @@ export type BaseDevelopmentRoute = {
   summary: string;
 };
 
+export type BaseDevelopmentBriefingItem = {
+  body: string;
+  id: "priority" | "materials" | "expedition" | "ceiling";
+  label: string;
+  tone: "ready" | "blocked" | "stable";
+  title: string;
+  value: string;
+};
+
 export type BaseDayPreview = {
   dangerDelta: number;
   dangerRelief: number;
@@ -1585,6 +1594,96 @@ export function baseDevelopmentRoute(session: PlaytestSession): BaseDevelopmentR
           ? `建设路线：${readyCount} 项已满足材料，优先推进能接入出征的设施。`
           : "建设路线已完成，当前资源可转向出征和恢复。"
   };
+}
+
+export function baseDevelopmentBriefing(session: PlaytestSession): BaseDevelopmentBriefingItem[] {
+  const plan = baseDevelopmentPlan(session);
+  const route = baseDevelopmentRoute(session);
+  const primary = plan.recommended[0] ?? null;
+  const nextReady = plan.recommended.find((project) => project.canAfford) ?? null;
+  const expeditionProject =
+    plan.recommended.find((project) => project.expeditionStage.includes("战斗") || project.expeditionStage.includes("路线")) ?? primary;
+  const activeCount = plan.projects.filter((project) => project.action !== "Maxed").length;
+  const maxedCount = plan.projects.filter((project) => project.action === "Maxed").length;
+
+  if (!primary) {
+    return [
+      {
+        body: "房间设施已经到达当前阶段上限，材料可以转向出征补给、伤病恢复和个人基地成长。",
+        id: "priority",
+        label: "建设优先级",
+        title: "阶段完成",
+        tone: "stable",
+        value: "完成"
+      },
+      {
+        body: "没有新的材料缺口。下一轮主要验证高风险远征和多人协作稳定性。",
+        id: "materials",
+        label: "材料路线",
+        title: "材料可自由分配",
+        tone: "stable",
+        value: `${plan.materials}`
+      },
+      {
+        body: "现有设施支援已经完整接入路线、营地、商店和战斗。",
+        id: "expedition",
+        label: "出征收益",
+        title: "后勤线完整",
+        tone: "ready",
+        value: "全接入"
+      },
+      {
+        body: "当前阶段已无设施短板。可以把试玩重点转向更深的对局内容和长期成长。",
+        id: "ceiling",
+        label: "成长上限",
+        title: "设施已满",
+        tone: "stable",
+        value: `${maxedCount}/${plan.projects.length}`
+      }
+    ];
+  }
+
+  return [
+    {
+      body: primary.reason,
+      id: "priority",
+      label: "建设优先级",
+      title: `${primary.name} ${primary.canAfford ? "可推进" : "缺材料"}`,
+      tone: primary.canAfford ? "ready" : "blocked",
+      value: `Lv.${primary.nextLevel}`
+    },
+    {
+      body:
+        route.materialGap > 0
+          ? `推荐队列还缺 ${route.materialGap} 材料。下一次出征优先选择材料、拆解战利或安排修理班补材料。`
+          : nextReady
+            ? `${nextReady.name} 材料已备齐，先建设再出征可以立刻获得后勤收益。`
+            : "材料压力较低，可以按路线继续推进建设。",
+      id: "materials",
+      label: "材料路线",
+      title: route.materialGap > 0 ? "先补材料" : "材料已备",
+      tone: route.materialGap > 0 ? "blocked" : "ready",
+      value: route.materialGap > 0 ? `缺 ${route.materialGap}` : `${plan.materials}`
+    },
+    {
+      body: expeditionProject
+        ? `${expeditionProject.name} 会接入${expeditionProject.expeditionStage}：${expeditionProject.expeditionImpact}`
+        : "设施收益会进入出征准备、路线处理、营地恢复或战斗结算。",
+      id: "expedition",
+      label: "出征收益",
+      title: expeditionProject?.expeditionStage ?? "后勤支援",
+      tone: expeditionProject?.canAfford ? "ready" : "stable",
+      value: expeditionProject ? expeditionProject.name : "通用"
+    },
+    {
+      body: activeCount > 0 ? `仍有 ${activeCount} 项设施可发展，当前已有 ${maxedCount} 项到达上限。` : "设施路线已完成。",
+      id: "ceiling",
+      label: "成长上限",
+      title: activeCount > 0 ? "仍有成长空间" : "设施已满",
+      tone: activeCount > 0 ? "stable" : "ready",
+      value: `${maxedCount}/${plan.projects.length}`
+    }
+  ];
 }
 
 export function baseDayPreview(session: PlaytestSession): BaseDayPreview {

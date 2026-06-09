@@ -17,6 +17,7 @@ import {
   baseCommandBriefing,
   baseDayEventBreadth,
   baseDayPreview,
+  baseDevelopmentBriefing,
   baseDevelopmentPlan,
   baseDevelopmentRoute,
   baseRecoveryPlan,
@@ -622,6 +623,50 @@ describe("playtest room loop", () => {
     });
     expect(route.steps.some((step) => step.impact.includes("出征"))).toBe(true);
     expect(route.steps.some((step) => step.nextAction.includes("建议本轮"))).toBe(true);
+  });
+
+  test("base development briefing turns facility plans into operating priorities", () => {
+    const session = createStarterSession("user-a", "Alice", "development-briefing-room");
+    session.room.base.resources.materials = 6;
+
+    const briefing = baseDevelopmentBriefing(session);
+
+    expect(briefing.map((item) => item.id)).toEqual(["priority", "materials", "expedition", "ceiling"]);
+    expect(briefing[0]).toMatchObject({
+      id: "priority",
+      label: "建设优先级",
+      tone: "ready"
+    });
+    expect(briefing[1]).toMatchObject({
+      id: "materials",
+      label: "材料路线",
+      tone: "blocked"
+    });
+    expect(briefing[1].body).toContain("下一次出征");
+    expect(briefing[2].body).toContain("接入");
+    expect(briefing[3].value).toContain("/");
+  });
+
+  test("base development briefing explains when the facility route is capped", () => {
+    const session = createStarterSession("user-a", "Alice", "development-briefing-capped-room");
+    session.room.base.resources.materials = 30;
+    session.room.base.facilities.forEach((facility) => {
+      facility.level = 3;
+      facility.status = "stable";
+    });
+
+    const briefing = baseDevelopmentBriefing(session);
+
+    expect(briefing[0]).toMatchObject({
+      title: "阶段完成",
+      tone: "stable",
+      value: "完成"
+    });
+    expect(briefing[2]).toMatchObject({
+      title: "后勤线完整",
+      tone: "ready"
+    });
+    expect(briefing[3].body).toContain("对局内容");
   });
 
   test("summarizes urgent base tasks for supplies recovery shifts and upgrades", () => {

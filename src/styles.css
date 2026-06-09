@@ -7865,6 +7865,78 @@ button:disabled {
   gap: 8px;
 }
 
+.development-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.development-briefing-grid article {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 11px;
+  border: 1px solid #c9d4ad;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.development-briefing-grid span {
+  color: #526c38;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.development-briefing-grid strong,
+.development-briefing-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.development-briefing-grid strong {
+  padding-right: 50px;
+  color: #263727;
+  font-size: 14px;
+}
+
+.development-briefing-grid b {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 40px;
+  padding: 3px 6px;
+  border: 1px solid #c9d4ad;
+  border-radius: 999px;
+  background: #f7faef;
+  color: #33482c;
+  font-size: 11px;
+  text-align: center;
+}
+
+.development-briefing-grid small {
+  color: #5d654e;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.development-briefing-grid article.ready {
+  border-color: #8fb58d;
+  background: #eef7e9;
+}
+
+.development-briefing-grid article.blocked {
+  border-color: #d4a948;
+  background: #fff5d8;
+}
+
+.development-briefing-grid article.stable {
+  border-color: #d8c4a4;
+  background: #fff9eb;
+}
+
 .development-route-board {
   display: grid;
   gap: 10px;
@@ -9721,6 +9793,7 @@ button:disabled {
     .room-action-ladder-grid,
     .base-command-actions,
     .base-command-strip,
+    .development-briefing-grid,
     .development-queue-board,
     .development-route-steps,
     .march-forecast,
@@ -9990,8 +10063,9 @@ button:disabled {
     .base-return-plan-grid,
     .hardship-strip,
     .facility-impact-grid,
-    .development-queue-board,
-    .development-route-steps,
+  .development-queue-board,
+  .development-briefing-grid,
+  .development-route-steps,
     .development-project-strip,
     .member-summary-row,
     .playtest-checkpoint-grid,
