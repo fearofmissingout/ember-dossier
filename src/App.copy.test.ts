@@ -608,6 +608,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("pulse={roomCooperationPulse(session)}");
     expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
+    expect(source).toContain("roomCooperationRequests");
+    expect(source).toContain("aria-label=\"房间协作请求板\"");
+    expect(source).toContain("协作请求");
+    expect(source).toContain("请队友先补共享库存");
+    expect(source).toContain("请队友派幸存者入队");
     expect(source).toContain("aria-label=\"房间行动链\"");
     expect(source).toContain("roomActionLadder");
     expect(source).toContain("roomReadinessItemTargetView");
@@ -653,6 +658,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".room-launch-grid");
     expect(styles).toContain(".room-cooperation-pulse");
     expect(styles).toContain(".room-cooperation-pulse-grid");
+    expect(styles).toContain(".room-request-board");
+    expect(styles).toContain(".room-request-grid");
+    expect(styles).toContain(".room-request-grid button.urgent");
     expect(styles).toContain(".room-action-ladder");
     expect(styles).toContain(".room-action-ladder-grid");
     expect(styles).toContain(".ownership-boundary-card");

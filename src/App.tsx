@@ -5538,6 +5538,7 @@ function RoomMembers({
     targetView: roomReadinessItemTargetView(item.id)
   }));
   const launchTarget = roomReadinessItemTargetView(launchBriefing.primaryItemId);
+  const cooperationRequests = roomCooperationRequests(playtestReadiness, contributionPlan, summary);
 
   return (
     <section className="panel">
@@ -5588,6 +5589,23 @@ function RoomMembers({
               <strong>{item.value}</strong>
               <small>{item.detail}</small>
             </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="room-request-board" aria-label="房间协作请求板">
+        <div className="room-request-heading">
+          <span>协作请求</span>
+          <strong>{cooperationRequests.headline}</strong>
+          <small>{cooperationRequests.summary}</small>
+        </div>
+        <div className="room-request-grid">
+          {cooperationRequests.items.map((request) => (
+            <button className={request.tone} key={request.id} type="button" onClick={() => onNavigate(request.targetView)}>
+              <span>{request.label}</span>
+              <strong>{request.title}</strong>
+              <small>{request.detail}</small>
+            </button>
           ))}
         </div>
       </div>
@@ -5806,6 +5824,59 @@ function roomMemberPrimaryAction(member: RoomMemberSummary): { label: string; ti
   }
 
   return { label: "准备远征", title: "你的协作项已覆盖", view: "expedition" };
+}
+
+function roomCooperationRequests(
+  readiness: ReturnType<typeof roomPlaytestReadiness>,
+  contributionPlan: ReturnType<typeof roomContributionPlan>,
+  summary: RoomCooperationSummary
+) {
+  const items = readiness.items
+    .filter((item) => item.status !== "ready")
+    .slice(0, 4)
+    .map((item) => {
+      const targetView = roomReadinessItemTargetView(item.id);
+      const urgentContribution = item.id === "contribution" ? contributionPlan.items.find((plan) => plan.priority === "urgent") : null;
+      const detail = urgentContribution ? `${urgentContribution.label}：${urgentContribution.detail}` : item.detail;
+      const titleById: Record<typeof item.id, string> = {
+        contribution: "请队友先补共享库存",
+        expedition: "等缺口补齐后一起开局",
+        invite: "把房间链接发给朋友",
+        shifts: "请空闲队友认领留守班次",
+        squad: "请队友派幸存者入队"
+      };
+
+      return {
+        detail,
+        id: item.id,
+        label: item.status === "blocked" ? "优先请求" : "协作请求",
+        targetView,
+        title: titleById[item.id],
+        tone: item.status === "blocked" ? "urgent" : "todo"
+      };
+    });
+
+  if (items.length === 0) {
+    items.push({
+      detail: "共享库存、编队、班次和出征条件都已覆盖，可以进入远征准备。",
+      id: "expedition",
+      label: "准备完成",
+      targetView: "expedition" as ViewKey,
+      title: "邀请大家确认本次路线",
+      tone: "ready"
+    });
+  }
+
+  return {
+    headline:
+      readiness.status === "ready"
+        ? "没有关键缺口，可以协调出征。"
+        : readiness.status === "blocked"
+          ? "先把阻塞项发给队友处理。"
+          : "还有几项协作请求可以分出去。",
+    items,
+    summary: `当前成员 ${summary.memberCount} 人，房间检查 ${readiness.readyCount}/${readiness.items.length} 项就绪。`
+  };
 }
 
 function roomReadinessTargetView(readiness: ReturnType<typeof roomPlaytestReadiness>): ViewKey {
