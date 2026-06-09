@@ -612,6 +612,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("npm run iteration:check");
     expect(source).toContain("playtestCheckpointLabel");
     expect(source).toContain("设施升级");
+    expect(source).toContain("设施协同");
     expect(source).toContain("伤病治疗");
     expect(source).toContain("多人协作");
     expect(source).toContain("回合战斗");

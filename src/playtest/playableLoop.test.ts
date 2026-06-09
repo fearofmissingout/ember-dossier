@@ -11,6 +11,7 @@ describe("playable loop smoke", () => {
       "base-command",
       "facility-upgraded",
       "facility-doctrine",
+      "facility-synergy",
       "facility-stage",
       "logistics-diagnosis",
       "survivor-treated",
@@ -32,6 +33,9 @@ describe("playable loop smoke", () => {
     expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
     expect(smoke.facilityFeedTitle).toContain("设施");
     expect(smoke.doctrineDetail).toContain("搜刮套件");
+    expect(smoke.facilitySynergyDetail).toContain("设施协同");
+    expect(smoke.facilitySynergyDetail).toContain("恢复线:active");
+    expect(smoke.facilitySynergyDetail).toContain("搜刮线:active");
     expect(smoke.facilityStageDetail).toContain("战斗医疗");
     expect(smoke.logisticsDiagnosisDetail).toContain("后勤诊断");
     expect(smoke.treatmentFeedTitle).toContain("治疗");

@@ -7,7 +7,7 @@ describe("local browser smoke checklist", () => {
 
     expect(localSmokeChecklist.address).toBe("http://localhost:5173/?room=playtest-smoke");
     expect(localSmokeChecklist.coverage).toEqual(
-      expect.arrayContaining(["auth", "baseEventForecast", "facilityDevelopment", "memberCooperation", "combatOrEvent", "databaseFallback"])
+      expect.arrayContaining(["auth", "baseEventForecast", "facilityDevelopment", "facilitySynergy", "memberCooperation", "combatOrEvent", "databaseFallback"])
     );
     expect(text).toContain("本地浏览器冒烟清单");
     expect(text).toContain("npm run dev");

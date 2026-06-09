@@ -9,7 +9,14 @@ import {
   type JourneyCombatRoundPlan,
   type JourneyCombatRoundRecord
 } from "./journey";
-import { expeditionDoctrineForFacility, expeditionSupportDiagnosis, supportFromAccountBase, supportFromFacilities, survivorGrowthPlan } from "./progression";
+import {
+  expeditionDoctrineForFacility,
+  expeditionSupportDiagnosis,
+  facilitySynergyPlan,
+  supportFromAccountBase,
+  supportFromFacilities,
+  survivorGrowthPlan
+} from "./progression";
 import {
   applyContribution,
   assignSurvivorToRoom,
@@ -40,6 +47,7 @@ export type PlayableLoopCheckpointId =
   | "base-command"
   | "facility-upgraded"
   | "facility-doctrine"
+  | "facility-synergy"
   | "facility-stage"
   | "logistics-diagnosis"
   | "survivor-treated"
@@ -74,6 +82,7 @@ export type PlayableLoopSmoke = {
   doctrineDetail: string;
   facilityStageDetail: string;
   facilityFeedTitle: string;
+  facilitySynergyDetail: string;
   logisticsDiagnosisDetail: string;
   journeyChoiceDetail: string;
   memberGuidanceDetail: string;
@@ -103,6 +112,8 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   const workshopDoctrine = expeditionDoctrineForFacility("workshop");
   const doctrineDetail = workshopDoctrine ? `${workshopDoctrine.label}：${workshopDoctrine.effect}` : "工坊没有出征方针";
   const facilityFeedTitle = session.room.feed[0]?.title ?? "";
+  const synergyPlan = facilitySynergyPlan(session.room.base.facilities);
+  const facilitySynergyDetail = `${synergyPlan.summary} / ${synergyPlan.items.map((item) => `${item.label}:${item.status}`).join(" / ")}`;
   const logisticsDiagnosis = expeditionSupportDiagnosis({
     account: supportFromAccountBase(session.account.base),
     facility: supportFromFacilities(session.room.base.facilities, "salvage-rig"),
@@ -266,6 +277,14 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: Boolean(workshopDoctrine && workshopDoctrine.id === "salvage-rig" && afterWorkshopLevel > 0)
     },
     {
+      detail: facilitySynergyDetail,
+      id: "facility-synergy",
+      ok:
+        synergyPlan.activeCount > 0 &&
+        synergyPlan.items.some((item) => item.id === "recovery-line" && item.status === "active") &&
+        synergyPlan.items.some((item) => item.id === "salvage-line" && item.status === "active")
+    },
+    {
       detail: facilityStageDetail,
       id: "facility-stage",
       ok:
@@ -383,6 +402,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     doctrineDetail,
     facilityStageDetail,
     facilityFeedTitle,
+    facilitySynergyDetail,
     journeyChoiceDetail,
     logisticsDiagnosisDetail,
     memberGuidanceDetail,

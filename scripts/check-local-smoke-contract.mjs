@@ -6,6 +6,7 @@ const requiredCoverage = [
   "baseOverview",
   "baseEventForecast",
   "facilityDevelopment",
+  "facilitySynergy",
   "memberCooperation",
   "expeditionPrep",
   "journeyProgress",

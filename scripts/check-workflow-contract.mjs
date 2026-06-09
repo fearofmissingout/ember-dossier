@@ -178,6 +178,7 @@ const requiredChecks = [
       smokeContract.includes("requiredCoverage") &&
       smokeContract.includes("baseEventForecast") &&
       smokeContract.includes("facilityDevelopment") &&
+      smokeContract.includes("facilitySynergy") &&
       smokeContract.includes("memberCooperation") &&
       smokeContract.includes("combatOrEvent") &&
       smokeContract.includes("databaseFallback")

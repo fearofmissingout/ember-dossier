@@ -6583,6 +6583,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "base-command": "基地待办",
     "facility-doctrine": "设施方针",
     "facility-stage": "出征接入",
+    "facility-synergy": "设施协同",
     "facility-upgraded": "设施升级",
     "logistics-diagnosis": "后勤诊断",
     "journey-choice-preview": "路途选择",
