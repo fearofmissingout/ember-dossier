@@ -98,6 +98,23 @@ export type FeedExpeditionDebrief = {
   summary: string;
 };
 
+export type FeedNextRunPlanItem = {
+  detail: string;
+  id: "route" | "risk" | "loadout" | "base";
+  label: string;
+  tone: "safe" | "warning" | "blocked";
+  value: string;
+};
+
+export type FeedNextRunPlan = {
+  hasPlan: boolean;
+  headline: string;
+  items: FeedNextRunPlanItem[];
+  primaryFocus: string;
+  summary: string;
+  tone: "safe" | "warning" | "blocked";
+};
+
 const categoryLabels: Record<FeedReportTimelineCategory, string> = {
   camp: "营地",
   combat: "战斗",
@@ -451,6 +468,73 @@ export function summarizeFeedExpeditionDebrief(item: FeedItem): FeedExpeditionDe
   };
 }
 
+export function summarizeFeedNextRunPlan(item: FeedItem): FeedNextRunPlan {
+  if (item.kind !== "report") {
+    return emptyNextRunPlan();
+  }
+
+  const ledger = summarizeFeedReturnLedger(item);
+  const settlement = summarizeFeedReportSettlement(item);
+  const debrief = summarizeFeedExpeditionDebrief(item);
+  const timeline = summarizeFeedReportTimeline(item);
+  if (!ledger.hasLedger && !settlement.hasSettlement && !debrief.hasDebrief && !timeline.hasProcess) {
+    return emptyNextRunPlan();
+  }
+
+  const injuryRisk = ledger.injuries || settlement.risk.find((entry) => /伤|疲劳|压力净变化 \+/.test(entry)) || "";
+  const objectiveText = ledger.objective || settlement.objective[0] || "";
+  const earlyReturn = ledger.extraction === "提前返程";
+  const combatCount = timeline.steps.filter((step) => step.category === "combat").length;
+  const noObjectiveProgress = !objectiveText || /\+0/.test(objectiveText);
+
+  const routeTone = noObjectiveProgress ? "warning" : "safe";
+  const riskTone = injuryRisk || earlyReturn ? (earlyReturn ? "blocked" : "warning") : "safe";
+  const loadoutTone = earlyReturn || combatCount > 0 ? "warning" : "safe";
+  const baseTone = injuryRisk || noObjectiveProgress ? "warning" : "safe";
+
+  const items: FeedNextRunPlanItem[] = [
+    {
+      detail: noObjectiveProgress ? "上一轮目标推进不足，优先找线索、目标或可配合电台的地点。" : "上一轮目标有推进，可以继续同类地点扩大收益。",
+      id: "route",
+      label: "路线方向",
+      tone: routeTone,
+      value: noObjectiveProgress ? "补目标线索" : "延续收益路线"
+    },
+    {
+      detail: earlyReturn ? "提前返程说明压力或补给余量不足，下一轮先用谨慎策略。" : injuryRisk ? "队伍有伤病或压力风险，下一轮先压低波动。" : "队伍状态可承受标准推进。",
+      id: "risk",
+      label: "风险策略",
+      tone: riskTone,
+      value: earlyReturn || injuryRisk ? "谨慎出发" : "标准推进"
+    },
+    {
+      detail: combatCount > 0 ? "上一轮发生战斗，弹药和药品要优先带够。" : earlyReturn ? "优先带水、食物和药品，把路线走完整。" : "保留一点材料或燃料，用于路上事件和商店。",
+      id: "loadout",
+      label: "补给重点",
+      tone: loadoutTone,
+      value: combatCount > 0 ? "弹药 / 药品" : earlyReturn ? "水 / 食物 / 药品" : "灵活补给"
+    },
+    {
+      detail: injuryRisk ? "先处理伤病，再出征；若目标推进不足，同步安排修理班或升级电台。" : noObjectiveProgress ? "安排修理班、电台或侦察支援，让下一次带回目标推进。" : "基地循环稳定，可以把资源投入设施和下一次编队。",
+      id: "base",
+      label: "基地准备",
+      tone: baseTone,
+      value: injuryRisk ? "治疗优先" : noObjectiveProgress ? "补目标支援" : "继续建设"
+    }
+  ];
+  const tone = items.some((item) => item.tone === "blocked") ? "blocked" : items.some((item) => item.tone === "warning") ? "warning" : "safe";
+  const primaryFocus = items.find((item) => item.tone === "blocked")?.value ?? items.find((item) => item.tone === "warning")?.value ?? items[0]?.value ?? "继续出征";
+
+  return {
+    hasPlan: true,
+    headline: nextRunPlanHeadline(tone),
+    items,
+    primaryFocus,
+    summary: `下一轮重点：${items.map((item) => `${item.label} ${item.value}`).join(" / ")}`,
+    tone
+  };
+}
+
 function emptyReturnPulse(): FeedReturnPulse {
   return {
     hasPulse: false,
@@ -458,6 +542,17 @@ function emptyReturnPulse(): FeedReturnPulse {
     items: [],
     nextAction: null,
     summary: "暂无归队复盘",
+    tone: "safe"
+  };
+}
+
+function emptyNextRunPlan(): FeedNextRunPlan {
+  return {
+    hasPlan: false,
+    headline: "暂无下一轮预案",
+    items: [],
+    primaryFocus: "等待战报",
+    summary: "暂无下一轮预案",
     tone: "safe"
   };
 }
@@ -530,6 +625,18 @@ function debriefHeadline(advice: FeedExpeditionDebriefAdvice[]) {
   }
 
   return "本轮节奏稳定，可以继续扩大收益。";
+}
+
+function nextRunPlanHeadline(tone: FeedNextRunPlan["tone"]) {
+  if (tone === "blocked") {
+    return "下一轮先降低风险，把路线走完整。";
+  }
+
+  if (tone === "warning") {
+    return "下一轮先补短板，再扩大收益。";
+  }
+
+  return "下一轮可以延续当前节奏。";
 }
 
 function returnPulseDetail(

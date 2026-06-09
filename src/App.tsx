@@ -142,6 +142,7 @@ import {
   summarizeFeedBaseReturnPlan,
   summarizeFeedExpeditionDebrief,
   summarizeFeedGrowthRoadmap,
+  summarizeFeedNextRunPlan,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
   summarizeFeedReturnPulse,
@@ -5321,6 +5322,7 @@ function Reports({
   const latestReport = latestReportId ? feed.find((item) => item.id === latestReportId) : null;
   const baseReturnPlan = latestReport ? summarizeFeedBaseReturnPlan(latestReport) : null;
   const returnPulse = latestReport ? summarizeFeedReturnPulse(latestReport) : null;
+  const nextRunPlan = latestReport ? summarizeFeedNextRunPlan(latestReport) : null;
   const primaryReturnAction = baseReturnPlan?.primaryAction ?? null;
   return (
     <section className="panel">
@@ -5332,6 +5334,7 @@ function Reports({
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
       </div>
       <ReportReturnPulse onNavigate={onNavigate} pulse={returnPulse} />
+      <ReportNextRunPlan onNavigate={onNavigate} plan={nextRunPlan} />
       {latestReportId && (
         <div className="report-next-actions" aria-label="战报下一步">
           <div>
@@ -5418,6 +5421,34 @@ function ReportReturnPulse({ onNavigate, pulse }: { onNavigate: (view: ViewKey) 
           优先处理：{nextAction.label}
         </button>
       )}
+    </div>
+  );
+}
+
+function ReportNextRunPlan({ onNavigate, plan }: { onNavigate: (view: ViewKey) => void; plan: ReturnType<typeof summarizeFeedNextRunPlan> | null }) {
+  if (!plan?.hasPlan) {
+    return null;
+  }
+
+  return (
+    <div className={`report-next-run-plan ${plan.tone}`} aria-label="下一轮出征预案">
+      <div className="report-next-run-heading">
+        <div>
+          <span>下一轮预案</span>
+          <strong>{plan.headline}</strong>
+          <small>{plan.summary}</small>
+        </div>
+        <b>{plan.primaryFocus}</b>
+      </div>
+      <div className="report-next-run-grid">
+        {plan.items.map((item) => (
+          <button className={item.tone} key={item.id} type="button" onClick={() => onNavigate(reportNextRunTargetView(item.id))}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.detail}</small>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -6295,6 +6326,17 @@ function roomReadinessItemTargetView(itemId: ReturnType<typeof roomPlaytestReadi
     invite: "members",
     shifts: "survivors",
     squad: "survivors"
+  };
+
+  return targets[itemId];
+}
+
+function reportNextRunTargetView(itemId: ReturnType<typeof summarizeFeedNextRunPlan>["items"][number]["id"]): ViewKey {
+  const targets: Record<typeof itemId, ViewKey> = {
+    base: "overview",
+    loadout: "expedition",
+    risk: "expedition",
+    route: "expedition"
   };
 
   return targets[itemId];

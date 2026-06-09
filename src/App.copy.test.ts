@@ -549,6 +549,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("归队脉冲");
     expect(source).toContain("优先处理：");
     expect(source).toContain("report-expedition-debrief");
+    expect(source).toContain("report-next-run-plan");
+    expect(source).toContain("summarizeFeedNextRunPlan");
+    expect(source).toContain("aria-label=\"下一轮出征预案\"");
+    expect(source).toContain("下一轮预案");
+    expect(source).toContain("reportNextRunTargetView");
     expect(source).toContain("report-growth-roadmap");
     expect(source).toContain("report-return-pulse");
     expect(source).toContain("report-action-digest");
@@ -561,6 +566,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".report-growth-roadmap");
     expect(styles).toContain(".report-expedition-debrief");
     expect(styles).toContain(".report-expedition-debrief-grid");
+    expect(styles).toContain(".report-next-run-plan");
+    expect(styles).toContain(".report-next-run-grid");
     expect(styles).toContain(".report-return-pulse");
     expect(styles).toContain(".report-return-pulse-grid");
     expect(styles).toContain(".report-action-digest");

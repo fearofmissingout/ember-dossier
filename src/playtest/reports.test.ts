@@ -4,6 +4,7 @@ import {
   summarizeFeedBaseReturnPlan,
   summarizeFeedExpeditionDebrief,
   summarizeFeedGrowthRoadmap,
+  summarizeFeedNextRunPlan,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
   summarizeFeedReturnPulse,
@@ -219,6 +220,33 @@ describe("playtest report timeline", () => {
     expect(debrief.advice.find((item) => item.id === "risk")?.text).toContain("药品");
     expect(debrief.advice.find((item) => item.id === "objective")?.text).toContain("电台");
     expect(debrief.advice.find((item) => item.id === "supplies")?.tone).toBe("blocked");
+  });
+
+  test("turns expedition reports into a next-run expedition plan", () => {
+    const report: FeedItem = {
+      body: [
+        "结果：提前撤离。主要收获：水 +1，材料 +1。",
+        "路线：遭遇战：阀门尸被击退，队伍压力 +12%。",
+        "目标：目标 +0。",
+        "伤病：林岚 擦伤，回基地后需要治疗。",
+        "归队清单：基地入库 水 +1, 材料 +1；目标推进 +0；账号回收 个人仓库带回情报 +1；伤病 1 名待恢复；提前返程。"
+      ].join("\n"),
+      id: "feed-report-next-run",
+      kind: "report",
+      timestamp: "第 3 天",
+      title: "远征报告"
+    };
+
+    const plan = summarizeFeedNextRunPlan(report);
+
+    expect(plan.hasPlan).toBe(true);
+    expect(plan.tone).toBe("blocked");
+    expect(plan.primaryFocus).toBe("谨慎出发");
+    expect(plan.items.map((item) => item.id)).toEqual(["route", "risk", "loadout", "base"]);
+    expect(plan.items.find((item) => item.id === "route")).toMatchObject({ tone: "warning", value: "补目标线索" });
+    expect(plan.items.find((item) => item.id === "risk")).toMatchObject({ tone: "blocked", value: "谨慎出发" });
+    expect(plan.items.find((item) => item.id === "loadout")?.value).toBe("弹药 / 药品");
+    expect(plan.items.find((item) => item.id === "base")?.value).toBe("治疗优先");
   });
 
   test("extracts survivor growth roadmap entries from expedition reports", () => {
