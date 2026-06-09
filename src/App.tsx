@@ -1646,6 +1646,54 @@ function Overview({
 
   return (
     <div className="view-grid">
+      <section className={`overview-mobile-command ${commandBriefing.readiness}`} aria-label="手机端基地总控">
+        <div className="overview-mobile-command-heading">
+          <span>今日指挥</span>
+          <strong>{commandBriefing.headline}</strong>
+          <small>{commandBriefing.summary}</small>
+        </div>
+        <div className="overview-mobile-meters" aria-label="手机端基地关键状态">
+          <span>
+            士气 <b>{state.resources.morale}</b>
+          </span>
+          <span>
+            危险 <b>{state.resources.danger}</b>
+          </span>
+          <span>
+            目标 <b>{objective.repairedParts}/{objective.requiredParts}</b>
+          </span>
+          <span>
+            期限 <b>{daysRemaining} 天</b>
+          </span>
+        </div>
+        <div className="overview-mobile-command-primary">
+          <span>{baseTaskShortUiLabel(commandBriefing.phase)}</span>
+          <strong>{primaryTask.title}</strong>
+          <button type="button" onClick={() => handleTaskAction(commandBriefing.primaryTaskId)}>
+            <Activity size={16} aria-hidden="true" />
+            {primaryTaskAction.label}
+          </button>
+        </div>
+        <div className="overview-mobile-command-actions">
+          <button type="button" onClick={goExpedition}>
+            <Send size={16} aria-hidden="true" />
+            出征
+          </button>
+          <button type="button" onClick={() => onNavigate("survivors")}>
+            <Users size={16} aria-hidden="true" />
+            编队
+          </button>
+          <button type="button" onClick={() => onNavigate("facilities")}>
+            <Wrench size={16} aria-hidden="true" />
+            建设
+          </button>
+          <button type="button" disabled={objective.status !== "active"} onClick={onEndDay}>
+            <CalendarDays size={16} aria-hidden="true" />
+            过夜
+          </button>
+        </div>
+      </section>
+
       <section className="panel account-band">
         <p className="eyebrow">个人基地</p>
         <h2>{session.account.profile.displayName}</h2>

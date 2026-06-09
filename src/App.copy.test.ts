@@ -481,6 +481,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("baseTaskList");
     expect(source).toContain("baseCommandBriefing");
     expect(source).toContain("baseCycleSteps");
+    expect(source).toContain("overview-mobile-command");
+    expect(source).toContain("overview-mobile-command-primary");
+    expect(source).toContain("overview-mobile-command-actions");
+    expect(source).toContain("overview-mobile-meters");
+    expect(source).toContain("aria-label=\"手机端基地总控\"");
+    expect(source).toContain("aria-label=\"手机端基地关键状态\"");
     expect(source).toContain("aria-label=\"基地循环罗盘\"");
     expect(source).toContain("恢复");
     expect(source).toContain("建设");
@@ -534,6 +540,10 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-primary");
     expect(styles).toContain(".base-command-actions");
+    expect(styles).toContain(".overview-mobile-command");
+    expect(styles).toContain(".overview-mobile-command-primary");
+    expect(styles).toContain(".overview-mobile-command-actions");
+    expect(styles).toContain(".overview-mobile-meters");
     expect(styles).toContain(".base-operation-priority");
     expect(styles).toContain(".base-operation-priority-grid");
     expect(styles).toContain(".base-operation-priority-grid button.danger");

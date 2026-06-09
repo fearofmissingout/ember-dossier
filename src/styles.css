@@ -187,7 +187,8 @@ button:disabled {
 }
 
 .survivor-mobile-command,
-.facility-mobile-command {
+.facility-mobile-command,
+.overview-mobile-command {
   display: none;
 }
 
@@ -11605,7 +11606,8 @@ button:disabled {
   }
 
   .survivor-mobile-command,
-  .facility-mobile-command {
+  .facility-mobile-command,
+  .overview-mobile-command {
     display: grid;
     gap: 8px;
     margin: 0 0 10px;
@@ -11616,15 +11618,28 @@ button:disabled {
     box-shadow: 0 12px 22px rgba(52, 36, 19, 0.11);
   }
 
+  .overview-mobile-command.urgent {
+    border-color: #c97963;
+    background: #fff0ea;
+  }
+
+  .overview-mobile-command.ready {
+    border-color: #83a77f;
+    background: #edf7eb;
+  }
+
   .survivor-mobile-command > div:first-child,
-  .facility-mobile-command > div:first-child {
+  .facility-mobile-command > div:first-child,
+  .overview-mobile-command-heading,
+  .overview-mobile-command-primary {
     display: grid;
     min-width: 0;
     gap: 3px;
   }
 
   .survivor-mobile-command span,
-  .facility-mobile-command span {
+  .facility-mobile-command span,
+  .overview-mobile-command span {
     color: #8b4b31;
     font-size: 11px;
     font-weight: 950;
@@ -11633,35 +11648,103 @@ button:disabled {
   .survivor-mobile-command strong,
   .survivor-mobile-command small,
   .facility-mobile-command strong,
-  .facility-mobile-command small {
+  .facility-mobile-command small,
+  .overview-mobile-command strong,
+  .overview-mobile-command small,
+  .overview-mobile-meters b {
     min-width: 0;
     overflow-wrap: anywhere;
   }
 
   .survivor-mobile-command strong,
-  .facility-mobile-command strong {
+  .facility-mobile-command strong,
+  .overview-mobile-command strong {
     color: #30251b;
     font-size: 15px;
     font-weight: 950;
   }
 
   .survivor-mobile-command small,
-  .facility-mobile-command small {
+  .facility-mobile-command small,
+  .overview-mobile-command small {
     color: #675747;
     font-size: 12px;
     font-weight: 800;
     line-height: 1.35;
   }
 
+  .overview-mobile-meters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .overview-mobile-meters span {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid #d5c2a0;
+    border-radius: 8px;
+    background: rgba(255, 253, 246, 0.82);
+    color: #715c42;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .overview-mobile-meters b {
+    color: #30251b;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .overview-mobile-command-primary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #d5c2a0;
+    border-radius: 8px;
+    background: rgba(255, 253, 246, 0.82);
+  }
+
+  .overview-mobile-command-primary span,
+  .overview-mobile-command-primary strong {
+    grid-column: 1;
+  }
+
+  .overview-mobile-command-primary button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: inline-flex;
+    min-width: 82px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px;
+    border: 1px solid #8d6a3c;
+    border-radius: 8px;
+    background: #3b2a1b;
+    color: #fff7e9;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
   .survivor-mobile-command-actions,
-  .facility-mobile-command-actions {
+  .facility-mobile-command-actions,
+  .overview-mobile-command-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
 
+  .overview-mobile-command-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .survivor-mobile-command-actions button,
-  .facility-mobile-command-actions button {
+  .facility-mobile-command-actions button,
+  .overview-mobile-command-actions button {
     display: grid;
     min-width: 0;
     min-height: 50px;
@@ -11680,19 +11763,23 @@ button:disabled {
   }
 
   .survivor-mobile-command-actions button:nth-child(2),
-  .facility-mobile-command-actions button:nth-child(2) {
+  .facility-mobile-command-actions button:nth-child(2),
+  .overview-mobile-command-actions button:nth-child(2) {
     background: #234b36;
     border-color: #6f9b73;
   }
 
   .survivor-mobile-command-actions button:disabled,
-  .facility-mobile-command-actions button:disabled {
+  .facility-mobile-command-actions button:disabled,
+  .overview-mobile-command-actions button:disabled {
     background: #f0e6d2;
     color: #7a6b5d;
   }
 
   .survivor-mobile-command-actions svg,
-  .facility-mobile-command-actions svg {
+  .facility-mobile-command-actions svg,
+  .overview-mobile-command-actions svg,
+  .overview-mobile-command-primary svg {
     width: 16px;
     height: 16px;
   }
