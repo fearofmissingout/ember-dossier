@@ -50,8 +50,11 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("survivorGrowthPlan");
+    expect(source).toContain("survivorExpeditionGrowthPreview");
+    expect(source).toContain("expeditionXpGain");
     expect(source).toContain("survivorRoleBoard");
     expect(source).toContain("aria-label=\"幸存者培养队列\"");
+    expect(source).toContain("aria-label=\"出征成长预期\"");
     expect(source).toContain("aria-label=\"幸存者定位建议\"");
     expect(source).toContain("accountGrowthBoundary");
     expect(source).toContain("aria-label=\"账号成长边界\"");
@@ -64,12 +67,16 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("修理建设");
     expect(source).toContain("守卫防线");
     expect(source).toContain("按顺序处理，下一次出征更稳。");
+    expect(source).toContain("标准完整撤离预计");
     expect(styles).toContain(".account-growth-boundary");
     expect(styles).toContain(".account-growth-metrics");
     expect(styles).toContain(".growth-plan-card");
     expect(styles).toContain(".growth-plan-grid");
     expect(styles).toContain(".growth-plan-item.ready");
     expect(styles).toContain(".growth-plan-item.blocked");
+    expect(styles).toContain(".expedition-growth-preview");
+    expect(styles).toContain(".expedition-growth-grid article.ready");
+    expect(styles).toContain(".expedition-growth-grid article.capped");
     expect(styles).toContain(".survivor-role-board");
     expect(styles).toContain(".survivor-role-grid");
     expect(styles).toContain(".survivor-role-item.ready");

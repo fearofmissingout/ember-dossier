@@ -2381,6 +2381,113 @@ button:disabled {
   line-height: 1.35;
 }
 
+.expedition-growth-preview {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #c9b681;
+  border-radius: 8px;
+  background: #fff8e4;
+}
+
+.expedition-growth-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expedition-growth-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.expedition-growth-heading span,
+.expedition-growth-grid span {
+  color: #7a5d3f;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.expedition-growth-heading strong,
+.expedition-growth-heading small,
+.expedition-growth-grid strong,
+.expedition-growth-grid small,
+.expedition-growth-grid b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.expedition-growth-heading strong {
+  color: #3d3024;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.expedition-growth-heading small {
+  max-width: 34ch;
+  color: #6a5a41;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.expedition-growth-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.expedition-growth-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 108px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d6c4a3;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.expedition-growth-grid article.ready {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.expedition-growth-grid article.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.expedition-growth-grid article.capped {
+  border-color: #c8c2b2;
+  background: #f6f2e8;
+}
+
+.expedition-growth-grid strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.expedition-growth-grid b {
+  color: #5a3f20;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.expedition-growth-grid small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .survivor-role-board {
   display: grid;
   gap: 10px;

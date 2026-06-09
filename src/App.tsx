@@ -108,6 +108,7 @@ import {
 import {
   accountBaseSupportBriefing,
   basePrepSupportFromAssignments,
+  expeditionXpGain,
   expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
   expeditionSupportDiagnosis,
@@ -117,6 +118,7 @@ import {
   supportFromAccountBase,
   supportFromFacilities,
   survivorGrowthPlan,
+  survivorExpeditionGrowthPreview,
   survivorPerkDetails,
   xpForNextLevel,
   type ExpeditionDoctrineId
@@ -1375,6 +1377,7 @@ export default function App() {
           <Survivors
             state={state}
             accountSurvivors={session.account.survivors}
+            accountTrainingRoomLevel={session.account.base.trainingRoomLevel}
             selectedIds={draft.squadIds}
             canTreat={session.room.base.resources.medicine > 0}
             baseAssignments={session.room.baseAssignments}
@@ -2184,6 +2187,7 @@ function survivorRoleBoard(
 
 function Survivors({
   accountSurvivors,
+  accountTrainingRoomLevel,
   state,
   selectedIds,
   canTreat,
@@ -2195,6 +2199,7 @@ function Survivors({
   onWorkChange
 }: {
   accountSurvivors: PlaytestSession["account"]["survivors"];
+  accountTrainingRoomLevel: number;
   state: GameState;
   selectedIds: string[];
   canTreat: boolean;
@@ -2206,6 +2211,9 @@ function Survivors({
   onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
 }) {
   const growthPlan = survivorGrowthPlan(accountSurvivors);
+  const roomTrainingLevel = state.facilities.find((facility) => facility.id === "training")?.level ?? 0;
+  const expectedExpeditionXp = expeditionXpGain(30, roomTrainingLevel + Math.max(0, accountTrainingRoomLevel - 1));
+  const expeditionGrowthPreview = survivorExpeditionGrowthPreview(accountSurvivors, selectedIds, expectedExpeditionXp);
   const roleBoard = survivorRoleBoard(state.survivors, selectedIds, baseAssignments);
 
   return (
@@ -2267,6 +2275,28 @@ function Survivors({
             <article className={`growth-plan-item ${item.priority}`} key={item.id}>
               <span>{item.label}</span>
               <strong>{item.name}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="expedition-growth-preview" aria-label="出征成长预期">
+        <div className="expedition-growth-heading">
+          <div>
+            <span>出征成长预期</span>
+            <strong>{expeditionGrowthPreview.summary}</strong>
+          </div>
+          <small>
+            标准完整撤离预计 +{expeditionGrowthPreview.estimatedXp} 经验 / 训练室 Lv.{roomTrainingLevel} / 个人训练室 Lv.
+            {accountTrainingRoomLevel}
+          </small>
+        </div>
+        <div className="expedition-growth-grid">
+          {expeditionGrowthPreview.items.map((item) => (
+            <article className={item.tone} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.name}</strong>
+              <b>{item.value}</b>
               <small>{item.detail}</small>
             </article>
           ))}

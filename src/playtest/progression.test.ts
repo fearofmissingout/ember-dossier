@@ -6,6 +6,7 @@ import {
   accountBaseSupportBriefing,
   advanceSurvivorExperience,
   basePrepSupportFromAssignments,
+  expeditionXpGain,
   expeditionDoctrineForFacility,
   expeditionDoctrineOptions,
   expeditionSupportDiagnosis,
@@ -13,6 +14,7 @@ import {
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
   survivorLevelCap,
+  survivorExpeditionGrowthPreview,
   survivorGrowthPlan,
   survivorMaxXp,
   survivorPerkDetails,
@@ -259,6 +261,26 @@ describe("survivor progression", () => {
     expect(plan.items[0]).toMatchObject({ label: "先治疗", priority: "blocked" });
     expect(plan.items[1].detail).toContain("距 Lv.3 还差 5 经验");
     expect(plan.items[3]).toMatchObject({ label: "已达上限", priority: "capped" });
+  });
+
+  test("survivor expedition growth preview explains level-ups caps and injured swaps", () => {
+    const expectedXp = expeditionXpGain(30, 2);
+    const preview = survivorExpeditionGrowthPreview(
+      [
+        survivor({ id: "near", level: 1, name: "临门队员", xp: 15 }),
+        survivor({ id: "capped", level: survivorLevelCap, name: "满级队员", xp: survivorMaxXp }),
+        survivor({ id: "hurt", injuries: ["裂伤"], name: "伤员", xp: 2 })
+      ],
+      ["near", "capped", "hurt"],
+      expectedXp
+    );
+
+    expect(preview.estimatedXp).toBe(13);
+    expect(preview.items.map((item) => item.tone)).toEqual(["ready", "capped", "blocked"]);
+    expect(preview.items[0].detail).toContain("预计升到 Lv.2");
+    expect(preview.items[1].detail).toContain("带队核心");
+    expect(preview.items[2].detail).toContain("先治疗");
+    expect(preview.summary).toContain("带伤");
   });
 
   test("advances through every reached threshold and reports unlocked perks", () => {

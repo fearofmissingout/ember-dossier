@@ -45,6 +45,21 @@ export type SurvivorGrowthPlan = {
   summary: string;
 };
 
+export type SurvivorExpeditionGrowthPreviewItem = {
+  detail: string;
+  id: string;
+  label: string;
+  name: string;
+  tone: "ready" | "steady" | "capped" | "blocked";
+  value: string;
+};
+
+export type SurvivorExpeditionGrowthPreview = {
+  estimatedXp: number;
+  items: SurvivorExpeditionGrowthPreviewItem[];
+  summary: string;
+};
+
 export type ExpeditionSupport = {
   ammoDamage: number;
   campCook: number;
@@ -199,6 +214,76 @@ export function advanceSurvivorExperience(survivor: AccountSurvivor, xpGained: n
     unlockedPerks,
     xpGained: survivorAfterGain.xp - survivor.xp,
     xpToNextLevel: atLevelCap ? 0 : Math.max(0, xpForNextLevel(survivorAfterGain) - survivorAfterGain.xp)
+  };
+}
+
+export function expeditionXpGain(travelFatigue: number, trainingLevel: number) {
+  return 8 + Math.floor(travelFatigue / 25) + trainingLevel * 2;
+}
+
+export function survivorExpeditionGrowthPreview(
+  survivors: AccountSurvivor[],
+  selectedIds: string[],
+  estimatedXp: number
+): SurvivorExpeditionGrowthPreview {
+  const selected = selectedIds.flatMap((id) => {
+    const survivor = survivors.find((candidate) => candidate.id === id);
+    return survivor ? [survivor] : [];
+  });
+  const items = selected.map((survivor) => {
+    if (survivor.injuries.length > 0) {
+      return {
+        detail: `${survivor.injuries.length} 个伤病会放大出征风险，建议先治疗或换人。`,
+        id: survivor.id,
+        label: "先治疗",
+        name: survivor.name,
+        tone: "blocked" as const,
+        value: `疲劳 ${survivor.fatigue}`
+      };
+    }
+
+    if (isSurvivorAtLevelCap(survivor)) {
+      return {
+        detail: "已达当前成长上限，本次出征更适合作为带队核心或转去基地班次。",
+        id: survivor.id,
+        label: "已达上限",
+        name: survivor.name,
+        tone: "capped" as const,
+        value: `Lv.${survivor.level}`
+      };
+    }
+
+    const beforeTarget = xpForNextLevel(survivor);
+    const projected = advanceSurvivorExperience(survivor, estimatedXp);
+    const willLevel = projected.levelUps.length > 0;
+    return {
+      detail: willLevel
+        ? `完整撤离预计升到 Lv.${projected.afterLevel}${projected.unlockedPerks.length ? `，解锁 ${projected.unlockedPerks.map((perk) => perk.label).join("、")}` : ""}。`
+        : `完整撤离后预计距 Lv.${projected.afterLevel + 1} 还差 ${projected.xpToNextLevel} 经验。`,
+      id: survivor.id,
+      label: willLevel ? "预计升级" : "稳定成长",
+      name: survivor.name,
+      tone: willLevel ? "ready" as const : "steady" as const,
+      value: `${survivor.xp}+${projected.xpGained}/${beforeTarget}`
+    };
+  });
+  const levelUps = items.filter((item) => item.tone === "ready").length;
+  const capped = items.filter((item) => item.tone === "capped").length;
+  const blocked = items.filter((item) => item.tone === "blocked").length;
+
+  return {
+    estimatedXp,
+    items,
+    summary:
+      selected.length === 0
+        ? "先选择 3-5 名幸存者，再评估本次出征成长。"
+        : blocked > 0
+          ? `${blocked} 名队员带伤，成长前先处理生存风险。`
+          : levelUps > 0
+            ? `${levelUps} 名队员预计升级，适合完成一次完整撤离。`
+            : capped > 0
+              ? `${capped} 名队员已到上限，可以考虑带新人轮换。`
+              : `本次完整撤离预计每名队员 +${estimatedXp} 经验，稳步推进专长解锁。`
   };
 }
 
