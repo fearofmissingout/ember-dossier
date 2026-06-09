@@ -530,6 +530,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("默认不要频繁发布");
     expect(source).toContain("不要用线上部署当测试工具");
     expect(source).toContain("browserSmokeChecklist");
+    expect(source).toContain("releaseBatchPolicy");
+    expect(source).toContain("aria-label=\"发布批次判定\"");
+    expect(source).toContain("先本地累积，形成完整试玩切片后再发布。");
+    expect(source).toContain("局部小改");
     expect(source).toContain("aria-label=\"浏览器冒烟清单\"");
     expect(source).toContain("本地先走完整路径，线上只做验收。");
     expect(source).toContain("http://localhost:5173/?room=playtest-smoke");
@@ -551,6 +555,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".playtest-gate-strip");
     expect(styles).toContain(".release-readiness-card");
     expect(styles).toContain(".release-readiness-grid");
+    expect(styles).toContain(".release-batch-card");
+    expect(styles).toContain(".release-batch-grid");
     expect(styles).toContain(".browser-smoke-card");
     expect(styles).toContain(".browser-smoke-grid");
   });

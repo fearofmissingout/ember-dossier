@@ -45,6 +45,7 @@ docs/release-cadence-checklist.md
 大功能
 线上阻断
 暂不发布
+发布批次判定
 本地浏览器冒烟
 npm run release:preflight
 npm run release:verify

@@ -62,6 +62,7 @@ const requiredChecks = [
       releaseChecklist.includes("大功能") &&
       releaseChecklist.includes("线上阻断") &&
       releaseChecklist.includes("暂不发布") &&
+      releaseChecklist.includes("发布批次判定") &&
       releaseChecklist.includes("本地浏览器冒烟") &&
       releaseChecklist.includes("npm run release:preflight") &&
       releaseChecklist.includes("npm run release:verify")

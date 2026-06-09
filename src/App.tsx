@@ -302,6 +302,29 @@ const releaseReadinessSteps = [
   }
 ];
 
+const releaseBatchPolicy = [
+  {
+    detail: "基地、出征、战斗、战报、多人协作中的多个本地切片已经组成玩家能连续体验的新路径。",
+    label: "大功能批次",
+    status: "可以发布"
+  },
+  {
+    detail: "登录、进房、保存、出征、构建产物或生产页面访问被阻断时，可以单独发布修复。",
+    label: "线上阻断",
+    status: "可以发布"
+  },
+  {
+    detail: "界面小调整、文案、样式、测试、内部重构先留在本地提交，累积到下一批完整试玩切片。",
+    label: "局部小改",
+    status: "暂不发布"
+  },
+  {
+    detail: "发布前必须通过本地门禁、工作区干净、发布预检和发布后线上验收。",
+    label: "准入条件",
+    status: "强制检查"
+  }
+];
+
 const browserSmokeChecklist = [
   {
     detail: "打开后能看到试玩登录或基地总览。",
@@ -5643,6 +5666,22 @@ function ArchiveView({ state }: { state: GameState }) {
               <span>{step.label}</span>
               <strong>{step.command}</strong>
               <small>{step.detail}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="release-batch-card" aria-label="发布批次判定">
+        <div className="release-batch-heading">
+          <span>发布批次</span>
+          <strong>先本地累积，形成完整试玩切片后再发布。</strong>
+          <small>每次发布前先判断这批改动是否真的让玩家多体验了一段完整流程。</small>
+        </div>
+        <div className="release-batch-grid">
+          {releaseBatchPolicy.map((item) => (
+            <article key={item.label}>
+              <span>{item.status}</span>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
             </article>
           ))}
         </div>
