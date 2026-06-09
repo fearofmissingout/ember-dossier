@@ -3703,6 +3703,7 @@ function JourneyPanel({
   }
   const currentActionQueue = commandActionItems;
   const mobilePrimaryActions = currentActionQueue.slice(0, 2);
+  const actionComparison = buildJourneyActionComparison(currentActionQueue);
   const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
   const actionPulse = journeyActionPulse(journey, latestActionResult, actionGuide.primaryAction, routePace);
   const scrollToJourneySection = (id: string) => {
@@ -3881,6 +3882,27 @@ function JourneyPanel({
             <strong>{routeIntel.remainingSummary}</strong>
             <small>{routeIntel.priorityHint}</small>
           </article>
+        </div>
+        <div className="journey-action-comparison" aria-label="出征行动对比">
+          <div className="journey-action-comparison-heading">
+            <span>行动对比</span>
+            <strong>先看收益、代价和风险，再决定这一回合怎么走。</strong>
+            <small>推荐项会优先考虑当前阻碍和安全度；高风险动作仍可用，但会明确标出代价。</small>
+          </div>
+          <div className="journey-action-comparison-grid">
+            {actionComparison.map((item) => (
+              <article className={item.tone} key={`compare-${item.id}`}>
+                <div>
+                  <span>{item.rankLabel}</span>
+                  <strong>{item.label}</strong>
+                </div>
+                <b>{item.benefit}</b>
+                <small>{item.cost}</small>
+                <em>{item.risk}</em>
+                <p>{item.reason}</p>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="journey-action-deck" id="journey-action-options" aria-label="手机端当前行动面板">
           <div className="journey-action-queue-heading">
@@ -5073,6 +5095,54 @@ function roadToneLabel(tone: "find" | "hazard" | "road") {
     road: "路口"
   };
   return labels[tone];
+}
+
+function buildJourneyActionComparison(
+  actions: Array<{
+    body: string;
+    detail: string;
+    id: string;
+    label: string;
+    result: string;
+    tone: string;
+  }>
+) {
+  const toneRank: Record<string, number> = {
+    counter: 0,
+    safe: 1,
+    standard: 2,
+    warning: 3,
+    risk: 4,
+    danger: 5
+  };
+  const sorted = [...actions].sort((left, right) => (toneRank[left.tone] ?? 3) - (toneRank[right.tone] ?? 3));
+
+  return sorted.slice(0, 4).map((action, index) => ({
+    benefit: action.result,
+    cost: action.detail,
+    id: action.id,
+    label: action.label,
+    rankLabel: index === 0 && action.tone !== "danger" && action.tone !== "risk" ? "推荐" : action.tone === "danger" || action.tone === "risk" ? "高风险" : "备选",
+    reason: action.body,
+    risk: journeyActionRiskLabel(action.tone),
+    tone: action.tone
+  }));
+}
+
+function journeyActionRiskLabel(tone: string) {
+  if (tone === "counter" || tone === "safe") {
+    return "风险低，适合作为当前回合的稳妥选择。";
+  }
+
+  if (tone === "danger" || tone === "risk") {
+    return "风险高，除非想抢时间或必须脱离，否则先看清代价。";
+  }
+
+  if (tone === "warning") {
+    return "风险中等，通常会换来更快推进或更直接收益。";
+  }
+
+  return "风险可控，收益和消耗都比较平衡。";
 }
 
 function BaseVistaArtwork({ danger, day, morale }: { danger: number; day: number; morale: number }) {

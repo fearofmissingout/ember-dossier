@@ -151,6 +151,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-turn-summary");
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-action-deck");
+    expect(source).toContain("journey-action-comparison");
+    expect(source).toContain("buildJourneyActionComparison");
+    expect(source).toContain("journeyActionRiskLabel");
     expect(source).toContain("commandActionItems");
     expect(source).toContain("currentActionQueue");
     expect(source).toContain("onClick={item.onSelect}");
@@ -211,6 +214,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-turn-summary");
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-action-deck");
+    expect(styles).toContain(".journey-action-comparison");
+    expect(styles).toContain(".journey-action-comparison-grid");
     expect(styles).toContain(".journey-action-queue-list");
     expect(styles).toContain(".journey-action-queue-list button");
     expect(styles).toContain(".journey-command-button strong b");

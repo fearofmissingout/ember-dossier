@@ -5500,6 +5500,136 @@ button:disabled {
   line-height: 1.35;
 }
 
+.journey-action-comparison {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #b9c19b;
+  border-radius: 8px;
+  background: #f6faea;
+}
+
+.journey-action-comparison-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.journey-action-comparison-heading span,
+.journey-action-comparison-grid span {
+  color: #68733f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.journey-action-comparison-heading strong,
+.journey-action-comparison-heading small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-action-comparison-heading strong {
+  color: #2f3822;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.journey-action-comparison-heading small {
+  color: #59614a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.journey-action-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.journey-action-comparison-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 142px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d6c4a3;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.journey-action-comparison-grid article.safe,
+.journey-action-comparison-grid article.counter {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.journey-action-comparison-grid article.warning,
+.journey-action-comparison-grid article.standard {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.journey-action-comparison-grid article.danger,
+.journey-action-comparison-grid article.risk {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.journey-action-comparison-grid article div {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.journey-action-comparison-grid strong,
+.journey-action-comparison-grid b,
+.journey-action-comparison-grid small,
+.journey-action-comparison-grid em,
+.journey-action-comparison-grid p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-action-comparison-grid strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.journey-action-comparison-grid b {
+  color: #2f5f4f;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.journey-action-comparison-grid small {
+  color: #655846;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.journey-action-comparison-grid em {
+  color: #7a5531;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.journey-action-comparison-grid p {
+  margin: 0;
+  color: #665b48;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .journey-action-deck {
   display: grid;
   gap: 8px;
@@ -10302,6 +10432,7 @@ button:disabled {
   .route-phase-grid,
   .combat-round-breakdown,
   .journey-command-snapshot,
+  .journey-action-comparison-grid,
   .journey-result-breakdown,
   .journey-status-grid,
   .journey-situation-report,
@@ -10869,6 +11000,18 @@ button:disabled {
   .journey-route-intel article:nth-child(2),
   .journey-route-intel article:nth-child(3) {
     display: none;
+  }
+
+  .journey-action-comparison {
+    padding: 8px;
+  }
+
+  .journey-action-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-action-comparison-grid article {
+    min-height: 0;
   }
 
   .journey-action-deck {
