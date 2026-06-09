@@ -240,7 +240,7 @@ describe("playtest room loop", () => {
 
     expect(blocked.tone).toBe("blocked");
     expect(blocked.headline).toContain("关键协作缺口");
-    expect(blocked.items.map((item) => item.id)).toEqual(["members", "contribution", "squad", "shifts"]);
+    expect(blocked.items.map((item) => item.id)).toEqual(["members", "contribution", "squad", "shifts", "event"]);
     expect(blocked.items.find((item) => item.id === "contribution")).toMatchObject({
       status: "blocked",
       value: "0 次"
@@ -268,6 +268,7 @@ describe("playtest room loop", () => {
 
     expect(ready.items.find((item) => item.id === "members")).toMatchObject({ status: "ready", value: "2 人" });
     expect(ready.items.find((item) => item.id === "squad")).toMatchObject({ status: "ready", value: "3/3" });
+    expect(ready.items.find((item) => item.id === "event")).toMatchObject({ label: "明日事件", status: "todo", value: "防线压力" });
     expect(ready.summary).toContain("房间准备");
   });
 

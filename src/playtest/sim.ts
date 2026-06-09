@@ -1012,7 +1012,7 @@ export type RoomLaunchBriefing = {
 
 export type RoomCooperationPulseItem = {
   detail: string;
-  id: "members" | "contribution" | "squad" | "shifts";
+  id: "members" | "contribution" | "squad" | "shifts" | "event";
   label: string;
   status: "blocked" | "todo" | "ready";
   value: string;
@@ -1333,6 +1333,7 @@ export function roomCooperationPulse(session: PlaytestSession): RoomCooperationP
   const readiness = roomPlaytestReadiness(session);
   const members = roomMemberSummaries(session);
   const membersReady = members.filter((member) => member.collaborationStatus === "ready").length;
+  const eventPreview = baseDayPreview(session).event;
   const items: RoomCooperationPulseItem[] = [
     {
       detail:
@@ -1373,6 +1374,13 @@ export function roomCooperationPulse(session: PlaytestSession): RoomCooperationP
       label: "留守班次",
       status: cooperation.baseShifts > 0 ? "ready" : "todo",
       value: `${cooperation.baseShifts} 个`
+    },
+    {
+      detail: `${eventPreview.title}：${eventPreview.advice}`,
+      id: "event",
+      label: "明日事件",
+      status: eventPreview.readiness === "covered" ? "ready" : eventPreview.readiness === "partial" ? "todo" : "blocked",
+      value: eventPreview.riskLabel
     }
   ];
   const blockedCount = items.filter((item) => item.status === "blocked").length;
