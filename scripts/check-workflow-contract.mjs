@@ -11,6 +11,7 @@ const defaultFiles = {
   releaseStatus: "scripts/print-release-candidate-report.mjs",
   releaseChecklist: "docs/release-cadence-checklist.md",
   smoke: "scripts/print-local-smoke.mjs",
+  smokeContract: "scripts/check-local-smoke-contract.mjs",
   viteConfig: "vite.config.ts",
   workflow: ".github/workflows/deploy-cloudflare-pages.yml"
 };
@@ -156,6 +157,10 @@ const requiredChecks = [
     test: ({ scripts }) => scripts["smoke:local"] === "node scripts/print-local-smoke.mjs"
   },
   {
+    id: "package script: smoke:contract",
+    test: ({ scripts }) => scripts["smoke:contract"] === "node scripts/check-local-smoke-contract.mjs"
+  },
+  {
     id: "smoke script: local browser route",
     test: ({ smoke }) =>
       smoke.includes("本地浏览器冒烟清单") &&
@@ -164,8 +169,21 @@ const requiredChecks = [
       smoke.includes("数据库不可用")
   },
   {
+    id: "smoke contract: complete local acceptance",
+    test: ({ smokeContract }) =>
+      smokeContract.includes("requiredCoverage") &&
+      smokeContract.includes("facilityDevelopment") &&
+      smokeContract.includes("memberCooperation") &&
+      smokeContract.includes("combatOrEvent") &&
+      smokeContract.includes("databaseFallback")
+  },
+  {
     id: "release gate: workflow contract",
     test: ({ gates }) => gates.includes("scripts/check-workflow-contract.mjs")
+  },
+  {
+    id: "release gate: local smoke contract",
+    test: ({ gates }) => gates.includes('["run", "smoke:contract"]')
   },
   {
     id: "release gate: visible copy",

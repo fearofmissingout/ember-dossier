@@ -14,6 +14,7 @@
     "supabase:check": "node scripts/check-supabase-demo.mjs",
     "playable:check": "vitest run src/playtest/playableLoop.test.ts",
     "playtest:check": "node scripts/check-production-playtest.mjs",
+    "smoke:contract": "node scripts/check-local-smoke-contract.mjs",
     "smoke:local": "node scripts/print-local-smoke.mjs",
     "workflow:check": "node scripts/check-workflow-contract.mjs",
     "iteration:check": "node scripts/check-iteration-gates.mjs",

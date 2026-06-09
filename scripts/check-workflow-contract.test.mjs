@@ -64,6 +64,7 @@ const failure = "mixed Chinese/English";
     gates: `
 assertCloudflarePagesConfig();
 run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
+run("npm", ["run", "smoke:contract"], "Local smoke contract");
 run("npm", ["run", "copy:check"], "Visible copy check");
 run("npm", ["run", "playable:check"], "Playable loop smoke");
 run("npm", ["test"], "Unit and smoke tests");
@@ -83,6 +84,7 @@ if (productionMode) {
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
         "release:publish:api": "node scripts/publish-github-api.mjs",
         "release:verify": "node scripts/check-iteration-gates.mjs --production",
+        "smoke:contract": "node scripts/check-local-smoke-contract.mjs",
         "smoke:local": "node scripts/print-local-smoke.mjs",
         "workflow:check": "node scripts/check-workflow-contract.mjs"
       }
@@ -92,6 +94,9 @@ if (productionMode) {
 http://localhost:5173/?room=playtest-smoke
 敌人意图
 数据库不可用
+`,
+    smokeContract: `
+const requiredCoverage = ["facilityDevelopment", "memberCooperation", "combatOrEvent", "databaseFallback"];
 `,
     workflow: `
 - name: Local iteration gates
