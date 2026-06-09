@@ -3372,6 +3372,38 @@ function JourneyPanel({
     .join(" / ");
   const recentDecisions = (journey.decisions ?? []).slice(-4).reverse();
   const latestCombatRound = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const primaryCombatPreview = combatBriefing
+    ? combatActionPreviews.find((item) => item.action === combatBriefing.primaryAction)?.preview ?? null
+    : null;
+  const combatDecisionChain =
+    journey.combat && threatPreview
+      ? [
+          {
+            detail: threatPreview.warning,
+            label: "读意图",
+            tone: threatPreview.incomingDamage >= journey.combat.squadHp ? "danger" : threatPreview.incomingDamage >= 10 ? "warning" : "safe",
+            value: `${threatPreview.intentLabel} / 反击 ${threatPreview.incomingDamage}`
+          },
+          {
+            detail: counterActionLabels ? `优先考虑 ${counterActionLabels}。` : "没有明确反制动作，保持队形或撤退更稳。",
+            label: "选反制",
+            tone: counterActionLabels ? "safe" : "warning",
+            value: combatBriefing?.primaryLabel ?? roundPlan?.label ?? "观察"
+          },
+          {
+            detail: primaryCombatPreview ? `${primaryCombatPreview.cost}；${primaryCombatPreview.risk}` : "先选择一个动作，系统会显示体力和风险。",
+            label: "看代价",
+            tone: primaryCombatPreview?.counterTag === "Risk" ? "danger" : primaryCombatPreview?.counterTag === "Counter" ? "safe" : "warning",
+            value: primaryCombatPreview?.actorName ?? "待选择"
+          },
+          {
+            detail: latestCombatRound ? latestCombatRound.enemyText : "本回合结算后会更新敌人意图、队伍体力、节奏和破势。",
+            label: "看后果",
+            tone: latestCombatRound ? (latestCombatRound.tone === "danger" ? "danger" : latestCombatRound.tone === "warning" ? "warning" : "safe") : "warning",
+            value: latestCombatRound?.outcomeText ?? "等待行动"
+          }
+        ]
+      : [];
   const counterLabels = segmentThreat.counterTactics
     .map((tacticId) => segmentTacticList.find((tactic) => tactic.id === tacticId)?.label ?? tacticId)
     .join(" / ");
@@ -4151,6 +4183,23 @@ function JourneyPanel({
                       <article className={item.tone} key={item.id}>
                         <span>{item.label}</span>
                         <strong>{item.value}</strong>
+                        <small>{item.detail}</small>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {combatDecisionChain.length > 0 && (
+                <div className="combat-decision-chain" aria-label="战斗决策链">
+                  <div className="combat-decision-heading">
+                    <span>决策链</span>
+                    <strong>先读敌人，再决定反制，不要盲点动作。</strong>
+                  </div>
+                  <div className="combat-decision-grid">
+                    {combatDecisionChain.map((item, index) => (
+                      <article className={item.tone} key={item.label}>
+                        <span>第 {index + 1} 步</span>
+                        <strong>{item.label}：{item.value}</strong>
                         <small>{item.detail}</small>
                       </article>
                     ))}

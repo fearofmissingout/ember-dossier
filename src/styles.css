@@ -6587,6 +6587,90 @@ button:disabled {
   line-height: 1.3;
 }
 
+.combat-decision-chain {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #b8aa86;
+  border-radius: 8px;
+  background: #fff9e8;
+}
+
+.combat-decision-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.combat-decision-heading span,
+.combat-decision-grid span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.combat-decision-heading strong,
+.combat-decision-grid strong,
+.combat-decision-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.combat-decision-heading strong {
+  color: #352c1f;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.combat-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.combat-decision-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 86px;
+  align-content: start;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #d8c6a6;
+  border-radius: 8px;
+  background: #fffdf7;
+}
+
+.combat-decision-grid article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.combat-decision-grid article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.combat-decision-grid article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.combat-decision-grid strong {
+  color: #34281a;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.3;
+}
+
+.combat-decision-grid small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .combat-mobile-heading small,
 .combat-mobile-result small,
 .combat-mobile-intent small,
@@ -9194,6 +9278,7 @@ button:disabled {
   .combat-threat,
   .combat-action-readout,
   .combat-command-grid,
+  .combat-decision-grid,
   .combat-round-breakdown,
   .journey-command-snapshot,
   .journey-result-breakdown,
@@ -9451,6 +9536,7 @@ button:disabled {
   .frontline-grid,
   .combat-threat,
   .combat-command-grid,
+  .combat-decision-grid,
   .archive-grid,
   .combat-round-breakdown,
   .journey-status-grid,

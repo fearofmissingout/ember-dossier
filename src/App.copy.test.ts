@@ -236,6 +236,13 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"本回合战斗指挥\"");
     expect(source).toContain("战斗指挥");
     expect(source).toContain("执行：");
+    expect(source).toContain("combatDecisionChain");
+    expect(source).toContain("aria-label=\"战斗决策链\"");
+    expect(source).toContain("先读敌人，再决定反制，不要盲点动作。");
+    expect(source).toContain("读意图");
+    expect(source).toContain("选反制");
+    expect(source).toContain("看代价");
+    expect(source).toContain("看后果");
     expect(source).toContain("combat-command-briefing");
     expect(source).toContain("combat-command-grid");
     expect(source).toContain("combat-mobile-bars");
@@ -260,6 +267,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".combat-mobile-dashboard");
     expect(styles).toContain(".combat-command-briefing");
     expect(styles).toContain(".combat-command-grid");
+    expect(styles).toContain(".combat-decision-chain");
+    expect(styles).toContain(".combat-decision-grid");
+    expect(styles).toContain(".combat-decision-grid article.danger");
     expect(styles).toContain(".combat-mobile-bars");
     expect(styles).toContain(".combat-mobile-intent");
     expect(styles).toContain(".combat-mobile-result");
