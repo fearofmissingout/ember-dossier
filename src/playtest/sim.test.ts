@@ -22,6 +22,7 @@ import {
   baseShiftPlan,
   baseTaskList,
   resolvePlaytestExpedition,
+  roomCooperationPulse,
   roomCooperationSummary,
   roomContributionPlan,
   roomPlaytestReadiness,
@@ -223,6 +224,46 @@ describe("playtest room loop", () => {
       status: "urgent"
     });
     expect(cooperation.gaps.map((gap) => gap.id)).toContain("shifts");
+  });
+
+  test("room cooperation pulse summarizes shared multiplayer readiness", () => {
+    let session = createStarterSession("user-a", "Alice", "cooperation-pulse-room");
+    session.room.base.resources.food = 0;
+    session.room.base.resources.water = 0;
+
+    const blocked = roomCooperationPulse(session);
+
+    expect(blocked.tone).toBe("blocked");
+    expect(blocked.headline).toContain("关键协作缺口");
+    expect(blocked.items.map((item) => item.id)).toEqual(["members", "contribution", "squad", "shifts"]);
+    expect(blocked.items.find((item) => item.id === "contribution")).toMatchObject({
+      status: "blocked",
+      value: "0 次"
+    });
+
+    session.room.members.push({
+      displayName: "阿周",
+      joinedAt: "2026-06-06T09:00:00.000Z",
+      lastSeenAt: "2026-06-06T10:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+    session = applyContribution(session, "user-a", { ammo: 0, food: 4, fuel: 0, materials: 4, medicine: 0, water: 4 });
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    const [scout, medic, guard, worker] = session.account.survivors;
+    session.room.assignedSurvivors.push(
+      { assignedAt: "2026-06-06T10:10:00.000Z", roomId: session.room.id, survivorId: scout.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:11:00.000Z", roomId: session.room.id, survivorId: medic.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:12:00.000Z", roomId: session.room.id, survivorId: guard.id, userId: "user-b" }
+    );
+    session.room.baseAssignments.push({ roomId: session.room.id, survivorId: worker.id, type: "guard", userId: "user-b" });
+
+    const ready = roomCooperationPulse(session);
+
+    expect(ready.items.find((item) => item.id === "members")).toMatchObject({ status: "ready", value: "2 人" });
+    expect(ready.items.find((item) => item.id === "squad")).toMatchObject({ status: "ready", value: "3/3" });
+    expect(ready.summary).toContain("房间准备");
   });
 
   test("room playtest readiness turns multiplayer setup into launch checks", () => {

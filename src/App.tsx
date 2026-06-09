@@ -36,6 +36,7 @@ import {
   baseShiftPlan,
   baseTaskList,
   resolvePlaytestExpedition,
+  roomCooperationPulse,
   roomCooperationSummary,
   roomContributionPlan,
   roomMemberSummaries,
@@ -51,6 +52,7 @@ import {
   type BaseDevelopmentRoute,
   type BaseRecoveryPlan,
   type BaseShiftPlan,
+  type RoomCooperationPulse,
   type RoomCooperationSummary,
   type RoomMemberSummary
 } from "./playtest/sim";
@@ -1442,6 +1444,7 @@ export default function App() {
             players={roomPlayers}
             memberSummaries={roomMemberSummaries(session)}
             playtestReadiness={roomPlaytestReadiness(session)}
+            pulse={roomCooperationPulse(session)}
             roomSlug={roomSlug}
             summary={roomCooperationSummary(session)}
             copyStatus={copyStatus}
@@ -5147,6 +5150,7 @@ function RoomMembers({
   players,
   memberSummaries,
   playtestReadiness,
+  pulse,
   roomSlug,
   summary,
   copyStatus,
@@ -5161,6 +5165,7 @@ function RoomMembers({
   players: RoomPlayer[];
   memberSummaries: RoomMemberSummary[];
   playtestReadiness: ReturnType<typeof roomPlaytestReadiness>;
+  pulse: RoomCooperationPulse;
   roomSlug: string;
   summary: RoomCooperationSummary;
   copyStatus: "idle" | "copied" | "failed";
@@ -5226,6 +5231,26 @@ function RoomMembers({
           <p className="muted-copy">同一个房间链接会共享基地、远征结果和动态流。</p>
         </div>
         <span className="subtle-pill">{roomSlug}</span>
+      </div>
+
+      <div className={`room-cooperation-pulse ${pulse.tone}`} aria-label="好友房间协作脉冲">
+        <div className="room-cooperation-pulse-heading">
+          <div>
+            <span>协作脉冲</span>
+            <strong>{pulse.headline}</strong>
+            <small>{pulse.summary}</small>
+          </div>
+          <small>{pulse.nextAction}</small>
+        </div>
+        <div className="room-cooperation-pulse-grid">
+          {pulse.items.map((item) => (
+            <article className={item.status} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
       </div>
 
       <div className={`room-cooperation-board ${summary.readiness}`} aria-label="房间协作总览">

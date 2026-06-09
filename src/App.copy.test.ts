@@ -541,6 +541,8 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("roomCooperationSummary");
+    expect(source).toContain("roomCooperationPulse");
+    expect(source).toContain("pulse={roomCooperationPulse(session)}");
     expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
     expect(source).toContain("aria-label=\"房间行动链\"");
@@ -568,6 +570,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("summary.gaps.map");
     expect(source).toContain("aria-label=\"房间协作缺口\"");
     expect(source).toContain("room-cooperation-board");
+    expect(source).toContain("room-cooperation-pulse");
+    expect(source).toContain("aria-label=\"好友房间协作脉冲\"");
+    expect(source).toContain("协作脉冲");
     expect(source).toContain("room-cooperation-metrics");
     expect(source).toContain("room-cooperation-gaps");
     expect(source).toContain("room-gap-card");
@@ -577,6 +582,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("member-collaboration-hint");
     expect(source).toContain("协作建议：");
     expect(styles).toContain(".room-cooperation-board");
+    expect(styles).toContain(".room-cooperation-pulse");
+    expect(styles).toContain(".room-cooperation-pulse-grid");
     expect(styles).toContain(".room-action-ladder");
     expect(styles).toContain(".room-action-ladder-grid");
     expect(styles).toContain(".ownership-boundary-card");

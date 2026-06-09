@@ -58,7 +58,8 @@ const requiredChineseAnchors = [
   "手机端当前行动面板",
   "出征行动脉冲",
   "基地建设路线板",
-  "基地日结脉冲"
+  "基地日结脉冲",
+  "好友房间协作脉冲"
 ];
 
 const additionalRequiredChineseAnchors = [

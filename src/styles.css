@@ -7413,6 +7413,116 @@ button:disabled {
   color: #7d3f2d;
 }
 
+.room-cooperation-pulse {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #c9b694;
+  border-radius: 8px;
+  background: #fff8e8;
+}
+
+.room-cooperation-pulse.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.room-cooperation-pulse.blocked {
+  border-color: #d3974a;
+  background: #fff5de;
+}
+
+.room-cooperation-pulse-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-cooperation-pulse-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.room-cooperation-pulse-heading span,
+.room-cooperation-pulse-grid span {
+  color: #8c4b32;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.room-cooperation-pulse-heading strong,
+.room-cooperation-pulse-heading small,
+.room-cooperation-pulse-grid strong,
+.room-cooperation-pulse-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-cooperation-pulse-heading strong {
+  color: #2d342f;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.room-cooperation-pulse-heading small {
+  max-width: 40ch;
+  color: #6a766f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.room-cooperation-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-cooperation-pulse-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 94px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d7cab0;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.82);
+}
+
+.room-cooperation-pulse-grid article.ready {
+  border-color: #8fb58d;
+  background: #f2fbef;
+}
+
+.room-cooperation-pulse-grid article.todo {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.room-cooperation-pulse-grid article.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.room-cooperation-pulse-grid strong {
+  color: #7d3f2d;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.room-cooperation-pulse-grid small {
+  color: #655846;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .room-cooperation-board {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.85fr);
@@ -8722,6 +8832,7 @@ button:disabled {
     .journey-turn-summary,
     .room-duty-board,
     .ownership-boundary-grid,
+    .room-cooperation-pulse-grid,
     .room-action-ladder-grid,
     .room-playtest-check-grid,
     .location-choice-grid,
@@ -8816,6 +8927,15 @@ button:disabled {
 
   .room-cooperation-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-cooperation-pulse-heading {
+    display: grid;
+  }
+
+  .room-cooperation-pulse-heading small {
+    max-width: none;
+    text-align: left;
   }
 
   .room-playtest-readiness-heading {
