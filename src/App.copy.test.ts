@@ -29,6 +29,13 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"出发决策摘要\"");
     expect(source).toContain("aria-label=\"本次远征收益预览\"");
     expect(source).toContain("expeditionYieldPreview");
+    expect(source).toContain("expeditionRoutePhasePlan");
+    expect(source).toContain("aria-label=\"出征路线阶段计划\"");
+    expect(source).toContain("路线阶段");
+    expect(source).toContain("探入口");
+    expect(source).toContain("压硬仗");
+    expect(source).toContain("保续航");
+    expect(source).toContain("断联系");
     expect(source).toContain("departureDecisionItems");
     expect(source).toContain("出发判断");
     expect(source).toContain("路线压力");
@@ -43,6 +50,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".departure-decision-grid");
     expect(styles).toContain(".dispatch-briefing");
     expect(styles).toContain(".yield-preview");
+    expect(styles).toContain(".route-phase-plan");
+    expect(styles).toContain(".route-phase-grid");
+    expect(styles).toContain(".route-phase-grid article.danger");
   });
 
   test("shows survivor growth planning as a base loop surface", () => {

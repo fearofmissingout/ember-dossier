@@ -67,7 +67,8 @@ const requiredChineseAnchors = [
   "发布批次判定",
   "手机端单页出征总控",
   "基地日程预演",
-  "战斗决策链"
+  "战斗决策链",
+  "出征路线阶段计划"
 ];
 
 const additionalRequiredChineseAnchors = [

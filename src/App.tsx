@@ -22,7 +22,7 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { facilityActionCost, facilityActionLabel, facilityImpactPreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
-import type { FeedItem, GameState, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "./game/types";
+import type { FeedItem, GameState, LocationFamily, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "./game/types";
 import {
   advanceRoomDay,
   applyContribution,
@@ -2752,6 +2752,7 @@ function ExpeditionPrep({
   const trainingLevel = roomTrainingLevel + Math.max(0, accountBase.trainingRoomLevel - 1);
   const loadoutTotal = resourceKeys.reduce((sum, key) => sum + draft.loadout[key] + (support.startingSupplies[key] ?? 0), 0);
   const supportEffects = supportPlan.totalEffects;
+  const routePhasePlan = expeditionRoutePhasePlan(selectedLocation, draft.risk, readiness, supportEffects);
   const yieldPreview = expeditionYieldPreview({
     canDispatch: launchChecklist.canDispatch,
     loadoutTotal,
@@ -3099,6 +3100,22 @@ function ExpeditionPrep({
               ))}
             </div>
           )}
+        </div>
+        <div className="route-phase-plan" aria-label="出征路线阶段计划">
+          <div className="route-phase-heading">
+            <span>路线阶段</span>
+            <strong>{routePhasePlan.summary}</strong>
+            <small>{routePhasePlan.hint}</small>
+          </div>
+          <div className="route-phase-grid">
+            {routePhasePlan.phases.map((phase, index) => (
+              <article className={phase.tone} key={phase.label}>
+                <span>第 {index + 1} 段</span>
+                <strong>{phase.label}</strong>
+                <small>{phase.detail}</small>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="readiness-meter">
           <span>编队适配度</span>
@@ -4496,6 +4513,56 @@ function journeyNodeTypeLabel(type: JourneyNode["type"]) {
     shop: "商店"
   };
   return labels[type];
+}
+
+function expeditionRoutePhasePlan(location: GameState["locations"][number], risk: RiskStrategy, readiness: number, supportEffects: number) {
+  const familyPlans: Record<
+    LocationFamily,
+    Array<{
+      detail: string;
+      label: string;
+      tone: "safe" | "warning" | "danger";
+    }>
+  > = {
+    resources: [
+      { detail: "先确认水、燃料或材料的入口，避免一开局就把补给花空。", label: "探入口", tone: "safe" },
+      { detail: "中段多半会遇到堵塞、巡游敌人或设备故障，技术和体能很关键。", label: "拆障碍", tone: "warning" },
+      { detail: "营地和交易优先换回可带走的硬资源。", label: "装补给", tone: "safe" },
+      { detail: "撤离时保住背包容量，别让超载把收益变成伤病。", label: "带回基地", tone: "warning" }
+    ],
+    urban: [
+      { detail: "城区先读门禁、走廊和感染动线，医疗与意志决定容错。", label: "读楼层", tone: "warning" },
+      { detail: "核心战斗会更硬，防守和包扎要留给敌人蓄力或游猎。", label: "压硬仗", tone: "danger" },
+      { detail: "商店和幸存者线索更重要，情报可转成目标进度。", label: "换情报", tone: "safe" },
+      { detail: "带药品回家前先评估伤痕，必要时提前返程。", label: "控伤病", tone: "warning" }
+    ],
+    weird: [
+      { detail: "异常地点先确认规则，幸运、意志和抗感染会影响事件代价。", label: "试规则", tone: "warning" },
+      { detail: "中段敌人意图更偏干扰，读对反制比硬打更划算。", label: "破异常", tone: "danger" },
+      { detail: "营地侦察和电台支援会把怪线索变成目标进度。", label: "收线索", tone: "safe" },
+      { detail: "撤离时优先保住已有线索，不贪最后一个奇怪奖励。", label: "断联系", tone: "warning" }
+    ],
+    wilds: [
+      { detail: "野外先看天气、路况和背包重量，疲劳会比敌人更早杀伤队伍。", label: "看路况", tone: "warning" },
+      { detail: "路上事件和营地选择决定续航，食物和水不能只靠运气。", label: "保续航", tone: "safe" },
+      { detail: "野外战斗常在压力高时变坏，守卫和战术能稳住队形。", label: "稳队形", tone: "warning" },
+      { detail: "撤离前整理战利品，优先带回能支撑设施发展的材料。", label: "整背包", tone: "safe" }
+    ]
+  };
+  const highRisk = risk === "greedy" || location.risk >= 65 || readiness < 45;
+  const lowSupport = supportEffects < 4;
+  const summary = `${location.name} 是${locationFamilyLabels[location.family]}路线，${riskLabels[risk]}策略会影响中段压力。`;
+  const hint = highRisk
+    ? "这趟更像高压远征：先保命，再考虑贪收益。"
+    : lowSupport
+      ? "后勤支援还薄，路线中段要少犯错。"
+      : "后勤支援能覆盖关键段落，可以更主动拿线索和战利。";
+
+  return {
+    hint,
+    phases: familyPlans[location.family],
+    summary
+  };
 }
 
 function journeyRouteIntel(journey: JourneyState, pace: ReturnType<typeof routePaceFor>) {

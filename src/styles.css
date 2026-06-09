@@ -4050,6 +4050,97 @@ button:disabled {
   color: #8a3524;
 }
 
+.route-phase-plan {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #b9c7a6;
+  border-radius: 8px;
+  background: #f7fbef;
+}
+
+.route-phase-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.route-phase-heading span,
+.route-phase-grid span {
+  color: #536c3d;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.route-phase-heading strong,
+.route-phase-heading small,
+.route-phase-grid strong,
+.route-phase-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.route-phase-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.route-phase-heading small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.route-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.route-phase-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 92px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.88);
+}
+
+.route-phase-grid article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.route-phase-grid article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.route-phase-grid article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.route-phase-grid strong {
+  color: #2f3d27;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.route-phase-grid small {
+  color: #5e6a52;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .support-plan-card {
   display: grid;
   gap: 10px;
@@ -9279,6 +9370,7 @@ button:disabled {
   .combat-action-readout,
   .combat-command-grid,
   .combat-decision-grid,
+  .route-phase-grid,
   .combat-round-breakdown,
   .journey-command-snapshot,
   .journey-result-breakdown,
@@ -9537,6 +9629,7 @@ button:disabled {
   .combat-threat,
   .combat-command-grid,
   .combat-decision-grid,
+  .route-phase-grid,
   .archive-grid,
   .combat-round-breakdown,
   .journey-status-grid,
@@ -9578,6 +9671,7 @@ button:disabled {
     .journey-action-pulse,
     .journey-turn-summary,
     .base-schedule-preview-grid,
+    .route-phase-grid,
     .room-duty-board,
     .ownership-boundary-grid,
     .room-launch-grid,
