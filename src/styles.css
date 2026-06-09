@@ -1092,6 +1092,95 @@ button:disabled {
   line-height: 1.25;
 }
 
+.base-action-feedback {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #c8b38b;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.base-action-feedback-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.base-action-feedback-heading span,
+.base-action-feedback-grid span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.base-action-feedback-heading strong,
+.base-action-feedback-heading small,
+.base-action-feedback-grid strong,
+.base-action-feedback-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-action-feedback-heading strong {
+  color: #3f331e;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.base-action-feedback-heading small {
+  color: #665b48;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-action-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-action-feedback-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d8c6a6;
+  border-radius: 8px;
+  background: #fffdf7;
+}
+
+.base-action-feedback-grid article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.base-action-feedback-grid article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.base-action-feedback-grid article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.base-action-feedback-grid strong {
+  color: #34281a;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.base-action-feedback-grid small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .base-expedition-briefing {
   display: grid;
   gap: 10px;
@@ -7702,6 +7791,7 @@ button:disabled {
     .launch-checklist-grid,
     .base-task-grid,
     .base-cycle-compass,
+    .base-action-feedback-grid,
     .playtest-route-grid,
     .base-expedition-briefing-grid,
     .room-action-ladder-grid,
@@ -7947,6 +8037,7 @@ button:disabled {
     .launch-checklist-grid,
     .base-command-strip,
     .base-command-actions,
+    .base-action-feedback-grid,
     .base-expedition-briefing-grid,
     .base-cycle-compass,
     .playtest-route-grid,

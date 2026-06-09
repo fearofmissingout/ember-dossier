@@ -329,6 +329,18 @@ const baseWorkOptions: Array<{ key: BaseWorkType | "idle"; label: string }> = [
   { key: "care", label: "护理" }
 ];
 
+type BaseActionFeedback = {
+  detail: string;
+  items: Array<{
+    detail: string;
+    id: string;
+    label: string;
+    tone: "safe" | "warning" | "danger";
+    value: string;
+  }>;
+  title: string;
+};
+
 const guestModeStorageKey = "ember-dossier-guest-mode";
 
 export default function App() {
@@ -350,6 +362,7 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [guestMode, setGuestMode] = useState(loadGuestMode);
+  const [lastBaseActionFeedback, setLastBaseActionFeedback] = useState<BaseActionFeedback | null>(null);
   const applyingRemoteState = useRef(false);
   const latestRemoteUpdatedAt = useRef<string | null>(null);
   const [draft, setDraft] = useState<ExpeditionDraft>(() => ({
@@ -787,6 +800,7 @@ export default function App() {
 
   function submitContribution() {
     const nextSession = applyContribution(session, session.account.profile.userId, contributionDraft);
+    setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "资源捐入"));
     applySession(nextSession);
     const contribution = nextSession.room.contributions[0];
     if (authSession && contribution) {
@@ -822,6 +836,7 @@ export default function App() {
   function treatSelectedSurvivor(survivorId: string) {
     try {
       const nextSession = treatSurvivor(session, session.account.profile.userId, survivorId);
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "伤病治疗"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -833,6 +848,7 @@ export default function App() {
   function assignBaseShift(survivorId: string, type: BaseWorkType | "idle") {
     try {
       const nextSession = setBaseAssignment(session, session.account.profile.userId, survivorId, type);
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, type === "idle" ? "班次调整" : `${baseWorkLabel(type)}班安排`));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -844,6 +860,7 @@ export default function App() {
   function upgradeRoomFacility(facilityId: string) {
     try {
       const nextSession = upgradeFacility(session, session.account.profile.userId, facilityId);
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "设施建设"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -855,6 +872,7 @@ export default function App() {
   function upgradePersonalBase(facilityId: AccountBaseFacilityId) {
     try {
       const nextSession = upgradeAccountBase(session, session.account.profile.userId, facilityId);
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "个人基地升级"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -866,6 +884,7 @@ export default function App() {
   function endRoomDay() {
     try {
       const nextSession = advanceRoomDay(session, session.account.profile.userId);
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "结束当天"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -1339,6 +1358,7 @@ export default function App() {
             session={session}
             accountBasePlan={accountBaseDevelopmentPlan(session.account)}
             contributionDraft={contributionDraft}
+            lastBaseActionFeedback={lastBaseActionFeedback}
             goExpedition={() => setView("expedition")}
             onNavigate={setView}
             onAccountBaseUpgrade={upgradePersonalBase}
@@ -1424,6 +1444,7 @@ function Overview({
   session,
   accountBasePlan,
   contributionDraft,
+  lastBaseActionFeedback,
   goExpedition,
   onNavigate,
   onAccountBaseUpgrade,
@@ -1435,6 +1456,7 @@ function Overview({
   session: PlaytestSession;
   accountBasePlan: AccountBaseDevelopmentPlan;
   contributionDraft: ResourceBundle;
+  lastBaseActionFeedback: BaseActionFeedback | null;
   goExpedition: () => void;
   onNavigate: (view: ViewKey) => void;
   onAccountBaseUpgrade: (id: AccountBaseFacilityId) => void;
@@ -1627,6 +1649,24 @@ function Overview({
               })}
             </div>
           </div>
+          {lastBaseActionFeedback && (
+            <div className="base-action-feedback" aria-label="基地操作结果拆解">
+              <div className="base-action-feedback-heading">
+                <span>最近操作</span>
+                <strong>{lastBaseActionFeedback.title}</strong>
+                <small>{lastBaseActionFeedback.detail}</small>
+              </div>
+              <div className="base-action-feedback-grid">
+                {lastBaseActionFeedback.items.map((item) => (
+                  <article className={item.tone} key={item.id}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    <small>{item.detail}</small>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
           {latestReturnPlan?.hasPlan && (
             <div className="overview-return-card" aria-label="基地归队承接">
               <div className="overview-return-heading">
@@ -1874,6 +1914,79 @@ function baseCycleSteps(primaryTaskId: BaseTaskItem["id"]) {
     ...step,
     active: step.label === activeLabel
   }));
+}
+
+function buildBaseActionFeedback(before: PlaytestSession, after: PlaytestSession, title: string): BaseActionFeedback {
+  const roomResourceDelta = resourceBundleDelta(before.room.base.resources, after.room.base.resources);
+  const accountResourceDelta = accountResourceDeltaText(before, after);
+  const moraleDelta = after.room.base.morale - before.room.base.morale;
+  const dangerDelta = after.room.base.danger - before.room.base.danger;
+  const objectiveDelta = after.room.base.objective.repairedParts - before.room.base.objective.repairedParts;
+  const survivorDelta = baseSurvivorDeltaText(before, after);
+  const feedLine = after.room.feed[0]?.body ?? "操作已完成，等待下一步安排。";
+
+  return {
+    detail: feedLine,
+    items: [
+      {
+        detail: accountResourceDelta !== "无变化" ? `个人资源：${accountResourceDelta}` : "房间库存与捐入、建设、治疗会在这里显示。",
+        id: "resources",
+        label: "资源变化",
+        tone: hasNegativeResourceDelta(roomResourceDelta) || accountResourceDelta.includes("-") ? "warning" : hasPositiveResourceDelta(roomResourceDelta) ? "safe" : "warning",
+        value: formatSignedResourceDelta(roomResourceDelta)
+      },
+      {
+        detail: `士气 ${formatSignedNumber(moraleDelta)} / 危险 ${formatSignedNumber(dangerDelta)} / 目标 ${formatSignedNumber(objectiveDelta)}`,
+        id: "base",
+        label: "基地状态",
+        tone: dangerDelta > 0 || moraleDelta < 0 ? "danger" : objectiveDelta > 0 || moraleDelta > 0 || dangerDelta < 0 ? "safe" : "warning",
+        value: `第 ${after.room.base.day} 天`
+      },
+      {
+        detail: survivorDelta.detail,
+        id: "survivors",
+        label: "幸存者状态",
+        tone: survivorDelta.tone,
+        value: survivorDelta.value
+      },
+      {
+        detail: feedLine,
+        id: "feed",
+        label: "最新记录",
+        tone: feedLine.includes("不足") || feedLine.includes("失败") ? "danger" : "safe",
+        value: after.room.feed[0]?.title ?? title
+      }
+    ],
+    title
+  };
+}
+
+function accountResourceDeltaText(before: PlaytestSession, after: PlaytestSession) {
+  const parts = [
+    ...resourceKeys
+      .map((key) => ({ label: resourceLabels[key], value: after.account.resources[key] - before.account.resources[key] }))
+      .filter((item) => item.value !== 0),
+    { label: "稀有零件", value: after.account.resources.rareParts - before.account.resources.rareParts },
+    { label: "情报", value: after.account.resources.intel - before.account.resources.intel }
+  ].filter((item) => item.value !== 0);
+
+  return parts.length > 0 ? parts.map((item) => `${item.label} ${formatSignedNumber(item.value)}`).join(" / ") : "无变化";
+}
+
+function baseSurvivorDeltaText(before: PlaytestSession, after: PlaytestSession) {
+  const beforeById = new Map(before.account.survivors.map((survivor) => [survivor.id, survivor]));
+  const fatigueDelta = after.account.survivors.reduce((sum, survivor) => sum + survivor.fatigue - (beforeById.get(survivor.id)?.fatigue ?? survivor.fatigue), 0);
+  const injuryDelta = after.account.survivors.reduce(
+    (sum, survivor) => sum + survivor.injuries.length - (beforeById.get(survivor.id)?.injuries.length ?? survivor.injuries.length),
+    0
+  );
+  const assignedDelta = after.room.baseAssignments.length - before.room.baseAssignments.length;
+
+  return {
+    detail: `疲劳合计 ${formatSignedNumber(fatigueDelta)} / 伤病 ${formatSignedNumber(injuryDelta)} / 留守班次 ${formatSignedNumber(assignedDelta)}`,
+    tone: injuryDelta > 0 || fatigueDelta > 0 ? "warning" : injuryDelta < 0 || fatigueDelta < 0 || assignedDelta > 0 ? "safe" : "warning",
+    value: assignedDelta !== 0 ? `班次 ${formatSignedNumber(assignedDelta)}` : fatigueDelta !== 0 ? `疲劳 ${formatSignedNumber(fatigueDelta)}` : "无变化"
+  } satisfies Pick<BaseActionFeedback["items"][number], "detail" | "tone" | "value">;
 }
 
 function baseExpeditionSupportBriefing(dayPreview: ReturnType<typeof baseDayPreview>) {
@@ -4116,6 +4229,10 @@ function formatSignedResourceDelta(resources: ResourceBundle) {
 
 function hasPositiveResourceDelta(resources: ResourceBundle) {
   return resourceKeys.some((key) => resources[key] > 0);
+}
+
+function hasNegativeResourceDelta(resources: ResourceBundle) {
+  return resourceKeys.some((key) => resources[key] < 0);
 }
 
 function roadToneForResultBreakdown(tone: "find" | "hazard" | "road") {
