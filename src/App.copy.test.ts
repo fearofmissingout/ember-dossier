@@ -130,6 +130,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("commandActionItems");
     expect(source).toContain("currentActionQueue");
     expect(source).toContain("onClick={item.onSelect}");
+    expect(source).toContain("aria-label=\"当前节点操作提示\"");
+    expect(source).toContain("本节点动作已收拢到上方远征行动台。");
+    expect(source).toContain("避免同一页出现两套可点击按钮。");
     expect(source).toContain("journey-command-result");
     expect(source).toContain("当前阻碍");
     expect(source).toContain("推荐动作");
@@ -158,6 +161,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-action-queue");
     expect(styles).toContain(".journey-action-queue-list");
     expect(styles).toContain(".journey-command-button strong b");
+    expect(styles).toContain(".journey-node-command-note");
+    expect(styles).toContain(".journey-primary-actions .combat-action-grid");
     expect(styles).toContain(".journey-command-result");
     expect(styles).toContain(".journey-mobile-flow");
     expect(styles).toContain(".journey-mobile-route");

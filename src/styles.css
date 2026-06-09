@@ -5384,6 +5384,48 @@ button:disabled {
   justify-self: start;
 }
 
+.journey-node-command-note {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #d7c3a0;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.journey-node-command-note span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.journey-node-command-note strong,
+.journey-node-command-note small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-node-command-note strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.journey-node-command-note small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.journey-primary-actions > .primary-button,
+.journey-primary-actions .combat-loot-grid,
+.journey-primary-actions .journey-actions,
+.journey-primary-actions .combat-action-grid {
+  display: none;
+}
+
 .journey-node h3,
 .journey-node p,
 .journey-log p {

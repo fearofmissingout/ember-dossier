@@ -3587,6 +3587,11 @@ function JourneyPanel({
         <span className="subtle-pill">{nodeTypeLabel}</span>
         <h3>{nodeTitle}</h3>
         <p>{nodeBody}</p>
+        <div className="journey-node-command-note" aria-label="当前节点操作提示">
+          <span>操作入口</span>
+          <strong>本节点动作已收拢到上方远征行动台。</strong>
+          <small>这里保留过程、敌人意图、节点说明和最近日志，避免同一页出现两套可点击按钮。</small>
+        </div>
         {pendingRoad ? (
           <div className="road-choice-card">
             <div>
