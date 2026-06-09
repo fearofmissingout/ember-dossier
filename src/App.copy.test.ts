@@ -622,6 +622,22 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".browser-smoke-grid");
   });
 
+  test("keeps lightweight game art attached to survivor and combat surfaces", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("function SurvivorPortrait");
+    expect(source).toContain("<SurvivorPortrait survivor={survivor}");
+    expect(source).toContain("<SurvivorPortrait compact");
+    expect(source).toContain("survivorRoleTone");
+    expect(styles).toContain(".survivor-portrait");
+    expect(styles).toContain(".survivor-portrait.medic");
+    expect(styles).toContain(".survivor-portrait.tech");
+    expect(styles).toContain(".survivor-portrait.guard");
+    expect(styles).toContain(".survivor-portrait.compact");
+    expect(styles).toContain(".frontline-row");
+  });
+
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");

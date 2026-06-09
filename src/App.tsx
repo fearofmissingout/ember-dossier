@@ -2683,7 +2683,7 @@ function Survivors({
           const capped = accountSurvivor ? isSurvivorAtLevelCap(accountSurvivor) : false;
           return (
           <article className={selectedIds.includes(survivor.id) ? "survivor-card selected" : "survivor-card"} key={survivor.id}>
-            <div className="portrait-mark">{survivor.codename.slice(0, 2)}</div>
+            <SurvivorPortrait survivor={survivor} selected={selectedIds.includes(survivor.id)} />
             <div className="card-copy">
               <div className="card-title-line">
                 <div>
@@ -4553,6 +4553,7 @@ function JourneyPanel({
             <div className="frontline-grid">
               {journey.combat.frontline.map((line) => (
                 <div className={`frontline-row ${line.status}`} key={line.survivorId}>
+                  <SurvivorPortrait compact survivor={squad.find((survivor) => survivor.id === line.survivorId)} status={line.status} />
                   <div>
                     <strong>{line.name}</strong>
                     <span>
@@ -5195,6 +5196,49 @@ function LocationArtwork({
       <i className="location-art-signal" />
     </div>
   );
+}
+
+function SurvivorPortrait({
+  compact = false,
+  selected = false,
+  status,
+  survivor
+}: {
+  compact?: boolean;
+  selected?: boolean;
+  status?: "ready" | "steady" | "strained" | "down";
+  survivor?: Survivor;
+}) {
+  const roleTone = survivor ? survivorRoleTone(survivor) : "scout";
+  const statusTone = status ?? (survivor && survivor.injuries.length > 0 ? "strained" : "ready");
+  const initials = survivor?.codename.slice(0, 2) ?? "队";
+
+  return (
+    <div className={`survivor-portrait ${roleTone} ${statusTone} ${selected ? "selected" : ""} ${compact ? "compact" : ""}`} aria-hidden="true">
+      <i className="survivor-portrait-halo" />
+      <i className="survivor-portrait-head" />
+      <i className="survivor-portrait-body" />
+      <i className="survivor-portrait-gear" />
+      <b>{initials}</b>
+    </div>
+  );
+}
+
+function survivorRoleTone(survivor: Survivor) {
+  const { medical, stamina, technical, willpower } = survivor.attributes;
+  if (medical >= technical && medical >= stamina) {
+    return "medic";
+  }
+
+  if (technical >= stamina && technical >= willpower) {
+    return "tech";
+  }
+
+  if (stamina >= willpower) {
+    return "guard";
+  }
+
+  return "scout";
 }
 
 function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {
