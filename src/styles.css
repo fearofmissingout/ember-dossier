@@ -1376,6 +1376,104 @@ button:disabled {
   line-height: 1.35;
 }
 
+.base-schedule-preview {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 11px;
+  border: 1px solid #b8aa86;
+  border-radius: 8px;
+  background: #f9f3e4;
+}
+
+.base-schedule-preview-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.base-schedule-preview-heading span,
+.base-schedule-preview-grid span {
+  color: #71562d;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.base-schedule-preview-heading strong,
+.base-schedule-preview-heading small,
+.base-schedule-preview-grid strong,
+.base-schedule-preview-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-schedule-preview-heading strong {
+  color: #352c1f;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.base-schedule-preview-heading small {
+  color: #665b48;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-schedule-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-schedule-preview-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 98px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d8c6a6;
+  border-radius: 8px;
+  background: #fffdf7;
+}
+
+.base-schedule-preview-grid article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.base-schedule-preview-grid article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.base-schedule-preview-grid article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.base-schedule-preview-grid article.neutral {
+  border-color: #cfc3a8;
+  background: #fffdf7;
+}
+
+.base-schedule-preview-grid strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.base-schedule-preview-grid small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .base-expedition-briefing {
   display: grid;
   gap: 10px;
@@ -9393,6 +9491,7 @@ button:disabled {
     .browser-smoke-grid,
     .journey-action-pulse,
     .journey-turn-summary,
+    .base-schedule-preview-grid,
     .room-duty-board,
     .ownership-boundary-grid,
     .room-launch-grid,

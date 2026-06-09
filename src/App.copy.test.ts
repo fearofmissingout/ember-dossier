@@ -434,6 +434,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("lastBaseActionFeedback");
     expect(source).toContain("buildBaseActionFeedback");
     expect(source).toContain("baseDaySettlementPulse");
+    expect(source).toContain("baseSchedulePreview");
+    expect(source).toContain("aria-label=\"基地日程预演\"");
+    expect(source).toContain("按下结束当天后，会先结算这些基地后果。");
+    expect(source).toContain("用它判断该先补资源、排护理、修目标，还是直接进入下一天。");
     expect(source).toContain("BaseActionFeedbackPanel");
     expect(source).toContain("baseFeedbackForScope");
     expect(source).toContain("aria-label={label}");
@@ -466,6 +470,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".base-action-feedback-grid article.warning");
     expect(styles).toContain(".base-settlement-pulse");
     expect(styles).toContain(".base-settlement-pulse-grid");
+    expect(styles).toContain(".base-schedule-preview");
+    expect(styles).toContain(".base-schedule-preview-grid");
+    expect(styles).toContain(".base-schedule-preview-grid article.danger");
     expect(styles).toContain(".base-expedition-briefing");
     expect(styles).toContain(".base-expedition-briefing-grid");
     expect(styles).toContain(".overview-return-card");

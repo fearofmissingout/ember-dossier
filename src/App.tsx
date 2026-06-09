@@ -1593,6 +1593,38 @@ function Overview({
   ];
   const baseExpeditionSupport = baseExpeditionSupportBriefing(dayPreview);
   const settlementPulse = baseDaySettlementPulse(lastBaseActionFeedback, session);
+  const baseSchedulePreview = [
+    {
+      detail: dayPreview.supplySummary,
+      label: "消耗",
+      tone: dayPreview.foodShortage + dayPreview.waterShortage > 0 ? "danger" : "safe",
+      value: `食物 -${dayPreview.foodNeed - dayPreview.foodShortage} / 水 -${dayPreview.waterNeed - dayPreview.waterShortage}`
+    },
+    {
+      detail: dayPreview.recoverySummary,
+      label: "恢复",
+      tone: dayPreview.shiftCounts.care > 0 ? "safe" : dayPreview.recoverySummary.includes("0 人恢复中") ? "neutral" : "warning",
+      value: `${dayPreview.shiftCounts.care} 个护理班`
+    },
+    {
+      detail: dayPreview.repairSummary,
+      label: "目标",
+      tone: dayPreview.objectiveGain > 0 ? "safe" : "warning",
+      value: `${dayPreview.objectiveCurrent} → ${dayPreview.objectiveProjected}`
+    },
+    {
+      detail: dayPreview.guardSummary,
+      label: "危险",
+      tone: dayPreview.dangerDelta <= 0 ? "safe" : dayPreview.dangerDelta >= 5 ? "danger" : "warning",
+      value: formatSignedNumber(dayPreview.dangerDelta)
+    },
+    {
+      detail: dayPreview.forageSummary,
+      label: "搜寻",
+      tone: dayPreview.shiftCounts.forage > 0 ? "safe" : "neutral",
+      value: dayPreview.shiftCounts.forage > 0 ? "有补给进账" : "无人搜寻"
+    }
+  ];
 
   return (
     <div className="view-grid">
@@ -1745,6 +1777,22 @@ function Overview({
                   </button>
                 );
               })}
+            </div>
+          </div>
+          <div className="base-schedule-preview" aria-label="基地日程预演">
+            <div className="base-schedule-preview-heading">
+              <span>日程预演</span>
+              <strong>按下结束当天后，会先结算这些基地后果。</strong>
+              <small>用它判断该先补资源、排护理、修目标，还是直接进入下一天。</small>
+            </div>
+            <div className="base-schedule-preview-grid">
+              {baseSchedulePreview.map((item) => (
+                <article className={item.tone} key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.detail}</small>
+                </article>
+              ))}
             </div>
           </div>
           <BaseActionFeedbackPanel feedback={lastBaseActionFeedback} label="基地操作结果拆解" />

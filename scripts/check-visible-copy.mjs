@@ -65,7 +65,8 @@ const requiredChineseAnchors = [
   "本回合战斗指挥",
   "多人开局指挥",
   "发布批次判定",
-  "手机端单页出征总控"
+  "手机端单页出征总控",
+  "基地日程预演"
 ];
 
 const additionalRequiredChineseAnchors = [
