@@ -18,7 +18,7 @@ export const requiredProductionStrings = [
   "训练生命",
   "账号战利",
   "捐入",
-  "基地行动中枢",
+  "今日指挥板",
   "出征开局预案",
   "战后复盘",
   "单页行动",
@@ -97,31 +97,44 @@ async function checkProductionBundle() {
   }
 
   const html = await htmlResponse.text();
-  const assetPath = html.match(/src="(\/assets\/index-[^"]+\.js)"/)?.[1];
-  if (!assetPath) {
-    throw new Error("Could not find production JavaScript asset in index.html.");
+  const assetPaths = findJavaScriptAssetPaths(html);
+  if (assetPaths.length === 0) {
+    throw new Error("Could not find production JavaScript assets in index.html.");
   }
 
-  const assetUrl = new URL(assetPath, htmlUrl.origin);
-  assetUrl.searchParams.set("smoke", String(Date.now()));
-  const assetResponse = await fetch(assetUrl, {
-    headers: {
-      "Cache-Control": "no-cache"
-    }
-  });
-
-  if (!assetResponse.ok) {
-    throw new Error(`Production JavaScript asset returned HTTP ${assetResponse.status}.`);
-  }
-
-  const asset = await assetResponse.text();
-  const missingStrings = requiredProductionStrings.filter((text) => !asset.includes(text));
+  const assets = await Promise.all(assetPaths.map((assetPath) => fetchJavaScriptAsset(htmlUrl.origin, assetPath)));
+  const bundleText = assets.map((asset) => asset.text).join("\n");
+  const missingStrings = requiredProductionStrings.filter((text) => !bundleText.includes(text));
 
   if (missingStrings.length > 0) {
     throw new Error(`Production bundle is missing required playtest strings: ${missingStrings.join(", ")}`);
   }
 
-  console.log(`Production bundle is reachable and contains playtest entry points. asset=${assetPath}`);
+  console.log(`Production bundle is reachable and contains playtest entry points. assets=${assetPaths.join(", ")}`);
+}
+
+export function findJavaScriptAssetPaths(html) {
+  const paths = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((match) => match[1]);
+  return [...new Set(paths)];
+}
+
+async function fetchJavaScriptAsset(origin, assetPath) {
+  const assetUrl = new URL(assetPath, origin);
+  assetUrl.searchParams.set("smoke", String(Date.now()));
+  const response = await fetch(assetUrl, {
+    headers: {
+      "Cache-Control": "no-cache"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Production JavaScript asset ${assetPath} returned HTTP ${response.status}.`);
+  }
+
+  return {
+    path: assetPath,
+    text: await response.text()
+  };
 }
 
 async function checkPlaytestSignupEndpoint() {
