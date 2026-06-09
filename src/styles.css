@@ -5464,6 +5464,78 @@ button:disabled {
   gap: 10px;
 }
 
+.journey-situation-report {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.journey-situation-report article {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid #c8ad82;
+  border-radius: 8px;
+  background: #fff9eb;
+}
+
+.journey-situation-report span {
+  color: #8c4b32;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.journey-situation-report strong,
+.journey-situation-report small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-situation-report strong {
+  padding-right: 52px;
+  color: #2d3029;
+  font-size: 15px;
+}
+
+.journey-situation-report b {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 42px;
+  padding: 3px 6px;
+  border: 1px solid #d8c4a4;
+  border-radius: 999px;
+  background: #fffdf5;
+  color: #5f422c;
+  font-size: 11px;
+  text-align: center;
+}
+
+.journey-situation-report small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.journey-situation-report article.safe {
+  border-color: #8fb58d;
+  background: #eef7e9;
+}
+
+.journey-situation-report article.warning {
+  border-color: #d4a948;
+  background: #fff5d8;
+}
+
+.journey-situation-report article.danger {
+  border-color: #c9725c;
+  background: #fff0ea;
+}
+
 .route-pacing {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -9631,6 +9703,7 @@ button:disabled {
   .journey-command-snapshot,
   .journey-result-breakdown,
   .journey-status-grid,
+  .journey-situation-report,
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,
@@ -9891,6 +9964,7 @@ button:disabled {
   .journey-status-grid,
   .journey-result-breakdown,
   .route-pacing,
+  .journey-situation-report,
   .journey-objective-card,
   .extraction-preview-options,
     .support-plan-grid,

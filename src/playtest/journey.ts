@@ -200,6 +200,15 @@ export type JourneyActionGuide = {
   tone: JourneyActionGuideTone;
 };
 
+export type JourneySituationReportItem = {
+  body: string;
+  id: string;
+  label: string;
+  title: string;
+  tone: JourneyProcessStepTone;
+  value: string;
+};
+
 export type JourneyDecisionCategory = "event" | "road" | "shop" | "camp" | "combat-loot" | "base-command";
 export type JourneyDecisionTone = "safe" | "warning" | "danger";
 
@@ -915,6 +924,67 @@ export function journeyProcessDigest(journey: JourneyState): JourneyProcessDiges
     steps,
     summary: `${pace.currentTitle}。${blockers.length > 0 ? blockers.join("，") : "可以推进下一段或提前返程"}。${pace.clockLabel}，${pace.etaLabel}。`
   };
+}
+
+export function journeySituationReport(journey: JourneyState): JourneySituationReportItem[] {
+  const pace = routePaceFor(journey);
+  const activeNode = journey.nodes[Math.max(0, Math.min(journey.currentNodeIndex, Math.max(0, journey.nodes.length - 1)))] ?? null;
+  const latestTravel = journey.travelHistory[journey.travelHistory.length - 1] ?? null;
+  const latestDecision = (journey.decisions ?? [])[Math.max(0, (journey.decisions ?? []).length - 1)] ?? null;
+  const latestCombat = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const conditionPeak = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst, journey.pressure);
+  const conditionTone: JourneyProcessStepTone = conditionPeak >= 80 ? "danger" : conditionPeak >= 55 ? "warning" : "safe";
+  const nextBlocker = journey.combat
+    ? `先打完与${journey.combat.enemyName}的回合制战斗`
+    : journey.pendingCombatLoot
+      ? `先处理${journey.pendingCombatLoot.enemyName}的战利品`
+      : journey.pendingRoadEvent
+        ? `先处理路口：${journey.pendingRoadEvent.title}`
+        : activeNode?.type === "extraction"
+          ? "可以撤离并结算回基地"
+          : `处理当前${nodeTypeLabel(activeNode?.type)}后推进路线`;
+
+  const routeTone: JourneyProcessStepTone =
+    journey.extractionStatus === "complete" || activeNode?.type === "extraction" ? "safe" : pace.remainingStops <= 1 ? "warning" : "neutral";
+  const outcomeTone: JourneyProcessStepTone =
+    latestCombat?.tone === "danger" || latestDecision?.tone === "danger"
+      ? "danger"
+      : latestCombat?.tone === "warning" || latestDecision?.tone === "warning" || latestTravel?.tone === "warning"
+        ? "warning"
+        : "safe";
+
+  return [
+    {
+      body: `${nextBlocker}。${pace.clockLabel}，${pace.etaLabel}。`,
+      id: "route",
+      label: "路线推进",
+      title: `${pace.currentStop}/${pace.totalStops}：${pace.currentTitle}`,
+      tone: routeTone,
+      value: `${pace.progressPercent}%`
+    },
+    {
+      body: `压力 ${journey.pressure}% / 疲劳 ${journey.condition.fatigue} / 饥饿 ${journey.condition.hunger} / 口渴 ${journey.condition.thirst}。`,
+      id: "condition",
+      label: "队伍状态",
+      title: conditionTone === "danger" ? "必须止损" : conditionTone === "warning" ? "状态吃紧" : "还能推进",
+      tone: conditionTone,
+      value: conditionTone === "danger" ? "高危" : conditionTone === "warning" ? "紧张" : "稳定"
+    },
+    {
+      body: latestDecision
+        ? `${latestDecision.nodeTitle}：${latestDecision.detail}。${latestDecision.impactText}`
+        : latestCombat
+          ? `第 ${latestCombat.round} 回合：${latestCombat.actorName} ${latestCombat.actionLabel}。${latestCombat.outcomeText}`
+          : latestTravel
+            ? `${latestTravel.title}：${latestTravel.conditionText}。${latestTravel.effects.slice(0, 3).join(" / ")}`
+            : "尚未产生路线选择。先处理当前节点，系统会记录选择、代价和收益。",
+      id: "last-outcome",
+      label: "最近后果",
+      title: latestDecision?.label ?? latestCombat?.outcomeText ?? latestTravel?.title ?? "等待第一次选择",
+      tone: outcomeTone,
+      value: latestDecision ? "已记录" : latestCombat ? "战斗" : latestTravel ? "行军" : "待行动"
+    }
+  ];
 }
 
 export function journeyActionGuide(journey: JourneyState): JourneyActionGuide {

@@ -19,6 +19,7 @@ import {
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
+  journeySituationReport,
   resolveJourneyExtraction,
   roadEncounterChoicePreview,
   resolveCampAction,
@@ -407,6 +408,41 @@ describe("journey route generation", () => {
     expect(roadDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["最近行军", "待处理路口"]));
     expect(combatDigest.steps.map((step) => step.label)).toEqual(expect.arrayContaining(["当前战斗", "最近战斗"]));
     expect(combatDigest.steps.find((step) => step.label === "最近战斗")?.body).toContain("第 1 回合");
+  });
+
+  test("reports the current journey situation for route condition and latest outcome", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const session = createStarterSession("user-a", "Alice", "situation-report-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 1, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "water-plant",
+      60
+    );
+
+    const opening = journeySituationReport(journey);
+    const road = advanceJourneyTravel(setJourneyTravelPlan(journey, "scavenge"), squad, 60);
+    const roadReport = journeySituationReport(road);
+    const combatReport = journeySituationReport({
+      ...journey,
+      combat: createCombatForNode(journey.nodes[1], squad, 60),
+      currentNodeIndex: 1,
+      pressure: 82
+    });
+
+    expect(opening.map((item) => item.id)).toEqual(["route", "condition", "last-outcome"]);
+    expect(opening[0]).toMatchObject({ label: "路线推进", tone: "neutral", value: "0%" });
+    expect(opening[1]).toMatchObject({ label: "队伍状态", tone: "safe", value: "稳定" });
+    expect(opening[2].body).toContain("尚未产生路线选择");
+    expect(roadReport[0].body).toContain("先处理路口");
+    expect(roadReport[2].value).toBe("行军");
+    expect(combatReport[0].body).toContain("先打完");
+    expect(combatReport[1]).toMatchObject({ tone: "danger", value: "高危" });
   });
 
   test("guides the next expedition action for event road and combat states", () => {

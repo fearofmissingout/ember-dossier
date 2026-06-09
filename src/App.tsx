@@ -81,6 +81,7 @@ import {
   journeyObjectivePreview,
   journeyProcessDigest,
   journeyRouteBriefing,
+  journeySituationReport,
   recordJourneyDecision,
   resolveCampAction,
   resolveBaseCommand,
@@ -3456,6 +3457,7 @@ function JourneyPanel({
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
   const processDigest = journeyProcessDigest(journey);
+  const situationReport = journeySituationReport(journey);
   const actionGuide = journeyActionGuide(journey);
   const routeIntel = journeyRouteIntel(journey, routePace);
   const latestActionResult = journey.logs[journey.logs.length - 1] ?? nodeBody;
@@ -3919,6 +3921,16 @@ function JourneyPanel({
         </div>
       </section>
       <div className="journey-detail-grid" id="journey-process" aria-label="远征详情">
+      <div className="journey-situation-report" aria-label="出征局势报告">
+        {situationReport.map((item) => (
+          <article className={item.tone} key={item.id}>
+            <span>{item.label}</span>
+            <strong>{item.title}</strong>
+            <b>{item.value}</b>
+            <small>{item.body}</small>
+          </article>
+        ))}
+      </div>
       <div className="route-pacing" aria-label="路线节奏">
         <div>
           <span>路线进度</span>
