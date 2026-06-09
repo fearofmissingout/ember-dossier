@@ -858,6 +858,24 @@ export type BaseDevelopmentPlan = {
   summary: string;
 };
 
+export type BaseDevelopmentRouteStep = {
+  detail: string;
+  id: string;
+  impact: string;
+  label: string;
+  nextAction: string;
+  status: "ready" | "blocked" | "complete";
+  title: string;
+};
+
+export type BaseDevelopmentRoute = {
+  blockedCount: number;
+  materialGap: number;
+  readyCount: number;
+  steps: BaseDevelopmentRouteStep[];
+  summary: string;
+};
+
 export type BaseDayPreview = {
   dangerDelta: number;
   dangerRelief: number;
@@ -1350,6 +1368,53 @@ export function baseDevelopmentPlan(session: PlaytestSession): BaseDevelopmentPl
     projects,
     recommended: activeProjects.slice(0, 3),
     summary: `当前材料 ${materials}。可推进 ${affordableCount} 个项目，仍受材料限制 ${blockedCount} 个。`
+  };
+}
+
+export function baseDevelopmentRoute(session: PlaytestSession): BaseDevelopmentRoute {
+  const plan = baseDevelopmentPlan(session);
+  const steps: BaseDevelopmentRouteStep[] = plan.recommended.map((project, index) => {
+    const status = project.canAfford ? "ready" : "blocked";
+    return {
+      detail: project.canAfford
+        ? `${project.name} 已可推进，消耗 ${project.cost} 材料后接入${project.expeditionStage}。`
+        : `${project.name} 还缺 ${project.materialDeficit} 材料；先通过搜寻、捐入或出征战利补齐。`,
+      id: project.id,
+      impact: `基地：${project.baseImpact} / 出征：${project.expeditionImpact}`,
+      label: `第 ${index + 1} 步`,
+      nextAction: project.nextStep,
+      status,
+      title: `${project.name} ${project.action === "Build" ? "建造" : "升级"}到 Lv.${project.nextLevel}`
+    } satisfies BaseDevelopmentRouteStep;
+  });
+
+  if (steps.length === 0) {
+    steps.push({
+      detail: "当前房间设施已经到达阶段上限，可以把资源转向出征、恢复和个人基地成长。",
+      id: "complete",
+      impact: "基地：日结稳定 / 出征：后勤线完整",
+      label: "路线完成",
+      nextAction: "开始更高风险的远征，或创建新房间继续协作建设。",
+      status: "complete",
+      title: "设施路线已完成"
+    });
+  }
+
+  const readyCount = steps.filter((step) => step.status === "ready").length;
+  const blockedCount = steps.filter((step) => step.status === "blocked").length;
+  const materialGap = plan.recommended.reduce((sum, project) => sum + project.materialDeficit, 0);
+
+  return {
+    blockedCount,
+    materialGap,
+    readyCount,
+    steps,
+    summary:
+      materialGap > 0
+        ? `建设路线：${readyCount} 项可立即推进，推荐队列仍缺 ${materialGap} 材料。`
+        : readyCount > 0
+          ? `建设路线：${readyCount} 项已满足材料，优先推进能接入出征的设施。`
+          : "建设路线已完成，当前资源可转向出征和恢复。"
   };
 }
 

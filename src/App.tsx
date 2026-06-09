@@ -31,6 +31,7 @@ import {
   accountBaseDevelopmentPlan,
   accountGrowthBoundary,
   baseDevelopmentPlan,
+  baseDevelopmentRoute,
   baseRecoveryPlan,
   baseShiftPlan,
   baseTaskList,
@@ -47,6 +48,7 @@ import {
   type AccountBaseFacilityId,
   type BaseTaskItem,
   type BaseDevelopmentPlan,
+  type BaseDevelopmentRoute,
   type BaseRecoveryPlan,
   type BaseShiftPlan,
   type RoomCooperationSummary,
@@ -1429,6 +1431,7 @@ export default function App() {
             state={state}
             baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, "facilities")}
             developmentPlan={baseDevelopmentPlan(session)}
+            developmentRoute={baseDevelopmentRoute(session)}
             onUpgrade={upgradeRoomFacility}
           />
         )}
@@ -4913,11 +4916,13 @@ function Facilities({
   state,
   baseFeedback,
   developmentPlan,
+  developmentRoute,
   onUpgrade
 }: {
   state: GameState;
   baseFeedback: BaseActionFeedback | null;
   developmentPlan: BaseDevelopmentPlan;
+  developmentRoute: BaseDevelopmentRoute;
   onUpgrade: (id: string) => void;
 }) {
   return (
@@ -4934,6 +4939,28 @@ function Facilities({
               ? "下一轮建造周期推荐项目"
               : "所有设施已经完全发展"}
           </small>
+        </div>
+        <div className="development-route-board" aria-label="基地建设路线板">
+          <div className="development-route-heading">
+            <div>
+              <span>建设路线</span>
+              <strong>{developmentRoute.summary}</strong>
+            </div>
+            <small>
+              可推进 {developmentRoute.readyCount} / 受阻 {developmentRoute.blockedCount} / 材料缺口 {developmentRoute.materialGap}
+            </small>
+          </div>
+          <div className="development-route-steps">
+            {developmentRoute.steps.map((step) => (
+              <article className={step.status} key={step.id}>
+                <span>{step.label}</span>
+                <strong>{step.title}</strong>
+                <small>{step.detail}</small>
+                <p>{step.impact}</p>
+                <em>{step.nextAction}</em>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="development-queue-board" aria-label="建设队列总览">
           {developmentPlan.recommended.length ? (

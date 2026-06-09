@@ -56,7 +56,8 @@ const requiredChineseAnchors = [
   "浏览器冒烟清单",
   "本回合指挥摘要",
   "手机端当前行动面板",
-  "出征行动脉冲"
+  "出征行动脉冲",
+  "基地建设路线板"
 ];
 
 const additionalRequiredChineseAnchors = [

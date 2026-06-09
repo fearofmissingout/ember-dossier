@@ -361,8 +361,12 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("facilityImpactPreview");
+    expect(source).toContain("baseDevelopmentRoute");
+    expect(source).toContain("developmentRoute={baseDevelopmentRoute(session)}");
     expect(source).toContain("aria-label=\"设施升级收益预览\"");
     expect(source).toContain("aria-label=\"设施推荐原因\"");
+    expect(source).toContain("aria-label=\"基地建设路线板\"");
+    expect(source).toContain("建设路线");
     expect(source).toContain("aria-label=\"建设队列总览\"");
     expect(source).toContain("development-queue-board");
     expect(source).toContain("材料缺口");
@@ -381,6 +385,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("已解锁出征方针");
     expect(source).toContain("建造后解锁");
     expect(styles).toContain(".development-project-why");
+    expect(styles).toContain(".development-route-board");
+    expect(styles).toContain(".development-route-steps");
     expect(styles).toContain(".development-queue-board");
     expect(styles).toContain(".facility-impact-grid");
     expect(styles).toContain(".facility-doctrine-unlock");

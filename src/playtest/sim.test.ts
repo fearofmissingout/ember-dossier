@@ -17,6 +17,7 @@ import {
   baseDayEventBreadth,
   baseDayPreview,
   baseDevelopmentPlan,
+  baseDevelopmentRoute,
   baseRecoveryPlan,
   baseShiftPlan,
   baseTaskList,
@@ -518,6 +519,25 @@ describe("playtest room loop", () => {
     expect(clinic?.reason).toContain("1 名伤员");
     expect(radio?.reason).toContain("房间目标还没完成");
     expect(clinic?.nextStep).toContain("建议本轮");
+  });
+
+  test("base development route summarizes build steps and material gaps", () => {
+    const session = createStarterSession("user-a", "Alice", "development-route-room");
+    session.room.base.resources.materials = 6;
+
+    const route = baseDevelopmentRoute(session);
+
+    expect(route.steps).toHaveLength(3);
+    expect(route.readyCount).toBeGreaterThan(0);
+    expect(route.blockedCount).toBeGreaterThan(0);
+    expect(route.materialGap).toBeGreaterThan(0);
+    expect(route.summary).toContain("建设路线");
+    expect(route.steps[0]).toMatchObject({
+      label: "第 1 步",
+      status: "ready"
+    });
+    expect(route.steps.some((step) => step.impact.includes("出征"))).toBe(true);
+    expect(route.steps.some((step) => step.nextAction.includes("建议本轮"))).toBe(true);
   });
 
   test("summarizes urgent base tasks for supplies recovery shifts and upgrades", () => {
