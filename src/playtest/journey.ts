@@ -1894,6 +1894,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.05,
       rollShiftSuccess: -0.08,
       successLog: "调度员收下弹药，交出一张能避开两处死水的管线图。"
+    },
+    {
+      costPriority: ["water", "materials"],
+      failLog: "夜班泵工把扳手插回腰带，说干口袋的人不要问干井在哪里。",
+      label: "向夜班泵工买干井坐标",
+      pressureFail: 5,
+      pressureSuccess: -8,
+      rewardKeys: ["water", "medicine"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.08,
+      successLog: "夜班泵工收下净水和零件，画出一处还能抽出清水的干井坐标。"
     }
   ],
   urban: [
@@ -1940,6 +1951,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.06,
       rollShiftSuccess: -0.09,
       successLog: "调度员收下燃料，把一叠还能开门的旧车票塞进队伍手里。"
+    },
+    {
+      costPriority: ["materials", "food"],
+      failLog: "楼道修鞋匠把针线盒合上，说没有鞋底的人也走不了远路。",
+      label: "请楼道修鞋匠补鞋",
+      pressureFail: 5,
+      pressureSuccess: -7,
+      rewardKeys: ["medicine", "materials"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.07,
+      successLog: "修鞋匠收下零件和口粮，给队伍补好鞋底，还塞来一卷干净绷带。"
     }
   ],
   weird: [
@@ -1986,6 +2008,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.08,
       rollShiftSuccess: -0.1,
       successLog: "摊主从画框背后递来一把轻得不正常的钥匙和几枚子弹。"
+    },
+    {
+      costPriority: ["food", "medicine"],
+      failLog: "倒读书摊的老板把书倒扣回去，书页开始小声念队伍的失误。",
+      label: "向倒读书摊买反页地图",
+      pressureFail: 7,
+      pressureSuccess: -9,
+      rewardKeys: ["medicine", "fuel"],
+      rollShiftFail: 0.07,
+      rollShiftSuccess: -0.09,
+      successLog: "书摊老板收下食物和药品，把一张需要倒着看的地图交给队伍。"
     }
   ],
   wilds: [
@@ -2032,6 +2065,17 @@ const familyShops: Record<LocationFamily, ShopTemplate[]> = {
       rollShiftFail: 0.05,
       rollShiftSuccess: -0.08,
       successLog: "巡田老人收下弹药和零件，指给队伍一条不会踩进沼气的田埂。"
+    },
+    {
+      costPriority: ["water", "food"],
+      failLog: "桥下渔网人把网绳重新缠紧，说空肚子换不到渡河口令。",
+      label: "向桥下渔网人买渡口",
+      pressureFail: 5,
+      pressureSuccess: -8,
+      rewardKeys: ["food", "materials"],
+      rollShiftFail: 0.05,
+      rollShiftSuccess: -0.08,
+      successLog: "渔网人收下水和口粮，交出一截网绳和通往浅滩的渡口口令。"
     }
   ]
 };
