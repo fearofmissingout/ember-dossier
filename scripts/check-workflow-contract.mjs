@@ -29,6 +29,7 @@ const requiredChecks = [
     id: "doc stage: local test",
     test: ({ docs }) =>
       docs.includes("### 2.3") &&
+      docs.includes("npm run check:quick") &&
       docs.includes("npm run iteration:check") &&
       docs.includes("npm run playable:check") &&
       docs.includes("npm run copy:check")
@@ -90,12 +91,25 @@ const requiredChecks = [
     id: "doc qa: local browser smoke checklist",
     test: ({ docs }) =>
       docs.includes("#### 2.3.1 本地浏览器冒烟清单") &&
+      docs.includes("npm run dev:playtest") &&
       docs.includes("npm run smoke:local") &&
       docs.includes("http://localhost:5173/?room=playtest-smoke") &&
       docs.includes("视口：桌面 / 手机") &&
       docs.includes("路线预告") &&
       docs.includes("敌人意图") &&
       docs.includes("数据库不可用")
+  },
+  {
+    id: "package script: dev:playtest",
+    test: ({ scripts }) => scripts["dev:playtest"] === "vite --host 0.0.0.0 --port 5173"
+  },
+  {
+    id: "package script: check:quick",
+    test: ({ scripts }) => scripts["check:quick"] === "node scripts/check-iteration-gates.mjs --quick"
+  },
+  {
+    id: "package script: check:release",
+    test: ({ scripts }) => scripts["check:release"] === "node scripts/check-iteration-gates.mjs --release"
   },
   {
     id: "package script: local:check",
@@ -168,6 +182,7 @@ const requiredChecks = [
     id: "smoke script: local browser route",
     test: ({ smoke }) =>
       smoke.includes("本地浏览器冒烟清单") &&
+      smoke.includes("npm run dev:playtest") &&
       smoke.includes("http://localhost:5173/?room=playtest-smoke") &&
       smoke.includes("敌人意图") &&
       smoke.includes("数据库不可用")

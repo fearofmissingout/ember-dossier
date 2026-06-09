@@ -9,10 +9,12 @@ function completeContractFiles(overrides = {}) {
 ### 2.2 Implementation
 Rules live in src/playtest/
 ### 2.3 Local test
+npm run check:quick
 npm run iteration:check
 npm run playable:check
 npm run copy:check
 #### 2.3.1 本地浏览器冒烟清单
+npm run dev:playtest
 npm run smoke:local
 http://localhost:5173/?room=playtest-smoke
 视口：桌面 / 手机
@@ -75,6 +77,9 @@ if (productionMode) {
 `,
     packageJson: JSON.stringify({
       scripts: {
+        "dev:playtest": "vite --host 0.0.0.0 --port 5173",
+        "check:quick": "node scripts/check-iteration-gates.mjs --quick",
+        "check:release": "node scripts/check-iteration-gates.mjs --release",
         "local:check": "node scripts/check-iteration-gates.mjs --quick",
         "iteration:check": "node scripts/check-iteration-gates.mjs",
         "copy:check": "node scripts/check-visible-copy.mjs",
@@ -92,6 +97,7 @@ if (productionMode) {
     }),
     smoke: `
 本地浏览器冒烟清单
+npm run dev:playtest
 http://localhost:5173/?room=playtest-smoke
 敌人意图
 数据库不可用
@@ -156,6 +162,9 @@ describe("playtest iteration workflow contract", () => {
         gates: 'run("npm", ["test"], "Unit and smoke tests"); run("npm", ["run", "build"], "Typecheck and production build");',
         packageJson: JSON.stringify({
           scripts: {
+        "dev:playtest": "vite --host 0.0.0.0 --port 5173",
+        "check:quick": "node scripts/check-iteration-gates.mjs --quick",
+        "check:release": "node scripts/check-iteration-gates.mjs --release",
         "iteration:check": "node scripts/check-iteration-gates.mjs",
         "local:check": "node scripts/check-iteration-gates.mjs --quick",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
@@ -196,6 +205,9 @@ if (productionMode) {
 `,
         packageJson: JSON.stringify({
           scripts: {
+            "dev:playtest": "vite --host 0.0.0.0 --port 5173",
+            "check:quick": "node scripts/check-iteration-gates.mjs --quick",
+            "check:release": "node scripts/check-iteration-gates.mjs --release",
             "iteration:check": "node scripts/check-iteration-gates.mjs",
             "local:check": "node scripts/check-iteration-gates.mjs --quick",
             "copy:check": "node scripts/check-visible-copy.mjs",

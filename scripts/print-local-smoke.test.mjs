@@ -10,7 +10,7 @@ describe("local browser smoke checklist", () => {
       expect.arrayContaining(["auth", "baseEventForecast", "facilityDevelopment", "facilitySynergy", "memberCooperation", "combatOrEvent", "databaseFallback"])
     );
     expect(text).toContain("本地浏览器冒烟清单");
-    expect(text).toContain("npm run dev");
+    expect(text).toContain("npm run dev:playtest");
     expect(text).toContain("基地事件预判");
     expect(text).toContain("基地经营优先级");
     expect(text).toContain("设施发展");

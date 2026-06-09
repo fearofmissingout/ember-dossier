@@ -46,15 +46,25 @@
 
 ### 2.3 本地测试
 
-每个切片完成后必须运行：
+日常开发先跑快检：
+
+```bash
+npm run check:quick
+```
+
+`check:quick` 只检查工作流契约、本地冒烟契约、中文文案和核心试玩闭环。这个命令应该作为平时最常用的提交前检查。
+
+较大的玩法切片、准备合并或准备发布候选时，再运行全量门禁：
 
 ```bash
 npm run iteration:check
 ```
 
-`iteration:check` 会单独运行：
+`check:quick` 会单独运行：
 
 ```bash
+npm run workflow:check
+npm run smoke:contract
 npm run copy:check
 npm run playable:check
 ```
@@ -63,12 +73,8 @@ npm run playable:check
 
 这条门禁用确定性样本跑通基地待办、编队、出征结算、战报解析和回到基地下一步，确保每次迭代没有把核心试玩闭环拆断。
 
-这个命令会执行：
+`iteration:check` 会额外执行：
 
-- 迭代工作流契约检查，确认本文、`package.json`、本地门禁脚本和 GitHub Actions 没有互相漂移。
-- Cloudflare Pages 输出目录配置检查。
-- `npm run copy:check`
-- `npm run playable:check`
 - `npm test`
 - `npm run build`
 
@@ -98,7 +104,7 @@ UI、出征、基地经营、账号登录、房间协作相关切片，提交前
 推荐本地地址：
 
 ```bash
-npm run dev
+npm run dev:playtest
 ```
 
 提交 UI、出征、基地经营或多人协作切片前，可以先打印固定验收单：

@@ -1,6 +1,6 @@
 export const localSmokeChecklist = {
   address: "http://localhost:5173/?room=playtest-smoke",
-  command: "npm run dev",
+  command: "npm run dev:playtest",
   coverage: [
     "auth",
     "baseOverview",

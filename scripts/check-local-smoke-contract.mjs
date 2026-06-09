@@ -23,8 +23,8 @@ export function createLocalSmokeContractReport(checklist = localSmokeChecklist) 
   const paths = checklist.paths ?? [];
   const template = checklist.reportTemplate ?? [];
 
-  if (checklist.command !== "npm run dev") {
-    missing.push("command: npm run dev");
+  if (checklist.command !== "npm run dev:playtest") {
+    missing.push("command: npm run dev:playtest");
   }
 
   if (checklist.address !== "http://localhost:5173/?room=playtest-smoke") {

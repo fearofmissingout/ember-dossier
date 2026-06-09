@@ -9,6 +9,9 @@ const helpMode = args.has("--help") || args.has("-h");
 
 if (helpMode) {
   console.log(`Usage:
+  npm run check:quick
+  npm run check:release
+  npm run dev:playtest
   npm run local:check
   npm run iteration:check
   npm run release:preflight
@@ -34,7 +37,7 @@ run("npm", ["run", "copy:check"], "Visible copy check");
 run("npm", ["run", "playable:check"], "Playable loop smoke");
 
 if (quickMode) {
-  console.log("\nFast local gates passed. Run npm run iteration:check before larger merges or release candidates.");
+  console.log("\nFast local gates passed. Daily loop: npm run dev:playtest + npm run check:quick. Run npm run iteration:check before larger merges or release candidates.");
   process.exit(0);
 }
 
