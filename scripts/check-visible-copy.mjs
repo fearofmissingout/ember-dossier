@@ -69,7 +69,8 @@ const requiredChineseAnchors = [
   "基地日程预演",
   "战斗决策链",
   "出征路线阶段计划",
-  "房间协作请求板"
+  "房间协作请求板",
+  "西货运编组场"
 ];
 
 const additionalRequiredChineseAnchors = [

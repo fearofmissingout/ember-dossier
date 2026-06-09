@@ -264,6 +264,26 @@ export const starterLocations: Location[] = [
     dossier: "净水站半截沉在河雾里，滤芯仓的门却每天换一把锁。"
   },
   {
+    id: "freight-yard",
+    name: "西货运编组场",
+    family: "resources",
+    risk: 57,
+    recommendedStats: ["technical", "stamina", "luck"],
+    reward: { food: 1, water: 1, materials: 8, medicine: 0, fuel: 3, ammo: 1 },
+    tags: ["材料", "货柜", "露天轨道"],
+    dossier: "货柜门贴着褪色封条，风一吹，整片轨道都像在数钥匙。"
+  },
+  {
+    id: "cold-storage",
+    name: "东港冷库",
+    family: "resources",
+    risk: 61,
+    recommendedStats: ["stamina", "technical", "infectionResistance"],
+    reward: { food: 7, water: 2, materials: 2, medicine: 1, fuel: 2, ammo: 0 },
+    tags: ["食物", "低温", "备用电源"],
+    dossier: "冷库还在断续供电，门缝里飘出来的白气像有人轻轻叹气。"
+  },
+  {
     id: "greenhouse",
     name: "异常温室",
     family: "weird",
@@ -294,6 +314,26 @@ export const starterLocations: Location[] = [
     dossier: "每层楼都声称自己是一楼，电梯按钮多到像一份供词。"
   },
   {
+    id: "mirror-market",
+    name: "镜面旧货市",
+    family: "weird",
+    risk: 71,
+    recommendedStats: ["social", "luck", "willpower"],
+    reward: { food: 2, water: 1, materials: 5, medicine: 2, fuel: 0, ammo: 1 },
+    tags: ["怪异", "交易", "倒影"],
+    dossier: "摊主们都背对着你做买卖，镜子里却能看见他们在点头。"
+  },
+  {
+    id: "choir-substation",
+    name: "合唱变电站",
+    family: "weird",
+    risk: 82,
+    recommendedStats: ["technical", "willpower", "infectionResistance"],
+    reward: { food: 0, water: 1, materials: 6, medicine: 2, fuel: 4, ammo: 0 },
+    tags: ["怪异", "电力", "黑色信号"],
+    dossier: "变压器发出整齐的和声，每一次升调都会让指南针发烫。"
+  },
+  {
     id: "school",
     name: "雾桥中学",
     family: "urban",
@@ -312,6 +352,26 @@ export const starterLocations: Location[] = [
     reward: { food: 1, water: 1, materials: 6, medicine: 1, fuel: 1, ammo: 1 },
     tags: ["材料", "地下", "广播"],
     dossier: "闸机还在计数，尽管已经很久没有人真正刷卡进站。"
+  },
+  {
+    id: "civic-archive",
+    name: "市政档案馆",
+    family: "urban",
+    risk: 54,
+    recommendedStats: ["technical", "social", "willpower"],
+    reward: { food: 0, water: 1, materials: 5, medicine: 1, fuel: 0, ammo: 2 },
+    tags: ["档案", "路线情报", "封存"],
+    dossier: "档案柜排得像墓碑，最里面那排抽屉会自己换标签。"
+  },
+  {
+    id: "rooftop-mall",
+    name: "屋顶商场",
+    family: "urban",
+    risk: 63,
+    recommendedStats: ["agility", "social", "stamina"],
+    reward: { food: 4, water: 2, materials: 4, medicine: 2, fuel: 0, ammo: 1 },
+    tags: ["商店", "高处", "幸存者痕迹"],
+    dossier: "自动扶梯停在半空，顶层广告牌还在向天空推销打折套餐。"
   },
   {
     id: "farm",
@@ -342,6 +402,26 @@ export const starterLocations: Location[] = [
     reward: { food: 8, water: 1, materials: 1, medicine: 2, fuel: 0, ammo: 0 },
     tags: ["食物", "药草", "低语蜂箱"],
     dossier: "果树还在结果，只是枝条会在没人看见的时候换位置。"
+  },
+  {
+    id: "ridge-campsite",
+    name: "岭上露营地",
+    family: "wilds",
+    risk: 46,
+    recommendedStats: ["stamina", "medical", "luck"],
+    reward: { food: 5, water: 3, materials: 2, medicine: 2, fuel: 0, ammo: 1 },
+    tags: ["营地", "药草", "旧帐篷"],
+    dossier: "帐篷拉链全都从里面扣着，火塘里却还压着温热的灰。"
+  },
+  {
+    id: "windmill-hamlet",
+    name: "风车小村",
+    family: "wilds",
+    risk: 55,
+    recommendedStats: ["technical", "social", "willpower"],
+    reward: { food: 6, water: 2, materials: 4, medicine: 0, fuel: 2, ammo: 0 },
+    tags: ["荒野", "风车", "住户线索"],
+    dossier: "风车叶片转得太慢，像在给远处某个看不见的人打手势。"
   }
 ];
 
