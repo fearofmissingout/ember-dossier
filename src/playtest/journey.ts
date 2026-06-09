@@ -1082,6 +1082,24 @@ type CampFamilyProfile = {
   scoutRollShift: number;
 };
 
+type ShopFamilyProfile = {
+  intelFailurePressure: number;
+  intelObjectiveBonus: number;
+  intelPressureDelta: number;
+  intelRollDelta: number;
+  resupplyFatigue: number;
+  resupplyFood: number;
+  resupplyHunger: number;
+  resupplyPressure: number;
+  resupplyRollShift: number;
+  resupplyThirst: number;
+  resupplyWater: number;
+  serviceFatigue: number;
+  serviceFieldAmmo: number;
+  serviceFieldMedicine: number;
+  servicePressureDelta: number;
+};
+
 type JourneyRoadBeatTemplate = {
   fatigue: number;
   hazardLog: string;
@@ -2001,6 +2019,77 @@ const familyCampProfiles: Record<LocationFamily, CampFamilyProfile> = {
     scoutObjectiveBonus: 1,
     scoutPressure: -8,
     scoutRollShift: -0.1
+  }
+};
+
+const familyShopProfiles: Record<LocationFamily, ShopFamilyProfile> = {
+  resources: {
+    intelFailurePressure: 3,
+    intelObjectiveBonus: 1,
+    intelPressureDelta: -2,
+    intelRollDelta: -0.03,
+    resupplyFatigue: -2,
+    resupplyFood: 1,
+    resupplyHunger: -8,
+    resupplyPressure: -4,
+    resupplyRollShift: -0.03,
+    resupplyThirst: -10,
+    resupplyWater: 2,
+    serviceFatigue: -5,
+    serviceFieldAmmo: 0,
+    serviceFieldMedicine: 1,
+    servicePressureDelta: -1
+  },
+  urban: {
+    intelFailurePressure: 2,
+    intelObjectiveBonus: 1,
+    intelPressureDelta: -4,
+    intelRollDelta: -0.04,
+    resupplyFatigue: -1,
+    resupplyFood: 1,
+    resupplyHunger: -7,
+    resupplyPressure: -3,
+    resupplyRollShift: -0.03,
+    resupplyThirst: -7,
+    resupplyWater: 1,
+    serviceFatigue: -4,
+    serviceFieldAmmo: 1,
+    serviceFieldMedicine: 0,
+    servicePressureDelta: 0
+  },
+  weird: {
+    intelFailurePressure: 5,
+    intelObjectiveBonus: 2,
+    intelPressureDelta: -5,
+    intelRollDelta: -0.06,
+    resupplyFatigue: 0,
+    resupplyFood: 1,
+    resupplyHunger: -5,
+    resupplyPressure: -2,
+    resupplyRollShift: -0.02,
+    resupplyThirst: -5,
+    resupplyWater: 1,
+    serviceFatigue: -3,
+    serviceFieldAmmo: 1,
+    serviceFieldMedicine: 1,
+    servicePressureDelta: 1
+  },
+  wilds: {
+    intelFailurePressure: 3,
+    intelObjectiveBonus: 1,
+    intelPressureDelta: -2,
+    intelRollDelta: -0.03,
+    resupplyFatigue: -3,
+    resupplyFood: 2,
+    resupplyHunger: -12,
+    resupplyPressure: -5,
+    resupplyRollShift: -0.04,
+    resupplyThirst: -9,
+    resupplyWater: 1,
+    serviceFatigue: -4,
+    serviceFieldAmmo: 0,
+    serviceFieldMedicine: 0,
+    servicePressureDelta: -1
   }
 };
 
@@ -3631,6 +3720,7 @@ function materializeEnemy(template: EnemyTemplate): JourneyEnemy {
 }
 
 function materializeShop(template: ShopTemplate, family: LocationFamily): JourneyShop {
+  const profile = familyShopProfiles[family] ?? familyShopProfiles.urban;
   const serviceReward = bundleFromKeys(template.rewardKeys);
   const resupplyText =
     family === "wilds"
@@ -3656,11 +3746,11 @@ function materializeShop(template: ShopTemplate, family: LocationFamily): Journe
         hunger: 0,
         id: "intel",
         label: "购买路线情报",
-        objectiveBonus: 1,
-        pressure: Math.min(-4, template.pressureSuccess - 2),
-        pressureFail: template.pressureFail + 3,
+        objectiveBonus: profile.intelObjectiveBonus,
+        pressure: Math.min(-4, template.pressureSuccess + profile.intelPressureDelta),
+        pressureFail: template.pressureFail + profile.intelFailurePressure,
         reward: createEmptyResourceBundle(),
-        rollShift: Math.min(-0.06, template.rollShiftSuccess - 0.03),
+        rollShift: Math.min(-0.06, template.rollShiftSuccess + profile.intelRollDelta),
         rollShiftFail: template.rollShiftFail + 0.02,
         successLog: "商贩标出更干净的撤离线，也给了一条有用的塔台线索。",
         text: intelText,
@@ -3669,31 +3759,34 @@ function materializeShop(template: ShopTemplate, family: LocationFamily): Journe
       resupply: {
         costPriority: uniqueResourceKeys(["materials", "fuel", "ammo", ...template.costPriority]),
         failLog: "队伍想换食物，但交易点已经收起了好箱子。",
-        fatigue: -2,
-        fieldSupplyReward: lootReward({ food: 1, water: 1 }),
-        hunger: -8,
+        fatigue: profile.resupplyFatigue,
+        fieldSupplyReward: lootReward({ food: profile.resupplyFood, water: profile.resupplyWater }),
+        hunger: profile.resupplyHunger,
         id: "resupply",
         label: "购买路上口粮",
         objectiveBonus: 0,
-        pressure: -4,
+        pressure: profile.resupplyPressure,
         pressureFail: template.pressureFail + 2,
         reward: createEmptyResourceBundle(),
-        rollShift: -0.03,
+        rollShift: profile.resupplyRollShift,
         rollShiftFail: template.rollShiftFail + 0.02,
         successLog: "队伍换到密封口粮，并补满了野外包。",
         text: resupplyText,
-        thirst: -8
+        thirst: profile.resupplyThirst
       },
       service: {
         costPriority: [...template.costPriority],
         failLog: template.failLog,
-        fatigue: -4,
-        fieldSupplyReward: lootReward({ medicine: serviceReward.medicine > 0 ? 1 : 0, ammo: serviceReward.ammo > 0 ? 1 : 0 }),
+        fatigue: profile.serviceFatigue,
+        fieldSupplyReward: lootReward({
+          ammo: (serviceReward.ammo > 0 ? 1 : 0) + profile.serviceFieldAmmo,
+          medicine: (serviceReward.medicine > 0 ? 1 : 0) + profile.serviceFieldMedicine
+        }),
         hunger: 0,
         id: "service",
         label: template.label,
         objectiveBonus: 0,
-        pressure: template.pressureSuccess,
+        pressure: template.pressureSuccess + profile.servicePressureDelta,
         pressureFail: template.pressureFail,
         reward: serviceReward,
         rollShift: template.rollShiftSuccess,

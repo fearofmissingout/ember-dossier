@@ -1573,6 +1573,28 @@ describe("journey route generation", () => {
     expect(journey.nodes[3].shop?.offers.service.label).toBe("买修理包");
   });
 
+  test("shop offers use location-family specific tradeoffs", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "shop-family-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const resourceShop = createJourney(session, draft, "water-plant", 60).nodes[3].shop!;
+    const urbanShop = createJourney(session, draft, "hospital", 60).nodes[3].shop!;
+    const weirdShop = createJourney(session, draft, "greenhouse", 60).nodes[3].shop!;
+    const wildShop = createJourney(session, draft, "farm", 60).nodes[3].shop!;
+
+    expect(resourceShop.offers.resupply.fieldSupplyReward.water).toBeGreaterThan(urbanShop.offers.resupply.fieldSupplyReward.water);
+    expect(wildShop.offers.resupply.fieldSupplyReward.food).toBeGreaterThan(resourceShop.offers.resupply.fieldSupplyReward.food);
+    expect(urbanShop.offers.intel.pressure).toBeLessThan(resourceShop.offers.intel.pressure);
+    expect(weirdShop.offers.intel.objectiveBonus).toBeGreaterThan(urbanShop.offers.intel.objectiveBonus);
+    expect(weirdShop.offers.intel.pressureFail).toBeGreaterThan(urbanShop.offers.intel.pressureFail);
+    expect(resourceShop.offers.service.fieldSupplyReward.medicine).toBeGreaterThan(urbanShop.offers.service.fieldSupplyReward.medicine);
+  });
+
   test("shop resupply converts trade goods into field supplies with kitchen support", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const session = createStarterSession("user-a", "Alice", "shop-resupply-room");
