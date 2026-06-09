@@ -1067,6 +1067,21 @@ type ShopTemplate = Omit<MaterializedLegacyShop, "reward"> & {
   rewardKeys: ResourceKey[];
 };
 
+type CampFamilyProfile = {
+  cookFatigue: number;
+  cookHunger: number;
+  cookPressure: number;
+  cookThirst: number;
+  restFatigue: number;
+  restHunger: number;
+  restPressure: number;
+  restThirst: number;
+  scoutFatigue: number;
+  scoutObjectiveBonus: number;
+  scoutPressure: number;
+  scoutRollShift: number;
+};
+
 type JourneyRoadBeatTemplate = {
   fatigue: number;
   hazardLog: string;
@@ -1928,6 +1943,65 @@ const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>
       title: "谷仓阁楼"
     }
   ]
+};
+
+const familyCampProfiles: Record<LocationFamily, CampFamilyProfile> = {
+  resources: {
+    cookFatigue: -7,
+    cookHunger: -24,
+    cookPressure: -7,
+    cookThirst: -26,
+    restFatigue: -22,
+    restHunger: 5,
+    restPressure: -9,
+    restThirst: 4,
+    scoutFatigue: 4,
+    scoutObjectiveBonus: 1,
+    scoutPressure: -10,
+    scoutRollShift: -0.13
+  },
+  urban: {
+    cookFatigue: -5,
+    cookHunger: -22,
+    cookPressure: -5,
+    cookThirst: -16,
+    restFatigue: -26,
+    restHunger: 7,
+    restPressure: -10,
+    restThirst: 6,
+    scoutFatigue: 5,
+    scoutObjectiveBonus: 1,
+    scoutPressure: -11,
+    scoutRollShift: -0.12
+  },
+  weird: {
+    cookFatigue: -4,
+    cookHunger: -18,
+    cookPressure: -4,
+    cookThirst: -14,
+    restFatigue: -20,
+    restHunger: 8,
+    restPressure: -6,
+    restThirst: 8,
+    scoutFatigue: 7,
+    scoutObjectiveBonus: 2,
+    scoutPressure: -14,
+    scoutRollShift: -0.16
+  },
+  wilds: {
+    cookFatigue: -8,
+    cookHunger: -34,
+    cookPressure: -8,
+    cookThirst: -22,
+    restFatigue: -24,
+    restHunger: 6,
+    restPressure: -8,
+    restThirst: 7,
+    scoutFatigue: 3,
+    scoutObjectiveBonus: 1,
+    scoutPressure: -8,
+    scoutRollShift: -0.1
+  }
 };
 
 const familyTravelMoods: Record<LocationFamily, Array<{ body: string; title: string }>> = {
@@ -3633,41 +3707,40 @@ function materializeShop(template: ShopTemplate, family: LocationFamily): Journe
 }
 
 function createCampOptions(family: LocationFamily): Record<JourneyCampAction, JourneyCampOption> {
-  const scoutPressure = family === "weird" ? -14 : family === "urban" ? -11 : -9;
-  const cookPressure = family === "wilds" ? -8 : -6;
+  const profile = familyCampProfiles[family] ?? familyCampProfiles.urban;
   return {
     cook: {
       fallbackLog: "他们试着用边角料做饭，但停顿只让空腹更吵。",
-      fatigue: -6,
-      hunger: -28,
+      fatigue: profile.cookFatigue,
+      hunger: profile.cookHunger,
       label: "烹煮口粮",
       objectiveBonus: 0,
-      pressure: cookPressure,
+      pressure: profile.cookPressure,
       rollShift: -0.06,
       successLog: "一份热口粮让队伍在下一段路前重新稳住。",
       supplyPriority: ["food", "water"],
-      thirst: -20
+      thirst: profile.cookThirst
     },
     rest: {
       fallbackLog: "补给不足的休息仍有帮助，但每个人醒来都更警觉，也更饿。",
-      fatigue: -24,
-      hunger: 6,
+      fatigue: profile.restFatigue,
+      hunger: profile.restHunger,
       label: "处理伤口",
       objectiveBonus: 0,
-      pressure: -8,
+      pressure: profile.restPressure,
       rollShift: -0.08,
       successLog: "有人值守的休息让队伍重新喘上气。",
       supplyPriority: ["medicine", "food", "water"],
-      thirst: 6
+      thirst: profile.restThirst
     },
     scout: {
       fallbackLog: "他们凭直觉侦察，又为路线争执丢掉时间。",
-      fatigue: 5,
+      fatigue: profile.scoutFatigue,
       hunger: 4,
       label: "前出侦察",
-      objectiveBonus: 1,
-      pressure: scoutPressure,
-      rollShift: -0.12,
+      objectiveBonus: profile.scoutObjectiveBonus,
+      pressure: profile.scoutPressure,
+      rollShift: profile.scoutRollShift,
       successLog: "队伍消耗装备，标出更安全的通道和有用的塔台笔记。",
       supplyPriority: ["fuel", "ammo", "materials"],
       thirst: 4

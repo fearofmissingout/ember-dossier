@@ -152,6 +152,27 @@ describe("journey route generation", () => {
     expect(weirdRoute.nodes[2].camp?.rest.label).toBe("处理伤口");
   });
 
+  test("camp choices use location-family specific tradeoffs", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "camp-family-room");
+    const draft = {
+      loadout: { ammo: 1, food: 1, fuel: 1, materials: 1, medicine: 1, water: 1 },
+      risk: "standard" as const,
+      squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
+    };
+
+    const resourceCamp = createJourney(session, draft, "water-plant", 60).nodes[2].camp!;
+    const urbanCamp = createJourney(session, draft, "hospital", 60).nodes[2].camp!;
+    const weirdCamp = createJourney(session, draft, "greenhouse", 60).nodes[2].camp!;
+    const wildCamp = createJourney(session, draft, "farm", 60).nodes[2].camp!;
+
+    expect(resourceCamp.cook.thirst).toBeLessThan(urbanCamp.cook.thirst);
+    expect(urbanCamp.rest.fatigue).toBeLessThan(resourceCamp.rest.fatigue);
+    expect(weirdCamp.scout.objectiveBonus).toBeGreaterThan(resourceCamp.scout.objectiveBonus);
+    expect(weirdCamp.scout.pressure).toBeLessThan(wildCamp.scout.pressure);
+    expect(wildCamp.cook.hunger).toBeLessThan(resourceCamp.cook.hunger);
+  });
+
   test("can roll into the expanded combat enemy pools", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.99);
     const session = createStarterSession("user-a", "Alice", "expanded-enemy-room");
