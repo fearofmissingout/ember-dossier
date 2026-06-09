@@ -477,10 +477,15 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"战后复盘\"");
     expect(source).toContain("aria-label=\"下一轮远征建议\"");
     expect(source).toContain("aria-label=\"幸存者成长路线\"");
+    expect(source).toContain("aria-label=\"归队复盘脉冲\"");
     expect(source).toContain("summarizeFeedExpeditionDebrief");
     expect(source).toContain("summarizeFeedGrowthRoadmap");
+    expect(source).toContain("summarizeFeedReturnPulse");
+    expect(source).toContain("归队脉冲");
+    expect(source).toContain("优先处理：");
     expect(source).toContain("report-expedition-debrief");
     expect(source).toContain("report-growth-roadmap");
+    expect(source).toContain("report-return-pulse");
     expect(source).toContain("report-action-digest");
     expect(source).toContain("report-next-actions");
     expect(source).toContain("summarizeFeedBaseReturnPlan");
@@ -491,6 +496,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".report-growth-roadmap");
     expect(styles).toContain(".report-expedition-debrief");
     expect(styles).toContain(".report-expedition-debrief-grid");
+    expect(styles).toContain(".report-return-pulse");
+    expect(styles).toContain(".report-return-pulse-grid");
     expect(styles).toContain(".report-action-digest");
     expect(styles).toContain(".report-next-actions");
     expect(styles).toContain(".base-return-plan");

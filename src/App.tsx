@@ -138,7 +138,9 @@ import {
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
-  summarizeFeedReturnLedger
+  summarizeFeedReturnPulse,
+  summarizeFeedReturnLedger,
+  type FeedReturnPulse
 } from "./playtest/reports";
 import type { BaseWorkType, PlaytestSession } from "./playtest/types";
 import {
@@ -4734,6 +4736,7 @@ function Reports({
 }) {
   const latestReport = latestReportId ? feed.find((item) => item.id === latestReportId) : null;
   const baseReturnPlan = latestReport ? summarizeFeedBaseReturnPlan(latestReport) : null;
+  const returnPulse = latestReport ? summarizeFeedReturnPulse(latestReport) : null;
   const primaryReturnAction = baseReturnPlan?.primaryAction ?? null;
   return (
     <section className="panel">
@@ -4744,6 +4747,7 @@ function Reports({
         </div>
         {latestReportId && <span className="subtle-pill">刚完成一轮远征</span>}
       </div>
+      <ReportReturnPulse onNavigate={onNavigate} pulse={returnPulse} />
       {latestReportId && (
         <div className="report-next-actions" aria-label="战报下一步">
           <div>
@@ -4799,6 +4803,38 @@ function Reports({
         ))}
       </div>
     </section>
+  );
+}
+
+function ReportReturnPulse({ onNavigate, pulse }: { onNavigate: (view: ViewKey) => void; pulse: FeedReturnPulse | null }) {
+  if (!pulse?.hasPulse) {
+    return null;
+  }
+
+  const nextAction = pulse.nextAction;
+
+  return (
+    <div className={`report-return-pulse ${pulse.tone}`} aria-label="归队复盘脉冲">
+      <div className="report-return-pulse-heading">
+        <span>归队脉冲</span>
+        <strong>{pulse.headline}</strong>
+        <small>{pulse.summary}</small>
+      </div>
+      <div className="report-return-pulse-grid">
+        {pulse.items.map((item) => (
+          <button className={`report-return-pulse-item ${item.tone}`} key={item.id} type="button" onClick={() => onNavigate(item.targetView)}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.detail}</small>
+          </button>
+        ))}
+      </div>
+      {nextAction && (
+        <button className={`report-return-pulse-primary ${nextAction.tone}`} type="button" onClick={() => onNavigate(nextAction.targetView)}>
+          优先处理：{nextAction.label}
+        </button>
+      )}
+    </div>
   );
 }
 

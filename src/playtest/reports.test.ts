@@ -6,6 +6,7 @@ import {
   summarizeFeedGrowthRoadmap,
   summarizeFeedReportSettlement,
   summarizeFeedReportTimeline,
+  summarizeFeedReturnPulse,
   summarizeFeedReturnLedger
 } from "./reports";
 
@@ -167,6 +168,31 @@ describe("playtest report timeline", () => {
     const plan = summarizeFeedBaseReturnPlan(report);
 
     expect(plan.primaryAction).toEqual(expect.objectContaining({ id: "objective", label: "检查目标", targetView: "overview", tone: "warning" }));
+  });
+
+  test("summarizes a mobile return pulse from expedition reports", () => {
+    const report: FeedItem = {
+      body: [
+        "队伍在北区水处理厂完成路线。结果：艰难完成。主要收获：水 +4，材料 +2。",
+        "成长：林屿 +10 经验，升到 Lv.2，解锁 野外跑手。",
+        "伤病：林屿 擦伤，回基地后需要治疗。",
+        "归队清单：基地入库 水 +4, 材料 +2；目标推进 +2；账号回收 个人仓库回收材料 +2，情报 +1；伤病 1 名待恢复；完整撤离。"
+      ].join("\n"),
+      id: "feed-report-return-pulse",
+      kind: "report",
+      timestamp: "刚刚",
+      title: "北区水处理厂远征完成"
+    };
+
+    const pulse = summarizeFeedReturnPulse(report);
+
+    expect(pulse.hasPulse).toBe(true);
+    expect(pulse.tone).toBe("warning");
+    expect(pulse.headline).toContain("基地循环");
+    expect(pulse.nextAction).toEqual(expect.objectContaining({ id: "recovery", label: "处理伤病", targetView: "survivors" }));
+    expect(pulse.items.map((item) => item.id)).toEqual(["storage", "objective", "recovery", "growth"]);
+    expect(pulse.items.find((item) => item.id === "storage")?.value).toContain("水 +4");
+    expect(pulse.items.find((item) => item.id === "recovery")?.detail).toContain("伤病 1 名待恢复");
   });
 
   test("turns expedition reports into next-run debrief advice", () => {

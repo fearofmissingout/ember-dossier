@@ -1714,6 +1714,125 @@ button:disabled {
   padding: 16px;
 }
 
+.report-return-pulse {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #b9c6aa;
+  border-radius: 8px;
+  background: #f4faee;
+}
+
+.report-return-pulse.warning {
+  border-color: #d4b866;
+  background: #fff7dd;
+}
+
+.report-return-pulse.blocked {
+  border-color: #c98975;
+  background: #fff1ea;
+}
+
+.report-return-pulse-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.report-return-pulse-heading span {
+  color: #526c3d;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-return-pulse-heading strong {
+  color: #253727;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.report-return-pulse-heading small {
+  color: #607052;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.report-return-pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-return-pulse-item {
+  display: grid;
+  gap: 5px;
+  min-height: 104px;
+  padding: 10px;
+  border: 1px solid #cad8b5;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #26312c;
+  text-align: left;
+}
+
+.report-return-pulse-item span {
+  color: #536b3e;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-return-pulse-item strong,
+.report-return-pulse-item small {
+  overflow-wrap: anywhere;
+}
+
+.report-return-pulse-item strong {
+  color: #2d3a33;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.report-return-pulse-item small {
+  color: #617062;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.report-return-pulse-item.warning {
+  border-color: #d5bb73;
+  background: #fff8df;
+}
+
+.report-return-pulse-item.blocked {
+  border-color: #c98a74;
+  background: #fff1ea;
+}
+
+.report-return-pulse-primary {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #a8ba91;
+  border-radius: 8px;
+  background: #eaf5dd;
+  color: #31472d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.report-return-pulse-primary.warning {
+  border-color: #caa75f;
+  background: #fff1c8;
+  color: #62421d;
+}
+
+.report-return-pulse-primary.blocked {
+  border-color: #bd725e;
+  background: #ffe8df;
+  color: #6a3022;
+}
+
 .report-next-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) repeat(3, auto);
@@ -8564,6 +8683,7 @@ button:disabled {
     .travel-record-strip,
     .road-event-strip,
     .development-project-strip,
+    .report-return-pulse-grid,
     .report-settlement-grid,
     .report-growth-grid,
     .report-expedition-debrief-grid,
@@ -8813,6 +8933,7 @@ button:disabled {
     .playtest-route-grid,
     .travel-record-strip,
   .road-event-strip,
+    .report-return-pulse-grid,
     .report-settlement-grid,
     .report-growth-grid,
     .report-expedition-debrief-grid,

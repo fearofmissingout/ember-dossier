@@ -66,6 +66,24 @@ export type FeedBaseReturnPlan = {
   summary: string;
 };
 
+export type FeedReturnPulseItem = {
+  detail: string;
+  id: FeedBaseReturnPlanAction["id"];
+  label: string;
+  targetView: FeedBaseReturnPlanAction["targetView"];
+  tone: FeedBaseReturnPlanAction["tone"];
+  value: string;
+};
+
+export type FeedReturnPulse = {
+  hasPulse: boolean;
+  headline: string;
+  items: FeedReturnPulseItem[];
+  nextAction: FeedBaseReturnPlanAction | null;
+  summary: string;
+  tone: FeedBaseReturnPlanAction["tone"];
+};
+
 export type FeedExpeditionDebriefAdvice = {
   id: "risk" | "objective" | "supplies" | "growth" | "combat" | "tempo";
   label: string;
@@ -265,6 +283,90 @@ export function summarizeFeedBaseReturnPlan(item: FeedItem): FeedBaseReturnPlan 
   };
 }
 
+export function summarizeFeedReturnPulse(item: FeedItem): FeedReturnPulse {
+  if (item.kind !== "report") {
+    return emptyReturnPulse();
+  }
+
+  const plan = summarizeFeedBaseReturnPlan(item);
+  const ledger = summarizeFeedReturnLedger(item);
+  const settlement = summarizeFeedReportSettlement(item);
+  const debrief = summarizeFeedExpeditionDebrief(item);
+  if (!plan.hasPlan && !ledger.hasLedger && !settlement.hasSettlement && !debrief.hasDebrief) {
+    return emptyReturnPulse();
+  }
+
+  const fallbackActions = plan.actions.length
+    ? plan.actions
+    : ([
+        {
+          id: "storage",
+          label: "整理入库",
+          targetView: "overview",
+          text: ledger.base || settlement.resources.slice(0, 3).join("；") || "检查本轮带回资源。",
+          tone: "safe"
+        },
+        {
+          id: "objective",
+          label: "检查目标",
+          targetView: "overview",
+          text: ledger.objective || settlement.objective[0] || "确认房间目标推进。",
+          tone: "safe"
+        },
+        {
+          id: "recovery",
+          label: "处理伤病",
+          targetView: "survivors",
+          text: ledger.injuries || settlement.risk[0] || "确认队伍状态。",
+          tone: "warning"
+        },
+        {
+          id: "growth",
+          label: "分配成长",
+          targetView: "survivors",
+          text: settlement.growth[0] || "查看本轮幸存者成长。",
+          tone: "safe"
+        }
+      ] satisfies FeedBaseReturnPlanAction[]);
+
+  const items = fallbackActions.map((action) => ({
+    detail: returnPulseDetail(action.id, ledger, settlement, debrief),
+    id: action.id,
+    label: action.label,
+    targetView: action.targetView,
+    tone: action.tone,
+    value: action.text
+  }));
+
+  const tone = items.some((entry) => entry.tone === "blocked") || debrief.advice.some((entry) => entry.tone === "blocked")
+    ? "blocked"
+    : items.some((entry) => entry.tone === "warning") || debrief.advice.some((entry) => entry.tone === "warning")
+      ? "warning"
+      : "safe";
+  const nextAction =
+    plan.primaryAction ??
+    fallbackActions.find((entry) => entry.tone !== "safe") ??
+    fallbackActions[0] ??
+    null;
+
+  return {
+    hasPulse: true,
+    headline: returnPulseHeadline(tone, ledger, settlement),
+    items,
+    nextAction,
+    summary: [
+      ledger.base || settlement.resources.slice(0, 2).join("、"),
+      ledger.objective || settlement.objective[0],
+      ledger.injuries || settlement.risk.find((entry) => entry.includes("伤") || entry.includes("疲劳")),
+      debrief.hasDebrief ? debrief.advice[0]?.label : ""
+    ]
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(" / "),
+    tone
+  };
+}
+
 export function summarizeFeedExpeditionDebrief(item: FeedItem): FeedExpeditionDebrief {
   if (item.kind !== "report") {
     return emptyExpeditionDebrief();
@@ -349,6 +451,17 @@ export function summarizeFeedExpeditionDebrief(item: FeedItem): FeedExpeditionDe
   };
 }
 
+function emptyReturnPulse(): FeedReturnPulse {
+  return {
+    hasPulse: false,
+    headline: "暂无归队复盘",
+    items: [],
+    nextAction: null,
+    summary: "暂无归队复盘",
+    tone: "safe"
+  };
+}
+
 function emptySettlement(): FeedReportSettlement {
   return {
     growth: [],
@@ -417,6 +530,45 @@ function debriefHeadline(advice: FeedExpeditionDebriefAdvice[]) {
   }
 
   return "本轮节奏稳定，可以继续扩大收益。";
+}
+
+function returnPulseDetail(
+  id: FeedBaseReturnPlanAction["id"],
+  ledger: FeedReturnLedger,
+  settlement: FeedReportSettlement,
+  debrief: FeedExpeditionDebrief
+): string {
+  if (id === "storage") {
+    return ledger.extraction ? `${ledger.extraction}后先确认仓库和基地消耗。` : "先把带回资源转成基地行动。";
+  }
+
+  if (id === "objective") {
+    return debrief.advice.find((entry) => entry.id === "objective")?.text ?? "根据目标推进决定下一条路线。";
+  }
+
+  if (id === "recovery") {
+    return ledger.injuries || settlement.risk[0] || "无明确伤病时，也要检查疲劳和下一班编队。";
+  }
+
+  return debrief.advice.find((entry) => entry.id === "growth")?.text ?? "把经验、专长和训练安排接回幸存者成长。";
+}
+
+function returnPulseHeadline(
+  tone: FeedBaseReturnPlanAction["tone"],
+  ledger: FeedReturnLedger,
+  settlement: FeedReportSettlement
+): string {
+  if (tone === "blocked") {
+    return "本轮归队暴露了补给或撤离短板，先修正再出发。";
+  }
+
+  if (tone === "warning") {
+    return "本轮有伤病、目标或成长待处理，先把基地循环接上。";
+  }
+
+  return ledger.extraction || settlement.headline
+    ? `${ledger.extraction || settlement.headline}，可以顺畅进入下一轮准备。`
+    : "归队状态稳定，可以顺畅进入下一轮准备。";
 }
 
 function stripLedgerLabel(value: string | undefined, label: string): string {
