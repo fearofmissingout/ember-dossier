@@ -1018,6 +1018,16 @@ button:disabled {
   background: #f3ead4;
 }
 
+.base-command-center.urgent {
+  border-color: #c97963;
+  background: #fff0e8;
+}
+
+.base-command-center.ready {
+  border-color: #8fb079;
+  background: #f1f8e9;
+}
+
 .base-command-priority {
   display: grid;
   gap: 4px;
@@ -1049,6 +1059,62 @@ button:disabled {
   line-height: 1.35;
 }
 
+.base-command-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ccb88f;
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.82);
+}
+
+.base-command-primary span,
+.base-command-primary strong,
+.base-command-primary small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-command-primary span {
+  color: #725f39;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.base-command-primary strong {
+  color: #34281a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.base-command-primary small {
+  grid-column: 1;
+  color: #665b48;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-command-primary button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #8d6a3c;
+  border-radius: 8px;
+  background: #3b2a1b;
+  color: #fff7e9;
+  font-size: 12px;
+  font-weight: 950;
+}
+
 .base-command-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1068,6 +1134,16 @@ button:disabled {
   background: #fffdf6;
   color: #5b3d22;
   text-align: left;
+}
+
+.base-command-actions button.urgent {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.base-command-actions button.ready {
+  border-color: #8fb079;
+  background: #edf7eb;
 }
 
 .base-command-actions button:hover {
@@ -8960,8 +9036,18 @@ button:disabled {
     .room-cooperation-board,
     .room-cooperation-gaps,
     .your-room-task,
-    .resource-grid {
+  .resource-grid {
     grid-template-columns: 1fr;
+  }
+
+  .base-command-primary {
+    grid-template-columns: 1fr;
+  }
+
+  .base-command-primary button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
   }
 
   .expedition-prep-command {

@@ -14,6 +14,7 @@ import {
   advanceRoomDay,
   applyContribution,
   assignSurvivorToRoom,
+  baseCommandBriefing,
   baseDayEventBreadth,
   baseDayPreview,
   baseDevelopmentPlan,
@@ -601,6 +602,50 @@ describe("playtest room loop", () => {
     expect(tasks.items[1].body).toContain("1 名伤员");
     expect(tasks.items[2].body).toContain("安排搜寻、修理、守卫或护理班");
     expect(tasks.items[3].body).toContain("可推进");
+  });
+
+  test("summarizes a mobile-first command briefing from base priorities", () => {
+    const session = createStarterSession("user-a", "Alice", "base-command-room");
+    session.room.base.resources.food = 1;
+    session.room.base.resources.water = 1;
+    session.account.survivors[0].injuries = ["裂伤"];
+    session.account.survivors[0].status = "recovering";
+
+    const briefing = baseCommandBriefing(session);
+
+    expect(briefing.phase).toBe("recover");
+    expect(briefing.readiness).toBe("urgent");
+    expect(briefing.primaryTaskId).toBe("supplies");
+    expect(briefing.headline).toContain("先稳住基地");
+    expect(briefing.summary).toContain("急迫缺口");
+    expect(briefing.items.map((item) => item.id)).toEqual(["supplies", "recovery", "shifts", "development"]);
+    expect(briefing.items[0]).toMatchObject({
+      actionLabel: "捐入资源",
+      label: "补给",
+      status: "urgent"
+    });
+    expect(briefing.items[0].detail).toContain("明日需要食物");
+  });
+
+  test("command briefing opens the deploy phase when base is ready", () => {
+    const session = createStarterSession("user-a", "Alice", "base-command-ready-room");
+    session.room.base.resources.food = 12;
+    session.room.base.resources.water = 12;
+    session.room.base.resources.materials = 0;
+    session.room.baseAssignments.push({
+      roomId: session.room.id,
+      survivorId: session.account.survivors[0].id,
+      type: "guard",
+      userId: session.account.profile.userId
+    });
+
+    const briefing = baseCommandBriefing(session);
+
+    expect(briefing.phase).toBe("deploy");
+    expect(briefing.readiness).toBe("ready");
+    expect(briefing.primaryTaskId).toBe("expedition");
+    expect(briefing.headline).toContain("组织下一次远征");
+    expect(briefing.items).toHaveLength(1);
   });
 
   test("summarizes a stable base as ready for expedition", () => {

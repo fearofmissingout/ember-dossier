@@ -1004,6 +1004,25 @@ export type BaseTaskList = {
   summary: string;
 };
 
+export type BaseCommandBriefingItem = {
+  actionLabel: string;
+  body: string;
+  detail: string;
+  id: BaseTaskItem["id"];
+  label: string;
+  status: BaseTaskStatus;
+  title: string;
+};
+
+export type BaseCommandBriefing = {
+  headline: string;
+  items: BaseCommandBriefingItem[];
+  phase: "recover" | "build" | "deploy" | "resolve";
+  primaryTaskId: BaseTaskItem["id"];
+  readiness: BaseTaskStatus;
+  summary: string;
+};
+
 export function roomMemberSummaries(session: PlaytestSession): RoomMemberSummary[] {
   return session.room.members
     .map((member) => {
@@ -1706,6 +1725,126 @@ export function baseTaskList(session: PlaytestSession): BaseTaskList {
         ? "基地状态可控，可以准备下一次远征。"
         : `今日待办：${items.map((item) => baseTaskShortLabel(item.id)).join("、")}。`
   };
+}
+
+export function baseCommandBriefing(session: PlaytestSession): BaseCommandBriefing {
+  const tasks = baseTaskList(session);
+  const day = baseDayPreview(session);
+  const shiftPlan = baseShiftPlan(session);
+  const development = baseDevelopmentPlan(session);
+  const primary = tasks.items[0];
+  const phase = commandPhaseForTask(primary.id);
+  const readiness = primary.status;
+  const items = tasks.items.slice(0, 4).map((task) => ({
+    actionLabel: task.actionLabel,
+    body: task.body,
+    detail: commandBriefingDetail(task.id, day, shiftPlan, development),
+    id: task.id,
+    label: baseTaskShortLabel(task.id),
+    status: task.status,
+    title: task.title
+  }));
+
+  return {
+    headline: commandBriefingHeadline(primary, phase),
+    items,
+    phase,
+    primaryTaskId: primary.id,
+    readiness,
+    summary: commandBriefingSummary(tasks, day, shiftPlan, development)
+  };
+}
+
+function commandPhaseForTask(taskId: BaseTaskItem["id"]): BaseCommandBriefing["phase"] {
+  if (taskId === "supplies" || taskId === "recovery" || taskId === "shifts") {
+    return "recover";
+  }
+
+  if (taskId === "development") {
+    return "build";
+  }
+
+  if (taskId === "objective") {
+    return "resolve";
+  }
+
+  return "deploy";
+}
+
+function commandBriefingHeadline(primary: BaseTaskItem, phase: BaseCommandBriefing["phase"]) {
+  if (primary.status === "urgent") {
+    return "先稳住基地，再谈出征。";
+  }
+
+  if (phase === "deploy") {
+    return "基地窗口已打开，可以组织下一次远征。";
+  }
+
+  if (phase === "build") {
+    return "今天适合把资源转成长期支援。";
+  }
+
+  if (phase === "resolve") {
+    return "房间目标需要先完成结算处理。";
+  }
+
+  return "先把恢复、补给和班次接顺。";
+}
+
+function commandBriefingSummary(
+  tasks: BaseTaskList,
+  day: BaseDayPreview,
+  shiftPlan: BaseShiftPlan,
+  development: BaseDevelopmentPlan
+) {
+  const urgentCount = tasks.items.filter((item) => item.status === "urgent").length;
+  const readyShiftCount = shiftPlan.items.filter((item) => item.status === "ready").length;
+  const supplyGap = day.foodShortage + day.waterShortage;
+  const projectText =
+    development.affordableCount > 0
+      ? `可建设 ${development.affordableCount} 项`
+      : development.blockedCount > 0
+        ? `建设缺材料 ${development.recommended.reduce((sum, item) => sum + item.materialDeficit, 0)}`
+        : "建设路线稳定";
+
+  return [
+    urgentCount > 0 ? `${urgentCount} 个急迫缺口` : "无急迫缺口",
+    supplyGap > 0 ? `补给缺口 ${supplyGap}` : "补给可过夜",
+    `班次覆盖 ${readyShiftCount}/4`,
+    projectText
+  ].join(" / ");
+}
+
+function commandBriefingDetail(
+  taskId: BaseTaskItem["id"],
+  day: BaseDayPreview,
+  shiftPlan: BaseShiftPlan,
+  development: BaseDevelopmentPlan
+) {
+  if (taskId === "supplies") {
+    return `明日需要食物 ${day.foodNeed}、水 ${day.waterNeed}；缺口会影响士气和危险。`;
+  }
+
+  if (taskId === "recovery") {
+    return shiftPlan.items.find((item) => item.id === "care")?.detail ?? "确认伤病、疲劳和护理班。";
+  }
+
+  if (taskId === "shifts") {
+    return shiftPlan.summary;
+  }
+
+  if (taskId === "development") {
+    const recommended = development.recommended.find((project) => project.canAfford) ?? development.recommended[0];
+    return recommended
+      ? `${recommended.name}：${recommended.reason} ${recommended.nextStep}`
+      : "设施路线已经稳定，可以把资源转给出征和恢复。";
+  }
+
+  if (taskId === "objective") {
+    return `当前目标 ${day.objectiveCurrent}/${day.objectiveProjected}，先确认房间是否进入下一轮。`;
+  }
+
+  return `明日目标预计 ${day.objectiveProjected}，补给和班次可支撑下一次路线选择。`;
 }
 
 function buildProcess(session: PlaytestSession, request: PlaytestExpeditionRequest, report: ExpeditionReport): ProcessResult {

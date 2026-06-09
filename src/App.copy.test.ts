@@ -397,6 +397,7 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("baseTaskList");
+    expect(source).toContain("baseCommandBriefing");
     expect(source).toContain("baseCycleSteps");
     expect(source).toContain("aria-label=\"基地循环罗盘\"");
     expect(source).toContain("恢复");
@@ -408,7 +409,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("试玩路线");
     expect(source).toContain("按这条路线走，可以体验完整基地到出征闭环。");
     expect(source).toContain("邀请好友、认领捐入和留守职责。");
-    expect(source).toContain("aria-label=\"基地行动中枢\"");
+    expect(source).toContain("aria-label=\"今日指挥板\"");
+    expect(source).toContain("今日指挥板");
+    expect(source).toContain("base-command-primary");
     expect(source).toContain("base-command-center");
     expect(source).toContain("base-command-actions");
     expect(source).toContain("lastBaseActionFeedback");
@@ -438,6 +441,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".playtest-route-guide");
     expect(styles).toContain(".playtest-route-grid");
     expect(styles).toContain(".base-command-center");
+    expect(styles).toContain(".base-command-primary");
     expect(styles).toContain(".base-command-actions");
     expect(styles).toContain(".base-action-feedback");
     expect(styles).toContain(".panel > .base-action-feedback");

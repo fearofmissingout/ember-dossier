@@ -27,6 +27,7 @@ import {
   advanceRoomDay,
   applyContribution,
   baseDayPreview,
+  baseCommandBriefing,
   assignSurvivorToRoom,
   accountBaseDevelopmentPlan,
   accountGrowthBoundary,
@@ -1528,6 +1529,7 @@ function Overview({
   const daysRemaining = Math.max(0, objective.deadlineDay - session.room.base.day + 1);
   const dayPreview = baseDayPreview(session);
   const tasks = baseTaskList(session);
+  const commandBriefing = baseCommandBriefing(session);
   const growthBoundary = accountGrowthBoundary(session.account);
   const accountRooms = [
     { label: "训练室", level: session.account.base.trainingRoomLevel },
@@ -1685,18 +1687,28 @@ function Overview({
           </div>
         </div>
         <div className="base-task-list" aria-label="今日基地待办">
-          <div className="base-command-center" aria-label="基地行动中枢">
+          <div className={`base-command-center ${commandBriefing.readiness}`} aria-label="今日指挥板">
             <div className="base-command-priority">
-              <span>基地行动中枢</span>
+              <span>今日指挥板</span>
+              <strong>{commandBriefing.headline}</strong>
+              <small>{commandBriefing.summary}</small>
+            </div>
+            <div className="base-command-primary">
+              <span>{baseTaskShortUiLabel(commandBriefing.phase)}</span>
               <strong>{primaryTask.title}</strong>
               <small>{primaryTask.body}</small>
+              <button type="button" onClick={() => handleTaskAction(commandBriefing.primaryTaskId)}>
+                <Activity size={16} aria-hidden="true" />
+                {primaryTaskAction.label}
+              </button>
             </div>
             <div className="base-command-actions">
-              <button type="button" onClick={() => handleTaskAction(primaryTask.id)}>
-                <Activity size={16} aria-hidden="true" />
-                <strong>{primaryTaskAction.label}</strong>
-                <small>优先处理</small>
-              </button>
+              {commandBriefing.items.map((item) => (
+                <button className={item.status} type="button" key={item.id} onClick={() => handleTaskAction(item.id)}>
+                  <strong>{item.actionLabel}</strong>
+                  <small>{item.detail}</small>
+                </button>
+              ))}
               {commandActions.map((action) => {
                 const Icon = action.icon;
                 return (
@@ -1939,6 +1951,17 @@ function baseTaskNavigation(taskId: BaseTaskItem["id"]): { label: string; sectio
   };
 
   return actions[taskId];
+}
+
+function baseTaskShortUiLabel(phase: ReturnType<typeof baseCommandBriefing>["phase"]) {
+  const labels: Record<ReturnType<typeof baseCommandBriefing>["phase"], string> = {
+    build: "建设阶段",
+    deploy: "出征阶段",
+    recover: "恢复阶段",
+    resolve: "结算阶段"
+  };
+
+  return labels[phase];
 }
 
 function baseCycleSteps(primaryTaskId: BaseTaskItem["id"]) {
