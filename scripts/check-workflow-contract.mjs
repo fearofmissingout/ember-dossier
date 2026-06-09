@@ -8,6 +8,7 @@ const defaultFiles = {
   packageJson: "package.json",
   publish: "scripts/publish-github-api.mjs",
   releaseChecklist: "docs/release-cadence-checklist.md",
+  smoke: "scripts/print-local-smoke.mjs",
   viteConfig: "vite.config.ts",
   workflow: ".github/workflows/deploy-cloudflare-pages.yml"
 };
@@ -83,6 +84,7 @@ const requiredChecks = [
     id: "doc qa: local browser smoke checklist",
     test: ({ docs }) =>
       docs.includes("#### 2.3.1 本地浏览器冒烟清单") &&
+      docs.includes("npm run smoke:local") &&
       docs.includes("http://localhost:5173/?room=playtest-smoke") &&
       docs.includes("视口：桌面 / 手机") &&
       docs.includes("路线预告") &&
@@ -120,6 +122,18 @@ const requiredChecks = [
   {
     id: "package script: playtest:check",
     test: ({ scripts }) => scripts["playtest:check"] === "node scripts/check-production-playtest.mjs"
+  },
+  {
+    id: "package script: smoke:local",
+    test: ({ scripts }) => scripts["smoke:local"] === "node scripts/print-local-smoke.mjs"
+  },
+  {
+    id: "smoke script: local browser route",
+    test: ({ smoke }) =>
+      smoke.includes("本地浏览器冒烟清单") &&
+      smoke.includes("http://localhost:5173/?room=playtest-smoke") &&
+      smoke.includes("敌人意图") &&
+      smoke.includes("数据库不可用")
   },
   {
     id: "release gate: workflow contract",

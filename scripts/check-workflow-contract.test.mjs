@@ -13,6 +13,7 @@ npm run iteration:check
 npm run playable:check
 npm run copy:check
 #### 2.3.1 本地浏览器冒烟清单
+npm run smoke:local
 http://localhost:5173/?room=playtest-smoke
 视口：桌面 / 手机
 路线预告
@@ -48,6 +49,7 @@ docs/release-cadence-checklist.md
 发布批次判定
 本地浏览器冒烟
 npm run release:preflight
+npm run smoke:local
 npm run release:verify
 `,
     copy: `
@@ -76,9 +78,16 @@ if (productionMode) {
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
         "release:publish:api": "node scripts/publish-github-api.mjs",
         "release:verify": "node scripts/check-iteration-gates.mjs --production",
+        "smoke:local": "node scripts/print-local-smoke.mjs",
         "workflow:check": "node scripts/check-workflow-contract.mjs"
       }
     }),
+    smoke: `
+本地浏览器冒烟清单
+http://localhost:5173/?room=playtest-smoke
+敌人意图
+数据库不可用
+`,
     workflow: `
 - name: Local iteration gates
   run: npm run iteration:check

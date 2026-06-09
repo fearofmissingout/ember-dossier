@@ -39,6 +39,7 @@
 
 ```bash
 npm run iteration:check
+npm run smoke:local
 git status --short
 npm run release:preflight
 git push origin HEAD:master
