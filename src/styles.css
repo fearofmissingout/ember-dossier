@@ -2288,6 +2288,106 @@ button:disabled {
   line-height: 1.35;
 }
 
+.survivor-role-board {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #bfc7b3;
+  border-radius: 8px;
+  background: #f8f5e9;
+}
+
+.survivor-role-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.survivor-role-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.survivor-role-heading span,
+.survivor-role-item span {
+  color: #5f6047;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.survivor-role-heading strong,
+.survivor-role-heading small,
+.survivor-role-item strong,
+.survivor-role-item small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.survivor-role-heading strong {
+  color: #2f3228;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.survivor-role-heading small {
+  max-width: 30ch;
+  color: #6d684f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.survivor-role-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.survivor-role-item {
+  display: grid;
+  min-width: 0;
+  min-height: 104px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d2c19f;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.survivor-role-item.ready {
+  border-color: #8fb079;
+  background: #f2fbdf;
+}
+
+.survivor-role-item.todo {
+  border-color: #c8ba83;
+  background: #fff7d7;
+}
+
+.survivor-role-item.urgent {
+  border-color: #c97966;
+  background: #fff1ed;
+}
+
+.survivor-role-item strong {
+  color: #2c332a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.survivor-role-item small {
+  color: #625e4f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .survivor-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
@@ -7408,6 +7508,7 @@ button:disabled {
   .view-grid,
   .expedition-layout,
   .survivor-grid,
+  .survivor-role-grid,
   .facility-grid,
   .account-base-levels,
   .account-upgrade-row,
@@ -7650,6 +7751,7 @@ button:disabled {
   .view-grid,
   .expedition-layout,
   .survivor-grid,
+  .survivor-role-grid,
   .facility-grid,
   .account-base-levels,
   .account-resource-strip,
@@ -7788,6 +7890,15 @@ button:disabled {
 
   .room-playtest-readiness-heading {
     display: grid;
+  }
+
+  .survivor-role-heading {
+    display: grid;
+  }
+
+  .survivor-role-heading small {
+    max-width: none;
+    text-align: left;
   }
 
   .room-playtest-readiness-heading button {

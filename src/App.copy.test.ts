@@ -50,12 +50,19 @@ describe("hosted playtest copy", () => {
     const styles = readFileSync("src/styles.css", "utf8");
 
     expect(source).toContain("survivorGrowthPlan");
+    expect(source).toContain("survivorRoleBoard");
     expect(source).toContain("aria-label=\"幸存者培养队列\"");
+    expect(source).toContain("aria-label=\"幸存者定位建议\"");
     expect(source).toContain("accountGrowthBoundary");
     expect(source).toContain("aria-label=\"账号成长边界\"");
     expect(source).toContain("growthBoundary.survivorProgressLabel");
     expect(source).toContain("growthBoundary.baseCapLabel");
     expect(source).toContain("培养队列");
+    expect(source).toContain("编队定位");
+    expect(source).toContain("出征核心");
+    expect(source).toContain("医疗护理");
+    expect(source).toContain("修理建设");
+    expect(source).toContain("守卫防线");
     expect(source).toContain("按顺序处理，下一次出征更稳。");
     expect(styles).toContain(".account-growth-boundary");
     expect(styles).toContain(".account-growth-metrics");
@@ -63,6 +70,10 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".growth-plan-grid");
     expect(styles).toContain(".growth-plan-item.ready");
     expect(styles).toContain(".growth-plan-item.blocked");
+    expect(styles).toContain(".survivor-role-board");
+    expect(styles).toContain(".survivor-role-grid");
+    expect(styles).toContain(".survivor-role-item.ready");
+    expect(styles).toContain(".survivor-role-item.urgent");
   });
 
   test("keeps expedition prep as a mobile-first single-page command flow", () => {

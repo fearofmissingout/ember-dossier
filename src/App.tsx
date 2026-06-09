@@ -22,7 +22,7 @@ import {
 import { locationFamilyLabels, resourceKeys, resourceLabels, riskDescriptions, riskLabels, statLabels } from "./game/labels";
 import { facilityActionCost, facilityActionLabel, facilityImpactPreview, isFacilityBuilt, isFacilityMaxed } from "./game/facilities";
 import { clearDemoState, createInitialState, loadDemoState, saveDemoState } from "./game/state";
-import type { FeedItem, GameState, ResourceBundle, ResourceKey, RiskStrategy } from "./game/types";
+import type { FeedItem, GameState, ResourceBundle, ResourceKey, RiskStrategy, Survivor } from "./game/types";
 import {
   advanceRoomDay,
   applyContribution,
@@ -1916,6 +1916,125 @@ function baseExpeditionSupportBriefing(dayPreview: ReturnType<typeof baseDayPrev
   };
 }
 
+type SurvivorRoleBoardItem = {
+  detail: string;
+  id: string;
+  label: string;
+  tone: "ready" | "todo" | "urgent";
+  value: string;
+};
+
+function baseWorkLabel(type: BaseWorkType | "idle") {
+  return baseWorkOptions.find((option) => option.key === type)?.label ?? "休息";
+}
+
+function assignedWorkType(baseAssignments: PlaytestSession["room"]["baseAssignments"], survivorId: string): BaseWorkType | "idle" {
+  return baseAssignments.find((assignment) => assignment.survivorId === survivorId)?.type ?? "idle";
+}
+
+function bestSurvivorBy(survivors: Survivor[], score: (survivor: Survivor) => number) {
+  return survivors.reduce<Survivor | null>((best, survivor) => {
+    const adjustedScore = score(survivor) - survivor.fatigue - survivor.injuries.length * 20;
+    if (!best) {
+      return survivor;
+    }
+    const bestScore = score(best) - best.fatigue - best.injuries.length * 20;
+    return adjustedScore > bestScore ? survivor : best;
+  }, null);
+}
+
+function survivorAssignmentDetail(
+  survivor: Survivor | null,
+  baseAssignments: PlaytestSession["room"]["baseAssignments"],
+  expectedWork: BaseWorkType,
+  reason: string
+) {
+  if (!survivor) {
+    return "暂无可用人手，先治疗伤病或减少出征人数。";
+  }
+
+  const workType = assignedWorkType(baseAssignments, survivor.id);
+  const workHint = workType === expectedWork ? `已在${baseWorkLabel(expectedWork)}班` : `当前${baseWorkLabel(workType)}，可转入${baseWorkLabel(expectedWork)}班`;
+  return `${reason}；${workHint}；疲劳 ${survivor.fatigue} / 伤病 ${survivor.injuries.length}`;
+}
+
+function survivorRoleBoard(
+  survivors: Survivor[],
+  selectedIds: string[],
+  baseAssignments: PlaytestSession["room"]["baseAssignments"]
+) {
+  const selectedSurvivors = survivors.filter((survivor) => selectedIds.includes(survivor.id));
+  const selectedNames = selectedSurvivors.map((survivor) => survivor.name).join("、");
+  const medic = bestSurvivorBy(survivors, (survivor) => survivor.attributes.medical * 2 + survivor.attributes.willpower);
+  const mechanic = bestSurvivorBy(survivors, (survivor) => survivor.attributes.technical * 2 + survivor.attributes.luck);
+  const guard = bestSurvivorBy(survivors, (survivor) => survivor.attributes.willpower + survivor.attributes.stamina + survivor.attributes.agility);
+
+  const expeditionTone = selectedSurvivors.length >= 3 ? "ready" : selectedSurvivors.length > 0 ? "todo" : "urgent";
+  const expeditionValue =
+    selectedSurvivors.length >= 3
+      ? `${selectedSurvivors.length} 人可出征`
+      : selectedSurvivors.length > 0
+        ? "还需补编"
+        : "未选择";
+
+  return {
+    items: [
+      {
+        detail:
+          selectedSurvivors.length >= 3
+            ? `${selectedNames} 已形成基础小队，继续补一名医疗或技术位会更稳。`
+            : selectedSurvivors.length > 0
+              ? `${selectedNames} 已入队，建议补到三至五人再出发。`
+              : "先从幸存者卡片右上角加入三名核心成员，再选择路线和补给。",
+        id: "expedition",
+        label: "出征核心",
+        tone: expeditionTone,
+        value: expeditionValue
+      },
+      {
+        detail: survivorAssignmentDetail(
+          medic,
+          baseAssignments,
+          "care",
+          medic ? `${statLabels.medical} ${medic.attributes.medical}，适合压低伤病恢复时间` : ""
+        ),
+        id: "medical",
+        label: "医疗护理",
+        tone: medic && assignedWorkType(baseAssignments, medic.id) === "care" ? "ready" : "todo",
+        value: medic?.name ?? "缺口"
+      },
+      {
+        detail: survivorAssignmentDetail(
+          mechanic,
+          baseAssignments,
+          "repair",
+          mechanic ? `${statLabels.technical} ${mechanic.attributes.technical}，适合推进设施和房间目标` : ""
+        ),
+        id: "repair",
+        label: "修理建设",
+        tone: mechanic && assignedWorkType(baseAssignments, mechanic.id) === "repair" ? "ready" : "todo",
+        value: mechanic?.name ?? "缺口"
+      },
+      {
+        detail: survivorAssignmentDetail(
+          guard,
+          baseAssignments,
+          "guard",
+          guard ? `${statLabels.willpower} ${guard.attributes.willpower} / ${statLabels.stamina} ${guard.attributes.stamina}，适合守住危险度` : ""
+        ),
+        id: "guard",
+        label: "守卫防线",
+        tone: guard && assignedWorkType(baseAssignments, guard.id) === "guard" ? "ready" : "urgent",
+        value: guard?.name ?? "缺口"
+      }
+    ] satisfies SurvivorRoleBoardItem[],
+    summary:
+      selectedSurvivors.length >= 3
+        ? "出征核心已成型，基地岗位决定这轮能恢复多少、修多少、降多少危险。"
+        : "先补齐出征核心，再把医疗、修理、守卫分到对应岗位。"
+  };
+}
+
 function Survivors({
   accountSurvivors,
   state,
@@ -1938,6 +2057,7 @@ function Survivors({
   onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
 }) {
   const growthPlan = survivorGrowthPlan(accountSurvivors);
+  const roleBoard = survivorRoleBoard(state.survivors, selectedIds, baseAssignments);
 
   return (
     <section className="panel">
@@ -1997,6 +2117,24 @@ function Survivors({
             <article className={`growth-plan-item ${item.priority}`} key={item.id}>
               <span>{item.label}</span>
               <strong>{item.name}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="survivor-role-board" aria-label="幸存者定位建议">
+        <div className="survivor-role-heading">
+          <div>
+            <span>编队定位</span>
+            <strong>{roleBoard.summary}</strong>
+          </div>
+          <small>出征、护理、建设、守卫都从同一批幸存者里取舍。</small>
+        </div>
+        <div className="survivor-role-grid">
+          {roleBoard.items.map((item) => (
+            <article className={`survivor-role-item ${item.tone}`} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
               <small>{item.detail}</small>
             </article>
           ))}
