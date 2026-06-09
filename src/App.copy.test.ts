@@ -458,6 +458,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("lastBaseActionFeedback");
     expect(source).toContain("buildBaseActionFeedback");
     expect(source).toContain("baseDaySettlementPulse");
+    expect(source).toContain("baseOperationPriorities");
+    expect(source).toContain("aria-label=\"基地经营优先级\"");
+    expect(source).toContain("经营优先级");
+    expect(source).toContain("先处理会卡住下一次出征的事。");
+    expect(source).toContain("补给、伤病、建设和后勤支援会一起影响明天能不能稳妥出发。");
     expect(source).toContain("baseSchedulePreview");
     expect(source).toContain("aria-label=\"基地日程预演\"");
     expect(source).toContain("按下结束当天后，会先结算这些基地后果。");
@@ -488,6 +493,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-primary");
     expect(styles).toContain(".base-command-actions");
+    expect(styles).toContain(".base-operation-priority");
+    expect(styles).toContain(".base-operation-priority-grid");
+    expect(styles).toContain(".base-operation-priority-grid button.danger");
     expect(styles).toContain(".base-action-feedback");
     expect(styles).toContain(".panel > .base-action-feedback");
     expect(styles).toContain(".base-action-feedback-grid");

@@ -1593,6 +1593,12 @@ function Overview({
   ];
   const baseExpeditionSupport = baseExpeditionSupportBriefing(dayPreview);
   const settlementPulse = baseDaySettlementPulse(lastBaseActionFeedback, session);
+  const basePriorityItems = baseOperationPriorities({
+    developmentPlan: baseDevelopmentPlan(session),
+    recoveryPlan: baseRecoveryPlan(session),
+    session,
+    supportBriefing: baseExpeditionSupport
+  });
   const baseSchedulePreview = [
     {
       detail: dayPreview.supplySummary,
@@ -1777,6 +1783,23 @@ function Overview({
                   </button>
                 );
               })}
+            </div>
+          </div>
+          <div className="base-operation-priority" aria-label="基地经营优先级">
+            <div className="base-operation-priority-heading">
+              <span>经营优先级</span>
+              <strong>先处理会卡住下一次出征的事。</strong>
+              <small>补给、伤病、建设和后勤支援会一起影响明天能不能稳妥出发。</small>
+            </div>
+            <div className="base-operation-priority-grid">
+              {basePriorityItems.map((item) => (
+                <button className={item.tone} key={item.id} type="button" onClick={() => onNavigate(item.view)}>
+                  <span>{item.label}</span>
+                  <strong>{item.title}</strong>
+                  <small>{item.detail}</small>
+                  <b>{item.action}</b>
+                </button>
+              ))}
             </div>
           </div>
           <div className="base-schedule-preview" aria-label="基地日程预演">
@@ -2247,6 +2270,98 @@ function baseExpeditionSupportBriefing(dayPreview: ReturnType<typeof baseDayPrev
     ],
     summary: `支援覆盖 ${readyCount}/3。先让基地稳定，再把人和补给投入远征。`
   };
+}
+
+type BaseOperationPriorityItem = {
+  action: string;
+  detail: string;
+  id: string;
+  label: string;
+  title: string;
+  tone: "safe" | "warning" | "danger";
+  view: ViewKey;
+};
+
+function baseOperationPriorities({
+  developmentPlan,
+  recoveryPlan,
+  session,
+  supportBriefing
+}: {
+  developmentPlan: BaseDevelopmentPlan;
+  recoveryPlan: BaseRecoveryPlan;
+  session: PlaytestSession;
+  supportBriefing: ReturnType<typeof baseExpeditionSupportBriefing>;
+}): BaseOperationPriorityItem[] {
+  const resources = session.room.base.resources;
+  const foodWaterShortage = Math.max(0, 6 - resources.food) + Math.max(0, 6 - resources.water);
+  const recommendedProject = developmentPlan.recommended[0] ?? null;
+  const supportReady = supportBriefing.items.filter((item) => item.tone === "ready").length;
+  const activeObjective = session.room.base.objective.status === "active";
+
+  const items: BaseOperationPriorityItem[] = [
+    {
+      action: foodWaterShortage > 0 ? "去成员页安排搜寻或捐入补给" : "库存稳定，按计划分配补给",
+      detail:
+        foodWaterShortage > 0
+          ? `食物 ${resources.food} / 水 ${resources.water}，明日消耗可能压住士气。`
+          : `食物 ${resources.food} / 水 ${resources.water}，可以把材料投向建设或出征。`,
+      id: "supply",
+      label: "补给",
+      title: foodWaterShortage > 0 ? "先补吃喝" : "库存能撑住",
+      tone: foodWaterShortage >= 4 ? "danger" : foodWaterShortage > 0 ? "warning" : "safe",
+      view: foodWaterShortage > 0 ? "members" : "overview"
+    },
+    {
+      action: recoveryPlan.immediateTreatments > 0 ? "去幸存者页治疗" : recoveryPlan.careShifts > 0 ? "保留护理班" : "安排护理或轮换",
+      detail:
+        recoveryPlan.injuredCount > 0
+          ? `${recoveryPlan.injuredCount} 人带伤，药品可立即处理 ${recoveryPlan.immediateTreatments} 人。`
+          : recoveryPlan.recoveringCount > 0
+            ? `${recoveryPlan.recoveringCount} 人在恢复，护理班会影响下一次出征人数。`
+            : "当前没有明显伤病，可以把健康成员投入建设或出征。",
+      id: "recovery",
+      label: "伤病",
+      title: recoveryPlan.injuredCount > 0 ? "先稳住队伍" : "队伍状态可用",
+      tone: recoveryPlan.medicineShortage > 0 ? "danger" : recoveryPlan.injuredCount > 0 || recoveryPlan.recoveringCount > 0 ? "warning" : "safe",
+      view: "survivors"
+    },
+    {
+      action: recommendedProject
+        ? recommendedProject.canAfford
+          ? "去设施页推进"
+          : `还缺 ${recommendedProject.materialDeficit} 材料`
+        : "设施路线暂时稳定",
+      detail: recommendedProject
+        ? `${recommendedProject.name}：${recommendedProject.reason} ${recommendedProject.nextStep}`
+        : "当前房间设施已经接近阶段上限，资源可转向出征和恢复。",
+      id: "development",
+      label: "建设",
+      title: recommendedProject ? `${recommendedProject.name} ${recommendedProject.canAfford ? "可推进" : "缺材料"}` : "建设暂稳",
+      tone: recommendedProject ? (recommendedProject.canAfford ? "safe" : "warning") : "safe",
+      view: "facilities"
+    },
+    {
+      action: supportReady >= 3 && activeObjective ? "去远征页准备出发" : "先补留守支援",
+      detail: `${supportBriefing.summary} ${activeObjective ? "房间目标仍在进行中。" : "房间目标已经结算，先复盘战报。"}`,
+      id: "expedition",
+      label: "出征",
+      title: supportReady >= 3 && activeObjective ? "可以准备下一趟" : "后勤还要补",
+      tone: !activeObjective ? "warning" : supportReady >= 3 ? "safe" : supportReady > 0 ? "warning" : "danger",
+      view: activeObjective ? "expedition" : "reports"
+    }
+  ];
+
+  return items.sort((left, right) => operationPriorityScore(right) - operationPriorityScore(left));
+}
+
+function operationPriorityScore(item: BaseOperationPriorityItem) {
+  const toneScore = {
+    danger: 3,
+    safe: 1,
+    warning: 2
+  };
+  return toneScore[item.tone];
 }
 
 type SurvivorRoleBoardItem = {
