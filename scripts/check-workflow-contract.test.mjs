@@ -37,6 +37,17 @@ HP
 XP
 未允许的中英混排
 https://ember-dossier.pages.dev/?room=playtest-smoke
+docs/release-cadence-checklist.md
+`,
+    releaseChecklist: `
+# 发布批次清单
+默认不频繁发布。
+大功能
+线上阻断
+暂不发布
+本地浏览器冒烟
+npm run release:preflight
+npm run release:verify
 `,
     copy: `
 function hasDisallowedVisibleLatin(text) {
@@ -177,6 +188,17 @@ if (productionMode) {
 
     expect(report.ok).toBe(false);
     expect(report.missing).toEqual(expect.arrayContaining(["copy gate: mixed language"]));
+  });
+
+  test("reports drift when the release batch checklist loses cadence gates", () => {
+    const report = createWorkflowContractReport(
+      completeContractFiles({
+        releaseChecklist: "# 发布批次清单\n默认不频繁发布。\n"
+      })
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.missing).toEqual(expect.arrayContaining(["doc stage: release batch checklist"]));
   });
 
   test("reports drift when the GitHub API fallback bypasses release preflight", () => {

@@ -7,6 +7,7 @@ const defaultFiles = {
   gates: "scripts/check-iteration-gates.mjs",
   packageJson: "package.json",
   publish: "scripts/publish-github-api.mjs",
+  releaseChecklist: "docs/release-cadence-checklist.md",
   viteConfig: "vite.config.ts",
   workflow: ".github/workflows/deploy-cloudflare-pages.yml"
 };
@@ -51,6 +52,19 @@ const requiredChecks = [
   {
     id: "doc safety: secrets",
     test: ({ docs }) => docs.includes("Cloudflare Token") && docs.includes("Supabase")
+  },
+  {
+    id: "doc stage: release batch checklist",
+    test: ({ docs, releaseChecklist }) =>
+      docs.includes("docs/release-cadence-checklist.md") &&
+      releaseChecklist.includes("发布批次清单") &&
+      releaseChecklist.includes("默认不频繁发布") &&
+      releaseChecklist.includes("大功能") &&
+      releaseChecklist.includes("线上阻断") &&
+      releaseChecklist.includes("暂不发布") &&
+      releaseChecklist.includes("本地浏览器冒烟") &&
+      releaseChecklist.includes("npm run release:preflight") &&
+      releaseChecklist.includes("npm run release:verify")
   },
   {
     id: "doc safety: language",
