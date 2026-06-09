@@ -391,6 +391,17 @@ export type JourneyCondition = {
   thirst: number;
 };
 
+export type JourneyLastActionDelta = {
+  battleScarDelta: number;
+  conditionDelta: JourneyCondition;
+  fieldSupplyDelta: ResourceBundle;
+  logLine: string;
+  objectiveDelta: number;
+  pressureDelta: number;
+  rewardDelta: ResourceBundle;
+  routeDelta: number;
+};
+
 export type JourneyState = {
   battleScars: number;
   baseCommandUses: Partial<Record<JourneyBaseCommandAction, number>>;
@@ -403,6 +414,7 @@ export type JourneyState = {
   extractionStatus: JourneyExtractionStatus;
   fieldSupplies: ResourceBundle;
   id: string;
+  lastActionDelta: JourneyLastActionDelta | null;
   loadout: ResourceBundle;
   locationFamily: LocationFamily;
   locationId: string;
@@ -2509,6 +2521,7 @@ export function createJourney(session: PlaytestSession, draft: JourneyDraft, loc
     extractionStatus: "in-progress",
     fieldSupplies,
     id: `journey-${Date.now()}`,
+    lastActionDelta: null,
     loadout: { ...draft.loadout },
     locationFamily: family,
     locationId,

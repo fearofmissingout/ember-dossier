@@ -918,7 +918,7 @@ export default function App() {
 
     const selectedBaseCommand = baseCommandActionFromJourneyAction(action);
     if (selectedBaseCommand) {
-      setJourney(resolveBaseCommand(journey, selectedBaseCommand));
+      setJourney(annotateJourneyActionDelta(journey, resolveBaseCommand(journey, selectedBaseCommand)));
       return;
     }
 
@@ -937,7 +937,7 @@ export default function App() {
       if (!next.combat) {
         next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
       }
-      setJourney(next);
+      setJourney(annotateJourneyActionDelta(journey, next));
       return;
     }
 
@@ -953,19 +953,19 @@ export default function App() {
         next.currentNodeIndex += 1;
         next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
       }
-      setJourney(next);
+      setJourney(annotateJourneyActionDelta(journey, next));
       return;
     }
 
     const selectedTravelPlan = travelPlanFromAction(action);
     if (selectedTravelPlan) {
-      setJourney(setJourneyTravelPlan(journey, selectedTravelPlan));
+      setJourney(annotateJourneyActionDelta(journey, setJourneyTravelPlan(journey, selectedTravelPlan)));
       return;
     }
 
     const selectedSegmentTactic = segmentTacticFromAction(action);
     if (selectedSegmentTactic) {
-      setJourney(setJourneySegmentTactic(journey, selectedSegmentTactic));
+      setJourney(annotateJourneyActionDelta(journey, setJourneySegmentTactic(journey, selectedSegmentTactic)));
       return;
     }
 
@@ -1001,7 +1001,7 @@ export default function App() {
       next.currentNodeIndex += 1;
       next.combat = createCombatForNode(next.nodes[next.currentNodeIndex], selectedSquad, readiness, next.support);
     }
-    setJourney(next);
+    setJourney(annotateJourneyActionDelta(journey, next));
   }
 
   function resolveCombatAction(action: CombatAction) {
@@ -1015,11 +1015,11 @@ export default function App() {
       if (!traveled.pendingRoadEvent) {
         traveled.combat = createCombatForNode(traveled.nodes[traveled.currentNodeIndex], selectedSquad, readiness, traveled.support);
       }
-      setJourney(traveled);
+      setJourney(annotateJourneyActionDelta(journey, traveled));
       return;
     }
 
-    setJourney(resolved);
+    setJourney(annotateJourneyActionDelta(journey, resolved));
   }
 
   function finishJourney(completedJourney: JourneyState) {
@@ -4004,6 +4004,7 @@ function journeyRouteIntel(journey: JourneyState, pace: ReturnType<typeof routeP
 }
 
 function journeyActionResultBreakdown(journey: JourneyState, latestActionResult: string, pace: ReturnType<typeof routePaceFor>) {
+  const delta = journey.lastActionDelta ?? null;
   const latestDecision = journey.decisions[journey.decisions.length - 1] ?? null;
   const latestTravel = journey.travelHistory[journey.travelHistory.length - 1] ?? null;
   const latestRoad = journey.roadEvents[journey.roadEvents.length - 1] ?? null;
@@ -4023,34 +4024,89 @@ function journeyActionResultBreakdown(journey: JourneyState, latestActionResult:
 
   return [
     {
-      detail: resourceDetail,
+      detail: delta ? `本次战利 ${formatSignedResourceDelta(delta.rewardDelta)} / 随身 ${formatSignedResourceDelta(delta.fieldSupplyDelta)}` : resourceDetail,
       id: "reward",
       label: "资源变化",
-      tone: formatResourceDelta(journey.bonusReward) === "无战利品" ? "warning" : "safe",
-      value: formatResourceDelta(journey.bonusReward)
+      tone: delta && hasPositiveResourceDelta(delta.rewardDelta) ? "safe" : formatResourceDelta(journey.bonusReward) === "无" ? "warning" : "safe",
+      value: delta ? formatSignedResourceDelta(delta.rewardDelta) : formatResourceDelta(journey.bonusReward)
     },
     {
-      detail: `疲劳 ${journey.condition.fatigue} / 饥饿 ${journey.condition.hunger} / 口渴 ${journey.condition.thirst} / 战斗伤痕 ${journey.battleScars}`,
+      detail: delta
+        ? `疲劳 ${formatSignedNumber(delta.conditionDelta.fatigue)} / 饥饿 ${formatSignedNumber(delta.conditionDelta.hunger)} / 口渴 ${formatSignedNumber(delta.conditionDelta.thirst)} / 战斗伤痕 ${formatSignedNumber(delta.battleScarDelta)}`
+        : `疲劳 ${journey.condition.fatigue} / 饥饿 ${journey.condition.hunger} / 口渴 ${journey.condition.thirst} / 战斗伤痕 ${journey.battleScars}`,
       id: "condition",
       label: "队伍状态",
       tone: pressureTone,
-      value: worstCondition >= 70 ? "需要休整" : worstCondition >= 50 ? "状态吃紧" : "还能行动"
+      value: delta ? `距离 ${formatSignedNumber(delta.conditionDelta.distance)}` : worstCondition >= 70 ? "需要休整" : worstCondition >= 50 ? "状态吃紧" : "还能行动"
     },
     {
-      detail: routeDetail,
+      detail: delta ? `路线 ${formatSignedNumber(delta.routeDelta)} 站 / 目标 ${formatSignedNumber(delta.objectiveDelta)}。${routeDetail}` : routeDetail,
       id: "route",
       label: "路线推进",
       tone: pace.remainingStops <= 0 ? "safe" : latestTravel?.tone ?? (latestRoad ? roadToneForResultBreakdown(latestRoad.tone) : "warning"),
-      value: `${pace.currentStop}/${pace.totalStops} 站`
+      value: delta ? formatSignedNumber(delta.routeDelta) : `${pace.currentStop}/${pace.totalStops} 站`
     },
     {
-      detail: `随身补给：${formatResourceDelta(journey.fieldSupplies)}。${journey.pendingRoadEvent ? "路上抉择尚未处理。" : "当前没有路口阻塞。"}`,
+      detail: delta ? delta.logLine : `随身补给：${formatResourceDelta(journey.fieldSupplies)}。${journey.pendingRoadEvent ? "路上抉择尚未处理。" : "当前没有路口阻塞。"}`,
       id: "risk",
       label: "风险变化",
-      tone: pressureTone,
-      value: `压力 ${journey.pressure}%`
+      tone: delta && delta.pressureDelta <= 0 ? "safe" : pressureTone,
+      value: delta ? `压力 ${formatSignedPercent(delta.pressureDelta)}` : `压力 ${journey.pressure}%`
     }
   ];
+}
+
+function annotateJourneyActionDelta(before: JourneyState, after: JourneyState) {
+  after.lastActionDelta = buildJourneyActionDelta(before, after);
+  return after;
+}
+
+function buildJourneyActionDelta(before: JourneyState, after: JourneyState) {
+  return {
+    battleScarDelta: after.battleScars - before.battleScars,
+    conditionDelta: {
+      distance: after.condition.distance - before.condition.distance,
+      fatigue: after.condition.fatigue - before.condition.fatigue,
+      hunger: after.condition.hunger - before.condition.hunger,
+      thirst: after.condition.thirst - before.condition.thirst
+    },
+    fieldSupplyDelta: resourceBundleDelta(before.fieldSupplies, after.fieldSupplies),
+    logLine: after.logs.slice(before.logs.length).at(-1) ?? after.logs.at(-1) ?? "本次行动没有新增日志。",
+    objectiveDelta: after.objectiveBonus - before.objectiveBonus,
+    pressureDelta: after.pressure - before.pressure,
+    rewardDelta: resourceBundleDelta(before.bonusReward, after.bonusReward),
+    routeDelta: after.currentNodeIndex - before.currentNodeIndex
+  };
+}
+
+function resourceBundleDelta(before: ResourceBundle, after: ResourceBundle): ResourceBundle {
+  return resourceKeys.reduce(
+    (delta, key) => ({
+      ...delta,
+      [key]: after[key] - before[key]
+    }),
+    {
+      ammo: 0,
+      food: 0,
+      fuel: 0,
+      materials: 0,
+      medicine: 0,
+      water: 0
+    }
+  );
+}
+
+function formatSignedResourceDelta(resources: ResourceBundle) {
+  const entries = resourceKeys.filter((key) => resources[key] !== 0);
+  if (entries.length === 0) {
+    return "无变化";
+  }
+
+  return entries.map((key) => `${resourceLabels[key]} ${formatSignedNumber(resources[key])}`).join(" / ");
+}
+
+function hasPositiveResourceDelta(resources: ResourceBundle) {
+  return resourceKeys.some((key) => resources[key] > 0);
 }
 
 function roadToneForResultBreakdown(tone: "find" | "hazard" | "road") {
