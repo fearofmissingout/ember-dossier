@@ -3310,6 +3310,68 @@ button:disabled {
   color: #87321f;
 }
 
+.expedition-one-page-command {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d7c8a8;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.expedition-one-page-heading {
+  display: grid;
+  gap: 2px;
+}
+
+.expedition-one-page-heading span,
+.expedition-one-page-card span {
+  color: #806022;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.expedition-one-page-heading strong {
+  color: #2f3a31;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.expedition-one-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.expedition-one-page-card {
+  display: grid;
+  min-height: 92px;
+  align-content: start;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #ddcda7;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #26312c;
+  text-align: left;
+}
+
+.expedition-one-page-card strong {
+  color: #2b3a30;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.expedition-one-page-card small {
+  color: #6f6757;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .expedition-prep-section {
   scroll-margin-top: 96px;
 }
@@ -9421,8 +9483,42 @@ button:disabled {
     display: none;
   }
 
+  .expedition-one-page-command {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .expedition-one-page-heading strong {
+    font-size: 12px;
+  }
+
+  .expedition-one-page-grid {
+    grid-template-columns: repeat(3, minmax(118px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 2px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .expedition-one-page-card {
+    min-height: 72px;
+    padding: 8px;
+  }
+
+  .expedition-one-page-card strong {
+    font-size: 13px;
+  }
+
+  .expedition-one-page-card small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 11px;
+  }
+
   .expedition-prep-section {
-    scroll-margin-top: 204px;
+    scroll-margin-top: 294px;
   }
 
   .journey-plan-strip,

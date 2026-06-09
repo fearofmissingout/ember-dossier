@@ -2766,6 +2766,34 @@ function ExpeditionPrep({
       value: yieldPreview.items.find((item) => item.label === "基地目标")?.value ?? "待确认"
     }
   ];
+  const onePageCommandItems = [
+    {
+      action: draft.squadIds.length < 3 ? "补齐编队" : !canAffordLoadout ? "调整补给" : "确认出发",
+      detail:
+        draft.squadIds.length < 3
+          ? "手机端先点这里选择幸存者，凑够 3 人后再看补给。"
+          : !canAffordLoadout
+            ? "携带物资超过库存，先减少物资或回基地补给。"
+            : "当前可直接派遣，出发后会在本页进入回合行动台。",
+      id: "mobile-squad-command",
+      label: "当前操作",
+      targetId: draft.squadIds.length < 3 ? "prep-squad" : !canAffordLoadout ? "prep-loadout" : "prep-risk"
+    },
+    {
+      action: "回合行动",
+      detail: journey ? "事件、商店、营地和战斗动作都收拢在行动台第一屏。" : "派遣后本页会显示路线进度、当前节点和主要动作。",
+      id: "mobile-journey-command",
+      label: "出发以后",
+      targetId: journey ? "journey-action-options" : "prep-route"
+    },
+    {
+      action: "归队处理",
+      detail: "结算后回到战报，再按提示处理伤病、设施和下一次出征。",
+      id: "mobile-return-command",
+      label: "回基地",
+      targetId: "prep-doctrine"
+    }
+  ];
   const prepCommandItems = [
     {
       detail: draft.squadIds.length > 0 ? `${draft.squadIds.length} 名幸存者已入队` : "先选择 3-5 名幸存者",
@@ -2822,6 +2850,21 @@ function ExpeditionPrep({
               <small>{item.detail}</small>
             </button>
           ))}
+        </div>
+        <div className="expedition-one-page-command" aria-label="手机端单页出征总控">
+          <div className="expedition-one-page-heading">
+            <span>单页出征</span>
+            <strong>所有准备、行动和归队提示都在这一页完成。</strong>
+          </div>
+          <div className="expedition-one-page-grid">
+            {onePageCommandItems.map((item) => (
+              <button className="expedition-one-page-card" key={item.id} type="button" onClick={() => scrollToPrepStep(item.targetId)}>
+                <span>{item.label}</span>
+                <strong>{item.action}</strong>
+                <small>{item.detail}</small>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -169,6 +169,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("本回合行动");
     expect(source).toContain("直接选择下一步");
     expect(source).toContain("每个选项都会推进旅途");
+    expect(source).toContain("aria-label=\"手机端单页出征总控\"");
+    expect(source).toContain("onePageCommandItems");
+    expect(source).toContain("所有准备、行动和归队提示都在这一页完成。");
+    expect(source).toContain("当前操作");
+    expect(source).toContain("出发以后");
+    expect(source).toContain("回基地");
     expect(source).toContain("journey-mobile-flow");
     expect(source).toContain("aria-label=\"手机端远征页内导航\"");
     expect(source).toContain("aria-label=\"手机端单页行动摘要\"");
@@ -201,6 +207,9 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-action-pulse.danger");
     expect(styles).toContain(".journey-result-breakdown");
     expect(styles).toContain(".journey-result-breakdown article.warning");
+    expect(styles).toContain(".expedition-one-page-command");
+    expect(styles).toContain(".expedition-one-page-grid");
+    expect(styles).toContain(".expedition-one-page-card");
     expect(styles).toContain(".journey-mobile-flow");
     expect(styles).toContain(".journey-mobile-route");
     expect(styles).toContain(".journey-mobile-meters");
