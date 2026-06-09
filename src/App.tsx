@@ -39,6 +39,7 @@ import {
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationPulse,
+  roomCooperationPlan,
   roomCooperationSummary,
   roomContributionPlan,
   roomLaunchBriefing,
@@ -1477,6 +1478,7 @@ export default function App() {
             launchBriefing={roomLaunchBriefing(session)}
             playtestReadiness={roomPlaytestReadiness(session)}
             pulse={roomCooperationPulse(session)}
+            cooperationPlan={roomCooperationPlan(session)}
             roomSlug={roomSlug}
             summary={roomCooperationSummary(session)}
             copyStatus={copyStatus}
@@ -5642,6 +5644,7 @@ function RoomMembers({
   memberSummaries,
   playtestReadiness,
   pulse,
+  cooperationPlan,
   roomSlug,
   summary,
   copyStatus,
@@ -5658,6 +5661,7 @@ function RoomMembers({
   memberSummaries: RoomMemberSummary[];
   playtestReadiness: ReturnType<typeof roomPlaytestReadiness>;
   pulse: RoomCooperationPulse;
+  cooperationPlan: ReturnType<typeof roomCooperationPlan>;
   roomSlug: string;
   summary: RoomCooperationSummary;
   copyStatus: "idle" | "copied" | "failed";
@@ -5744,6 +5748,26 @@ function RoomMembers({
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.detail}</small>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={`room-cooperation-plan ${cooperationPlan.tone}`} aria-label="房间协作计划">
+        <div className="room-cooperation-plan-heading">
+          <div>
+            <span>协作计划</span>
+            <strong>{cooperationPlan.headline}</strong>
+            <small>{cooperationPlan.summary}</small>
+          </div>
+        </div>
+        <div className="room-cooperation-plan-grid">
+          {cooperationPlan.items.map((item) => (
+            <button className={item.tone} key={item.id} type="button" onClick={() => onNavigate(item.targetView)}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <small>{item.assignee}：{item.body}</small>
+              <b>{item.actionLabel}</b>
             </button>
           ))}
         </div>

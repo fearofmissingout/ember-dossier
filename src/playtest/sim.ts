@@ -1002,6 +1002,26 @@ export type RoomCooperationPulse = {
   tone: "blocked" | "building" | "ready";
 };
 
+export type RoomCooperationPlanTarget = "overview" | "survivors" | "expedition" | "facilities" | "members";
+
+export type RoomCooperationPlanItem = {
+  actionLabel: string;
+  assignee: string;
+  body: string;
+  id: "invite" | "contribution" | "squad" | "shifts" | "development" | "launch";
+  label: string;
+  targetView: RoomCooperationPlanTarget;
+  title: string;
+  tone: "urgent" | "todo" | "ready";
+};
+
+export type RoomCooperationPlan = {
+  headline: string;
+  items: RoomCooperationPlanItem[];
+  summary: string;
+  tone: "blocked" | "building" | "ready";
+};
+
 export type RoomContributionPlanItem = {
   detail: string;
   key: ResourceKey;
@@ -1345,6 +1365,111 @@ export function roomCooperationPulse(session: PlaytestSession): RoomCooperationP
     nextAction: readiness.nextAction,
     summary: `成员完成度 ${membersReady}/${Math.max(1, members.length)}，房间准备 ${readyCount}/${items.length}。${cooperation.actionHint}`,
     tone: readiness.status
+  };
+}
+
+export function roomCooperationPlan(session: PlaytestSession): RoomCooperationPlan {
+  const readiness = roomPlaytestReadiness(session);
+  const contributionPlan = roomContributionPlan(session);
+  const members = roomMemberSummaries(session);
+  const currentNeed = readiness.items.find((item) => item.status === "blocked") ?? readiness.items.find((item) => item.status === "todo");
+  const idleMember = members.find((member) => member.collaborationStatus !== "ready") ?? members[0] ?? null;
+  const urgentContribution = contributionPlan.items.find((item) => item.priority === "urgent") ?? contributionPlan.items[0] ?? null;
+  const items: RoomCooperationPlanItem[] = [];
+
+  if (readiness.items.find((item) => item.id === "invite")?.status !== "ready") {
+    items.push({
+      actionLabel: "复制邀请",
+      assignee: "房主",
+      body: "先把房间链接发给朋友。至少两名成员在房间里，协作分工才有意义。",
+      id: "invite",
+      label: "拉人进房",
+      targetView: "members",
+      title: "邀请好友加入同一房间",
+      tone: "todo"
+    });
+  }
+
+  if (urgentContribution) {
+    items.push({
+      actionLabel: "去捐入",
+      assignee: idleMember?.displayName ?? "任意成员",
+      body: `${urgentContribution.label} ${urgentContribution.target}。${urgentContribution.detail}`,
+      id: "contribution",
+      label: urgentContribution.priority === "urgent" ? "优先补库" : "补齐库存",
+      targetView: "overview",
+      title: contributionPlan.summary,
+      tone: urgentContribution.priority === "urgent" ? "urgent" : "todo"
+    });
+  }
+
+  if (readiness.items.find((item) => item.id === "squad")?.status !== "ready") {
+    const squadItem = readiness.items.find((item) => item.id === "squad");
+    items.push({
+      actionLabel: "去编队",
+      assignee: idleMember?.displayName ?? "任意成员",
+      body: squadItem?.detail ?? "派幸存者进入远征编队，让房间能启动一次完整出征。",
+      id: "squad",
+      label: "补远征队",
+      targetView: "survivors",
+      title: "补齐三人远征编队",
+      tone: squadItem?.status === "blocked" ? "urgent" : "todo"
+    });
+  }
+
+  if (readiness.items.find((item) => item.id === "shifts")?.status !== "ready") {
+    const shiftItem = readiness.items.find((item) => item.id === "shifts");
+    items.push({
+      actionLabel: "排班次",
+      assignee: idleMember?.displayName ?? "任意成员",
+      body: shiftItem?.detail ?? "安排搜寻、修理、守卫或护理班次，避免基地日结空转。",
+      id: "shifts",
+      label: "补留守班",
+      targetView: "survivors",
+      title: "安排至少一名留守幸存者",
+      tone: shiftItem?.status === "blocked" ? "urgent" : "todo"
+    });
+  }
+
+  if (items.length === 0 && currentNeed?.id === "expedition") {
+    items.push({
+      actionLabel: "准备远征",
+      assignee: "全体成员",
+      body: currentNeed.detail,
+      id: "launch",
+      label: "开局远征",
+      targetView: "expedition",
+      title: "房间已具备多人试玩开局条件",
+      tone: "ready"
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      actionLabel: "看设施",
+      assignee: "全体成员",
+      body: "当前关键缺口已经补齐，可以把材料投入设施，或准备下一次远征。",
+      id: "development",
+      label: "推进建设",
+      targetView: "facilities",
+      title: "协作项暂时稳定",
+      tone: "ready"
+    });
+  }
+
+  const shownItems = items.slice(0, 4);
+  const planTone: RoomCooperationPlan["tone"] = shownItems.every((item) => item.tone === "ready") ? "ready" : readiness.status;
+
+  return {
+    headline:
+      planTone === "ready"
+        ? "房间可以进入共同远征。"
+      : shownItems.some((item) => item.tone === "urgent")
+          ? "先分掉关键协作任务。"
+          : "按计划补齐房间协作。",
+    items: shownItems,
+    summary: `当前优先 ${shownItems.length} 项：${shownItems.map((item) => `${item.assignee} ${item.actionLabel}`).join(" / ")}。`,
+    tone: planTone
   };
 }
 
