@@ -67,10 +67,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "resources", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "urban", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "weird", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "wilds", roadBeats: 5, shops: 4 })
+        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "resources", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "urban", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "weird", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "wilds", roadBeats: 5, shops: 4 })
       ])
     );
   });
@@ -107,12 +107,16 @@ describe("journey route generation", () => {
     };
 
     const resourceRoute = createJourney(session, draft, "water-plant", 60);
+    const urbanRoute = createJourney(session, draft, "hospital", 60);
     const weirdRoute = createJourney(session, draft, "greenhouse", 60);
+    const wildRoute = createJourney(session, draft, "farm", 60);
 
-    expect(resourceRoute.nodes[0].title).toBe("旁通阀阵");
+    expect(resourceRoute.nodes[0].title).toBe("蓝藻计量井");
     expect(resourceRoute.nodes[3].shop?.label).toBe("买泵站调度图");
-    expect(weirdRoute.nodes[0].title).toBe("白色病历墙");
+    expect(urbanRoute.nodes[0].title).toBe("社区药柜");
+    expect(weirdRoute.nodes[0].title).toBe("回声取号机");
     expect(weirdRoute.nodes[3].shop?.label).toBe("买画框里的钥匙");
+    expect(wildRoute.nodes[0].title).toBe("雾棚蜂箱");
   });
 
   test("can roll into the expanded shop pools and preview their offers", () => {

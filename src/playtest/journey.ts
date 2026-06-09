@@ -1256,6 +1256,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "弹药打断卡死的阀销，队伍抢在蒸汽扩散前穿过旁通管。",
         supplyPriority: ["ammo", "fuel"]
       }
+    },
+    {
+      title: "蓝藻计量井",
+      body: "计量井里浮着厚厚的蓝绿色泡沫，刻度尺还在轻轻晃，像有人刚刚读过水位。",
+      careful: {
+        fallbackLog: "队伍用绳子慢慢取样，泡沫沾上手套后开始发热，大家不得不拉长休整间隔。",
+        label: "取样测水",
+        pressure: -9,
+        rewardKeys: ["water", "medicine"],
+        rollShift: -0.1,
+        successLog: "饮水和药品让取样过程保持干净，队伍顺手标出一处可净化水源。",
+        supplyPriority: ["water", "medicine"]
+      },
+      force: {
+        fallbackLog: "他们直接跨过井沿，泡沫被踩碎后散出甜腥气，把下层管道里的东西也引了上来。",
+        label: "跨井直过",
+        pressure: 15,
+        rewardKeys: ["fuel", "materials"],
+        rollShift: 0.14,
+        successLog: "燃料点火烧出一圈安全边界，队伍趁泡沫退开时拆下计量阀。",
+        supplyPriority: ["fuel", "ammo"]
+      }
     }
   ],
   urban: [
@@ -1344,6 +1366,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rewardKeys: ["ammo", "materials"],
         rollShift: 0.12,
         successLog: "弹药压住了闸机后面的动静，队伍趁广播失真时穿过站台。",
+        supplyPriority: ["ammo", "fuel"]
+      }
+    },
+    {
+      title: "社区药柜",
+      body: "居民活动室里有一排上锁药柜，签到簿上最后一页写满了不同人的同一个名字。",
+      careful: {
+        fallbackLog: "队伍按药柜编号慢慢核对，拿到药品，也让走廊里的脚步越聚越近。",
+        label: "核对药柜",
+        pressure: -8,
+        rewardKeys: ["medicine", "food"],
+        rollShift: -0.09,
+        successLog: "药品和清水稳住了污染柜门，队伍按清单取走能用的部分。",
+        supplyPriority: ["medicine", "water"]
+      },
+      force: {
+        fallbackLog: "药柜被砸开，玻璃碎声落地后，签到簿自己翻回了第一页。",
+        label: "砸柜取药",
+        pressure: 14,
+        rewardKeys: ["medicine", "ammo"],
+        rollShift: 0.13,
+        successLog: "弹药打断锁扣，队伍在警报响完整句之前撤出活动室。",
         supplyPriority: ["ammo", "fuel"]
       }
     }
@@ -1436,6 +1480,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "燃料烧出一条没有字的裂口，队伍从纸灰里冲了过去。",
         supplyPriority: ["fuel", "ammo"]
       }
+    },
+    {
+      title: "回声取号机",
+      body: "一台取号机不停吐出空白号码，每张纸落地时都会学队伍里某个人咳嗽。",
+      careful: {
+        fallbackLog: "队伍把号码按顺序压回机器，回声小了些，但每个人都觉得少了一分钟记忆。",
+        label: "按序归号",
+        pressure: -8,
+        rewardKeys: ["medicine", "materials"],
+        rollShift: -0.12,
+        successLog: "药品稳住了眩晕，号码机终于吐出一张写着出口方向的纸。",
+        supplyPriority: ["medicine", "food"]
+      },
+      force: {
+        fallbackLog: "他们踢翻取号机，所有空白号码同时开始念队伍的名字。",
+        label: "踢翻机器",
+        pressure: 18,
+        rewardKeys: ["ammo", "materials"],
+        rollShift: 0.17,
+        successLog: "弹药打碎出纸口，回声断了一拍，队伍从那一拍里冲了出去。",
+        supplyPriority: ["ammo", "fuel"]
+      }
     }
   ],
   wilds: [
@@ -1525,6 +1591,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rollShift: 0.11,
         successLog: "弹药吓退了田埂下的动静，队伍抢出一捆可用管线。",
         supplyPriority: ["ammo", "fuel"]
+      }
+    },
+    {
+      title: "雾棚蜂箱",
+      body: "一排蜂箱藏在雾棚后面，箱盖上压着石头，石头底下露出半截旧地图。",
+      careful: {
+        fallbackLog: "队伍绕开蜂箱取地图，动作慢到雾气开始贴住背包。",
+        label: "绕箱取图",
+        pressure: -9,
+        rewardKeys: ["food", "medicine"],
+        rollShift: -0.09,
+        successLog: "食物被留在箱边，蜂群没有追来，旧地图也被完整带走。",
+        supplyPriority: ["food", "water"]
+      },
+      force: {
+        fallbackLog: "他们掀开箱盖抢地图，雾棚后面立刻响起密密麻麻的翅声。",
+        label: "掀箱抢图",
+        pressure: 15,
+        rewardKeys: ["food", "ammo"],
+        rollShift: 0.14,
+        successLog: "燃料烟压住蜂群，队伍抢到地图和一包还能吃的蜂蜜饼。",
+        supplyPriority: ["fuel", "ammo"]
       }
     }
   ]
