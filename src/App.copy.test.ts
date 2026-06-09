@@ -600,6 +600,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("https://ember-dossier.pages.dev/?room=playtest-smoke");
     expect(source).toContain("npm run release:preflight");
     expect(source).toContain("npm run release:verify");
+    expect(source).toContain("npm run local:check");
     expect(source).toContain("npm run copy:check");
     expect(source).toContain("npm run playable:check");
     expect(source).toContain("npm run iteration:check");

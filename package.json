@@ -17,6 +17,7 @@
     "smoke:contract": "node scripts/check-local-smoke-contract.mjs",
     "smoke:local": "node scripts/print-local-smoke.mjs",
     "workflow:check": "node scripts/check-workflow-contract.mjs",
+    "local:check": "node scripts/check-iteration-gates.mjs --quick",
     "iteration:check": "node scripts/check-iteration-gates.mjs",
     "release:cadence": "node scripts/check-release-cadence.mjs",
     "release:status": "node scripts/print-release-candidate-report.mjs",

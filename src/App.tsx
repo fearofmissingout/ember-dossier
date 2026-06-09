@@ -285,9 +285,14 @@ const languageSwitchReadiness = [
 
 const releaseReadinessSteps = [
   {
+    command: "npm run local:check",
+    detail: "日常开发快检，只跑工作流契约、中文文案、试玩闭环和本地冒烟契约。",
+    label: "日常快检"
+  },
+  {
     command: "npm run iteration:check",
-    detail: "覆盖工作流契约、中文文案、试玩闭环、测试和生产构建。",
-    label: "本地门禁"
+    detail: "合并或发布候选前再跑全量测试、类型检查和生产构建。",
+    label: "全量门禁"
   },
   {
     command: "git status --short",
@@ -6369,6 +6374,7 @@ function ArchiveView({ state }: { state: GameState }) {
           <strong>{playableSmoke.nextBaseTasks.summary}</strong>
         </div>
         <div className="playtest-gate-strip" aria-label="发布前本地门禁">
+          <span>npm run local:check</span>
           <span>npm run copy:check</span>
           <span>npm run playable:check</span>
           <span>npm run iteration:check</span>
@@ -6463,6 +6469,7 @@ function playtestCheckpointLabel(id: ReturnType<typeof runPlayableLoopSmoke>["ch
     "combat-round": "回合战斗",
     "expedition-settled": "出征结算",
     "report-readable": "战报可读",
+    "next-run-plan": "下轮预案",
     "next-base-action": "回基地行动"
   };
 

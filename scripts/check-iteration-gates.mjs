@@ -4,15 +4,18 @@ import { existsSync, readFileSync } from "node:fs";
 const args = new Set(process.argv.slice(2));
 const releaseMode = args.has("--release");
 const productionMode = args.has("--production");
+const quickMode = args.has("--quick");
 const helpMode = args.has("--help") || args.has("-h");
 
 if (helpMode) {
   console.log(`Usage:
+  npm run local:check
   npm run iteration:check
   npm run release:preflight
   npm run release:verify
 
 Options:
+  --quick        Run the fast local loop: contracts, copy checks, and playable loop only.
   --release      Require a clean tree based on origin/master before running gates.
   --production   Also run the deployed production smoke test.`);
   process.exit(0);
@@ -29,6 +32,12 @@ run("node", ["scripts/check-workflow-contract.mjs"], "Workflow contract");
 run("npm", ["run", "smoke:contract"], "Local smoke contract");
 run("npm", ["run", "copy:check"], "Visible copy check");
 run("npm", ["run", "playable:check"], "Playable loop smoke");
+
+if (quickMode) {
+  console.log("\nFast local gates passed. Run npm run iteration:check before larger merges or release candidates.");
+  process.exit(0);
+}
+
 run("npm", ["test"], "Unit and smoke tests");
 run("npm", ["run", "build"], "Typecheck and production build");
 

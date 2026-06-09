@@ -27,7 +27,14 @@ import {
   type RoomCooperationSummary
 } from "./sim";
 import { createStarterSession } from "./state";
-import { summarizeFeedReportSettlement, summarizeFeedReturnLedger, type FeedReportSettlement, type FeedReturnLedger } from "./reports";
+import {
+  summarizeFeedNextRunPlan,
+  summarizeFeedReportSettlement,
+  summarizeFeedReturnLedger,
+  type FeedNextRunPlan,
+  type FeedReportSettlement,
+  type FeedReturnLedger
+} from "./reports";
 
 export type PlayableLoopCheckpointId =
   | "base-command"
@@ -48,6 +55,7 @@ export type PlayableLoopCheckpointId =
   | "combat-round"
   | "expedition-settled"
   | "report-readable"
+  | "next-run-plan"
   | "next-base-action";
 
 export type PlayableLoopCheckpoint = {
@@ -72,6 +80,7 @@ export type PlayableLoopSmoke = {
   roomContributionPlanDetail: string;
   reportDigest: {
     ledger: FeedReturnLedger;
+    nextRunPlan: FeedNextRunPlan;
     settlement: FeedReportSettlement;
   };
   treatmentFeedTitle: string;
@@ -238,6 +247,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
   const report = expedition.session.room.feed[0] as FeedItem | undefined;
   const settlement = report ? summarizeFeedReportSettlement(report) : summarizeFeedReportSettlement(createMissingReport());
   const ledger = report ? summarizeFeedReturnLedger(report) : summarizeFeedReturnLedger(createMissingReport());
+  const nextRunPlan = report ? summarizeFeedNextRunPlan(report) : summarizeFeedNextRunPlan(createMissingReport());
   const nextBaseTasks = baseTaskList(expedition.session);
   const checkpoints: PlayableLoopCheckpoint[] = [
     {
@@ -348,6 +358,17 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
       ok: settlement.hasSettlement && ledger.hasLedger
     },
     {
+      detail: nextRunPlan.summary,
+      id: "next-run-plan",
+      ok:
+        nextRunPlan.hasPlan &&
+        nextRunPlan.items.length === 4 &&
+        nextRunPlan.items.some((item) => item.id === "route") &&
+        nextRunPlan.items.some((item) => item.id === "risk") &&
+        nextRunPlan.items.some((item) => item.id === "loadout") &&
+        nextRunPlan.items.some((item) => item.id === "base")
+    },
+    {
       detail: nextBaseTasks.summary,
       id: "next-base-action",
       ok: nextBaseTasks.items.length > 0
@@ -370,6 +391,7 @@ export function runPlayableLoopSmoke(): PlayableLoopSmoke {
     ok: checkpoints.every((checkpoint) => checkpoint.ok),
     reportDigest: {
       ledger,
+      nextRunPlan,
       settlement
     },
     treatmentFeedTitle,

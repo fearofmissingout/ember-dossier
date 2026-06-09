@@ -26,6 +26,7 @@ describe("playable loop smoke", () => {
       "combat-round",
       "expedition-settled",
       "report-readable",
+      "next-run-plan",
       "next-base-action"
     ]);
     expect(smoke.checkpoints.every((checkpoint) => checkpoint.ok)).toBe(true);
@@ -47,6 +48,8 @@ describe("playable loop smoke", () => {
     expect(smoke.combatRound?.outcomeText).toContain("防");
     expect(smoke.reportDigest.settlement.hasSettlement).toBe(true);
     expect(smoke.reportDigest.ledger.hasLedger).toBe(true);
+    expect(smoke.reportDigest.nextRunPlan.hasPlan).toBe(true);
+    expect(smoke.reportDigest.nextRunPlan.items.map((item) => item.id)).toEqual(["route", "risk", "loadout", "base"]);
     expect(smoke.nextBaseTasks.items.length).toBeGreaterThan(0);
   });
 });

@@ -75,6 +75,7 @@ if (productionMode) {
 `,
     packageJson: JSON.stringify({
       scripts: {
+        "local:check": "node scripts/check-iteration-gates.mjs --quick",
         "iteration:check": "node scripts/check-iteration-gates.mjs",
         "copy:check": "node scripts/check-visible-copy.mjs",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
@@ -156,6 +157,7 @@ describe("playtest iteration workflow contract", () => {
         packageJson: JSON.stringify({
           scripts: {
         "iteration:check": "node scripts/check-iteration-gates.mjs",
+        "local:check": "node scripts/check-iteration-gates.mjs --quick",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
         "copy:check": "node scripts/check-visible-copy.mjs",
         "playtest:check": "node scripts/check-production-playtest.mjs",
@@ -195,6 +197,7 @@ if (productionMode) {
         packageJson: JSON.stringify({
           scripts: {
             "iteration:check": "node scripts/check-iteration-gates.mjs",
+            "local:check": "node scripts/check-iteration-gates.mjs --quick",
             "copy:check": "node scripts/check-visible-copy.mjs",
             "playtest:check": "node scripts/check-production-playtest.mjs",
             "release:preflight": "node scripts/check-iteration-gates.mjs --release",

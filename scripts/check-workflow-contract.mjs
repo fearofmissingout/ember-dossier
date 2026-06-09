@@ -98,6 +98,10 @@ const requiredChecks = [
       docs.includes("数据库不可用")
   },
   {
+    id: "package script: local:check",
+    test: ({ scripts }) => scripts["local:check"] === "node scripts/check-iteration-gates.mjs --quick"
+  },
+  {
     id: "package script: iteration:check",
     test: ({ scripts }) => scripts["iteration:check"] === "node scripts/check-iteration-gates.mjs"
   },

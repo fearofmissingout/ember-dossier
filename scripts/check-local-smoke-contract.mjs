@@ -11,6 +11,7 @@ const requiredCoverage = [
   "journeyProgress",
   "combatOrEvent",
   "settlement",
+  "nextRunPlan",
   "mobileViewport",
   "databaseFallback"
 ];
