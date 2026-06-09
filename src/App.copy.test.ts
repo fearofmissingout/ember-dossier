@@ -433,6 +433,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("facilitySynergyPlan");
     expect(source).toContain("baseDevelopmentRoute");
     expect(source).toContain("developmentRoute={baseDevelopmentRoute(session)}");
+    expect(source).toContain("facility-mobile-command");
+    expect(source).toContain("facility-mobile-command-actions");
+    expect(source).toContain("id=\"facility-plan\"");
+    expect(source).toContain("id=\"facility-queue\"");
+    expect(source).toContain("id=\"facility-roster\"");
     expect(source).toContain("aria-label=\"设施升级收益预览\"");
     expect(source).toContain("aria-label=\"设施推荐原因\"");
     expect(source).toContain("aria-label=\"基地建设路线板\"");
@@ -461,6 +466,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".development-route-board");
     expect(styles).toContain(".development-route-steps");
     expect(styles).toContain(".development-queue-board");
+    expect(styles).toContain(".facility-mobile-command");
+    expect(styles).toContain(".facility-mobile-command-actions");
     expect(styles).toContain(".facility-synergy-board");
     expect(styles).toContain(".facility-synergy-grid article.active");
     expect(styles).toContain(".facility-impact-grid");
@@ -554,12 +561,19 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("recoveryPlan.medicineAvailable");
     expect(source).toContain("recoveryPlan.medicineShortage");
     expect(source).toContain("recoveryPlan.nextAction");
+    expect(source).toContain("survivor-mobile-command");
+    expect(source).toContain("survivor-mobile-command-actions");
+    expect(source).toContain("id=\"survivor-roster\"");
+    expect(source).toContain("id=\"survivor-recovery\"");
+    expect(source).toContain("id=\"survivor-shifts\"");
     expect(source).toContain("baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, \"survivors\")}");
     expect(source).toContain("label=\"幸存者操作结果\"");
     expect(source).toContain("recovery-next-action");
     expect(source).toContain("可治疗");
     expect(source).toContain("下一步");
     expect(styles).toContain(".recovery-next-action");
+    expect(styles).toContain(".survivor-mobile-command");
+    expect(styles).toContain(".survivor-mobile-command-actions");
     expect(styles).toContain("repeat(auto-fit, minmax(120px, 1fr))");
   });
 

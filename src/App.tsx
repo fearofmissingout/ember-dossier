@@ -2549,6 +2549,13 @@ function Survivors({
   const expectedExpeditionXp = expeditionXpGain(30, roomTrainingLevel + Math.max(0, accountTrainingRoomLevel - 1));
   const expeditionGrowthPreview = survivorExpeditionGrowthPreview(accountSurvivors, selectedIds, expectedExpeditionXp);
   const roleBoard = survivorRoleBoard(state.survivors, selectedIds, baseAssignments);
+  const injuredCount = state.survivors.filter((survivor) => survivor.injuries.length > 0).length;
+  const tiredCount = state.survivors.filter((survivor) => survivor.fatigue >= 35).length;
+  const availableCount = state.survivors.filter((survivor) => survivor.fatigue < 80 && survivor.injuries.length === 0).length;
+  const recoveringCount = baseAssignments.filter((assignment) => assignment.type === "care").length;
+  const scrollToSurvivorSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <section className="panel">
@@ -2560,7 +2567,30 @@ function Survivors({
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
       </div>
       <BaseActionFeedbackPanel feedback={baseFeedback} label="幸存者操作结果" />
-      <div className="base-shift-plan" aria-label="基地班次预案">
+      <div className="survivor-mobile-command" aria-label="手机端幸存者总控">
+        <div>
+          <span>当前队伍</span>
+          <strong>已选 {selectedIds.length}/5 / 可出征 {availableCount}</strong>
+          <small>
+            伤病 {injuredCount} / 高疲劳 {tiredCount} / 护理班 {recoveringCount}
+          </small>
+        </div>
+        <div className="survivor-mobile-command-actions">
+          <button type="button" onClick={() => scrollToSurvivorSection("survivor-roster")}>
+            <Users size={16} aria-hidden="true" />
+            看名单
+          </button>
+          <button type="button" onClick={() => scrollToSurvivorSection("survivor-recovery")}>
+            <Shield size={16} aria-hidden="true" />
+            伤病恢复
+          </button>
+          <button type="button" onClick={() => scrollToSurvivorSection("survivor-shifts")}>
+            <Wrench size={16} aria-hidden="true" />
+            安排班次
+          </button>
+        </div>
+      </div>
+      <div className="base-shift-plan" id="survivor-shifts" aria-label="基地班次预案">
         <div className="base-shift-plan-heading">
           <div>
             <span>基地班次预案</span>
@@ -2582,7 +2612,7 @@ function Survivors({
           ))}
         </div>
       </div>
-      <div className="recovery-plan-card" aria-label="基地恢复计划">
+      <div className="recovery-plan-card" id="survivor-recovery" aria-label="基地恢复计划">
         <div>
           <span>恢复计划</span>
           <strong>{recoveryPlan.summary}</strong>
@@ -2676,7 +2706,7 @@ function Survivors({
           ))}
         </div>
       </div>
-      <div className="survivor-grid">
+      <div className="survivor-grid" id="survivor-roster">
         {state.survivors.map((survivor) => {
           const accountSurvivor = accountSurvivors.find((candidate) => candidate.id === survivor.id);
           const perks = accountSurvivor ? survivorPerkDetails(accountSurvivor) : [];
@@ -5848,13 +5878,45 @@ function Facilities({
   onUpgrade: (id: string) => void;
 }) {
   const synergyPlan = facilitySynergyPlan(state.facilities);
+  const nextProject = developmentPlan.recommended[0] ?? null;
+  const builtCount = state.facilities.filter((facility) => isFacilityBuilt(facility)).length;
+  const readyProjectCount = developmentPlan.recommended.filter((project) => project.canAfford).length;
+  const blockedProjectCount = developmentPlan.recommended.filter((project) => !project.canAfford).length;
+  const scrollToFacilitySection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <section className="panel">
       <p className="eyebrow">设施</p>
       <h2>基地发展</h2>
       <BaseActionFeedbackPanel feedback={baseFeedback} label="设施操作结果" />
-      <div className="development-plan-card" aria-label="基地发展计划">
+      <div className="facility-mobile-command" aria-label="手机端设施总控">
+        <div>
+          <span>建设状态</span>
+          <strong>{nextProject ? `${nextProject.name} 到 Lv.${nextProject.nextLevel}` : "设施已到当前上限"}</strong>
+          <small>
+            材料 {state.resources.materials} / 已建 {builtCount}/{state.facilities.length} / 可推进 {readyProjectCount} / 受阻 {blockedProjectCount}
+          </small>
+        </div>
+        <div className="facility-mobile-command-actions">
+          <button type="button" onClick={() => scrollToFacilitySection("facility-queue")}>
+            <Activity size={16} aria-hidden="true" />
+            建设队列
+          </button>
+          <button type="button" onClick={() => scrollToFacilitySection("facility-roster")}>
+            <Wrench size={16} aria-hidden="true" />
+            设施列表
+          </button>
+          {nextProject && (
+            <button disabled={!nextProject.canAfford} type="button" onClick={() => onUpgrade(nextProject.id)}>
+              <Plus size={16} aria-hidden="true" />
+              {nextProject.canAfford ? "推进推荐" : `缺 ${nextProject.materialDeficit}`}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="development-plan-card" id="facility-plan" aria-label="基地发展计划">
         <div>
           <span>发展计划</span>
           <strong>{developmentPlan.summary}</strong>
@@ -5896,7 +5958,7 @@ function Facilities({
             ))}
           </div>
         </div>
-        <div className="development-queue-board" aria-label="建设队列总览">
+        <div className="development-queue-board" id="facility-queue" aria-label="建设队列总览">
           {developmentPlan.recommended.length ? (
             developmentPlan.recommended.map((project, index) => (
               <article className={project.canAfford ? "ready" : "blocked"} key={`queue-${project.id}`}>
@@ -5966,7 +6028,7 @@ function Facilities({
           ))}
         </div>
       </div>
-      <div className="facility-grid">
+      <div className="facility-grid" id="facility-roster">
         {state.facilities.map((facility) => {
           const cost = facilityActionCost(facility);
           const actionLabel = facilityActionLabel(facility);

@@ -186,6 +186,11 @@ button:disabled {
   display: none;
 }
 
+.survivor-mobile-command,
+.facility-mobile-command {
+  display: none;
+}
+
 .ghost-button {
   margin-top: 20px;
   color: #7b3a2c;
@@ -11599,6 +11604,99 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .survivor-mobile-command,
+  .facility-mobile-command {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 10px;
+    border: 1px solid #c4ad86;
+    border-radius: 8px;
+    background: #fffaf0;
+    box-shadow: 0 12px 22px rgba(52, 36, 19, 0.11);
+  }
+
+  .survivor-mobile-command > div:first-child,
+  .facility-mobile-command > div:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .survivor-mobile-command span,
+  .facility-mobile-command span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .survivor-mobile-command strong,
+  .survivor-mobile-command small,
+  .facility-mobile-command strong,
+  .facility-mobile-command small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .survivor-mobile-command strong,
+  .facility-mobile-command strong {
+    color: #30251b;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .survivor-mobile-command small,
+  .facility-mobile-command small {
+    color: #675747;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .survivor-mobile-command-actions,
+  .facility-mobile-command-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .survivor-mobile-command-actions button,
+  .facility-mobile-command-actions button {
+    display: grid;
+    min-width: 0;
+    min-height: 50px;
+    place-items: center;
+    gap: 4px;
+    padding: 7px 5px;
+    border: 1px solid #b8945f;
+    border-radius: 8px;
+    background: #3b2a1b;
+    color: #fff7e9;
+    font-size: 11px;
+    font-weight: 950;
+    line-height: 1.15;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .survivor-mobile-command-actions button:nth-child(2),
+  .facility-mobile-command-actions button:nth-child(2) {
+    background: #234b36;
+    border-color: #6f9b73;
+  }
+
+  .survivor-mobile-command-actions button:disabled,
+  .facility-mobile-command-actions button:disabled {
+    background: #f0e6d2;
+    color: #7a6b5d;
+  }
+
+  .survivor-mobile-command-actions svg,
+  .facility-mobile-command-actions svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .nav-list {
     position: fixed;
     right: 10px;
@@ -11836,6 +11934,15 @@ button:disabled {
 
   .expedition-prep-section {
     scroll-margin-top: 294px;
+  }
+
+  #survivor-shifts,
+  #survivor-recovery,
+  #survivor-roster,
+  #facility-plan,
+  #facility-queue,
+  #facility-roster {
+    scroll-margin-top: 154px;
   }
 
   .journey-plan-strip,
