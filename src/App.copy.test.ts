@@ -342,6 +342,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("facility-impact-grid");
     expect(source).toContain("preview.baseText");
     expect(source).toContain("preview.expeditionText");
+    expect(source).toContain("baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, \"facilities\")}");
+    expect(source).toContain("label=\"设施操作结果\"");
     expect(source).toContain("expeditionDoctrineForFacility");
     expect(source).toContain("aria-label=\"设施出征方针解锁\"");
     expect(source).toContain("facility-doctrine-unlock");
@@ -374,7 +376,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("base-command-actions");
     expect(source).toContain("lastBaseActionFeedback");
     expect(source).toContain("buildBaseActionFeedback");
-    expect(source).toContain("aria-label=\"基地操作结果拆解\"");
+    expect(source).toContain("BaseActionFeedbackPanel");
+    expect(source).toContain("baseFeedbackForScope");
+    expect(source).toContain("aria-label={label}");
+    expect(source).toContain("label=\"基地操作结果拆解\"");
     expect(source).toContain("最近操作");
     expect(source).toContain("资源变化");
     expect(source).toContain("幸存者状态");
@@ -397,6 +402,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-actions");
     expect(styles).toContain(".base-action-feedback");
+    expect(styles).toContain(".panel > .base-action-feedback");
     expect(styles).toContain(".base-action-feedback-grid");
     expect(styles).toContain(".base-action-feedback-grid article.warning");
     expect(styles).toContain(".base-expedition-briefing");
@@ -414,6 +420,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("recoveryPlan.medicineAvailable");
     expect(source).toContain("recoveryPlan.medicineShortage");
     expect(source).toContain("recoveryPlan.nextAction");
+    expect(source).toContain("baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, \"survivors\")}");
+    expect(source).toContain("label=\"幸存者操作结果\"");
     expect(source).toContain("recovery-next-action");
     expect(source).toContain("可治疗");
     expect(source).toContain("下一步");

@@ -1101,6 +1101,10 @@ button:disabled {
   background: #fffaf0;
 }
 
+.panel > .base-action-feedback {
+  margin: 14px 0;
+}
+
 .base-action-feedback-heading {
   display: grid;
   gap: 4px;

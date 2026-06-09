@@ -338,6 +338,7 @@ type BaseActionFeedback = {
     tone: "safe" | "warning" | "danger";
     value: string;
   }>;
+  scope: "survivors" | "facilities" | "overview";
   title: string;
 };
 
@@ -800,7 +801,7 @@ export default function App() {
 
   function submitContribution() {
     const nextSession = applyContribution(session, session.account.profile.userId, contributionDraft);
-    setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "资源捐入"));
+    setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "资源捐入", "overview"));
     applySession(nextSession);
     const contribution = nextSession.room.contributions[0];
     if (authSession && contribution) {
@@ -836,7 +837,7 @@ export default function App() {
   function treatSelectedSurvivor(survivorId: string) {
     try {
       const nextSession = treatSurvivor(session, session.account.profile.userId, survivorId);
-      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "伤病治疗"));
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "伤病治疗", "survivors"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -848,7 +849,9 @@ export default function App() {
   function assignBaseShift(survivorId: string, type: BaseWorkType | "idle") {
     try {
       const nextSession = setBaseAssignment(session, session.account.profile.userId, survivorId, type);
-      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, type === "idle" ? "班次调整" : `${baseWorkLabel(type)}班安排`));
+      setLastBaseActionFeedback(
+        buildBaseActionFeedback(session, nextSession, type === "idle" ? "班次调整" : `${baseWorkLabel(type)}班安排`, "survivors")
+      );
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -860,7 +863,7 @@ export default function App() {
   function upgradeRoomFacility(facilityId: string) {
     try {
       const nextSession = upgradeFacility(session, session.account.profile.userId, facilityId);
-      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "设施建设"));
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "设施建设", "facilities"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -872,7 +875,7 @@ export default function App() {
   function upgradePersonalBase(facilityId: AccountBaseFacilityId) {
     try {
       const nextSession = upgradeAccountBase(session, session.account.profile.userId, facilityId);
-      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "个人基地升级"));
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "个人基地升级", "facilities"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -884,7 +887,7 @@ export default function App() {
   function endRoomDay() {
     try {
       const nextSession = advanceRoomDay(session, session.account.profile.userId);
-      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "结束当天"));
+      setLastBaseActionFeedback(buildBaseActionFeedback(session, nextSession, "结束当天", "overview"));
       applySession(nextSession);
       persistPlaytestProgress(nextSession);
     } catch (error) {
@@ -1374,6 +1377,7 @@ export default function App() {
             selectedIds={draft.squadIds}
             canTreat={session.room.base.resources.medicine > 0}
             baseAssignments={session.room.baseAssignments}
+            baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, "survivors")}
             recoveryPlan={baseRecoveryPlan(session)}
             onToggle={toggleSurvivor}
             onTreat={treatSelectedSurvivor}
@@ -1414,7 +1418,12 @@ export default function App() {
         )}
         {view === "reports" && <Reports feed={session.room.feed} latestReportId={latestReportId} onNavigate={setView} />}
         {view === "facilities" && (
-          <Facilities state={state} developmentPlan={baseDevelopmentPlan(session)} onUpgrade={upgradeRoomFacility} />
+          <Facilities
+            state={state}
+            baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, "facilities")}
+            developmentPlan={baseDevelopmentPlan(session)}
+            onUpgrade={upgradeRoomFacility}
+          />
         )}
         {view === "members" && (
           <RoomMembers
@@ -1436,6 +1445,41 @@ export default function App() {
         {view === "archive" && <ArchiveView state={state} />}
       </section>
     </main>
+  );
+}
+
+function baseFeedbackForScope(feedback: BaseActionFeedback | null, scope: BaseActionFeedback["scope"]) {
+  return feedback?.scope === scope ? feedback : null;
+}
+
+function BaseActionFeedbackPanel({
+  feedback,
+  label
+}: {
+  feedback: BaseActionFeedback | null;
+  label: string;
+}) {
+  if (!feedback) {
+    return null;
+  }
+
+  return (
+    <div className="base-action-feedback" aria-label={label}>
+      <div className="base-action-feedback-heading">
+        <span>最近操作</span>
+        <strong>{feedback.title}</strong>
+        <small>{feedback.detail}</small>
+      </div>
+      <div className="base-action-feedback-grid">
+        {feedback.items.map((item) => (
+          <article className={item.tone} key={item.id}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.detail}</small>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1649,24 +1693,7 @@ function Overview({
               })}
             </div>
           </div>
-          {lastBaseActionFeedback && (
-            <div className="base-action-feedback" aria-label="基地操作结果拆解">
-              <div className="base-action-feedback-heading">
-                <span>最近操作</span>
-                <strong>{lastBaseActionFeedback.title}</strong>
-                <small>{lastBaseActionFeedback.detail}</small>
-              </div>
-              <div className="base-action-feedback-grid">
-                {lastBaseActionFeedback.items.map((item) => (
-                  <article className={item.tone} key={item.id}>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
-                    <small>{item.detail}</small>
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
+          <BaseActionFeedbackPanel feedback={lastBaseActionFeedback} label="基地操作结果拆解" />
           {latestReturnPlan?.hasPlan && (
             <div className="overview-return-card" aria-label="基地归队承接">
               <div className="overview-return-heading">
@@ -1916,7 +1943,12 @@ function baseCycleSteps(primaryTaskId: BaseTaskItem["id"]) {
   }));
 }
 
-function buildBaseActionFeedback(before: PlaytestSession, after: PlaytestSession, title: string): BaseActionFeedback {
+function buildBaseActionFeedback(
+  before: PlaytestSession,
+  after: PlaytestSession,
+  title: string,
+  scope: BaseActionFeedback["scope"]
+): BaseActionFeedback {
   const roomResourceDelta = resourceBundleDelta(before.room.base.resources, after.room.base.resources);
   const accountResourceDelta = accountResourceDeltaText(before, after);
   const moraleDelta = after.room.base.morale - before.room.base.morale;
@@ -1957,6 +1989,7 @@ function buildBaseActionFeedback(before: PlaytestSession, after: PlaytestSession
         value: after.room.feed[0]?.title ?? title
       }
     ],
+    scope,
     title
   };
 }
@@ -2154,6 +2187,7 @@ function Survivors({
   selectedIds,
   canTreat,
   baseAssignments,
+  baseFeedback,
   recoveryPlan,
   onToggle,
   onTreat,
@@ -2164,6 +2198,7 @@ function Survivors({
   selectedIds: string[];
   canTreat: boolean;
   baseAssignments: PlaytestSession["room"]["baseAssignments"];
+  baseFeedback: BaseActionFeedback | null;
   recoveryPlan: BaseRecoveryPlan;
   onToggle: (id: string) => void;
   onTreat: (id: string) => void;
@@ -2181,6 +2216,7 @@ function Survivors({
         </div>
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
       </div>
+      <BaseActionFeedbackPanel feedback={baseFeedback} label="幸存者操作结果" />
       <div className="recovery-plan-card" aria-label="基地恢复计划">
         <div>
           <span>恢复计划</span>
@@ -4705,10 +4741,12 @@ function ReportTimeline({ item }: { item: FeedItem }) {
 
 function Facilities({
   state,
+  baseFeedback,
   developmentPlan,
   onUpgrade
 }: {
   state: GameState;
+  baseFeedback: BaseActionFeedback | null;
   developmentPlan: BaseDevelopmentPlan;
   onUpgrade: (id: string) => void;
 }) {
@@ -4716,6 +4754,7 @@ function Facilities({
     <section className="panel">
       <p className="eyebrow">设施</p>
       <h2>基地发展</h2>
+      <BaseActionFeedbackPanel feedback={baseFeedback} label="设施操作结果" />
       <div className="development-plan-card" aria-label="基地发展计划">
         <div>
           <span>发展计划</span>
