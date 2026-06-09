@@ -1482,6 +1482,7 @@ function Overview({
     { label: "出征", text: "选择地点、补给、风险并进入回合战斗。", view: "expedition" as ViewKey },
     { label: "复盘", text: "查看战报，回基地处理下一轮循环。", view: "reports" as ViewKey }
   ];
+  const baseExpeditionSupport = baseExpeditionSupportBriefing(dayPreview);
 
   return (
     <div className="view-grid">
@@ -1662,6 +1663,22 @@ function Overview({
                     {baseTaskNavigation(task.id).label}
                   </button>
                 </div>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="base-expedition-briefing" aria-label="基地出征支援简报">
+          <div className="base-expedition-briefing-heading">
+            <span>出征支援</span>
+            <strong>{baseExpeditionSupport.headline}</strong>
+            <small>{baseExpeditionSupport.summary}</small>
+          </div>
+          <div className="base-expedition-briefing-grid">
+            {baseExpeditionSupport.items.map((item) => (
+              <article className={item.tone} key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
               </article>
             ))}
           </div>
@@ -1857,6 +1874,46 @@ function baseCycleSteps(primaryTaskId: BaseTaskItem["id"]) {
     ...step,
     active: step.label === activeLabel
   }));
+}
+
+function baseExpeditionSupportBriefing(dayPreview: ReturnType<typeof baseDayPreview>) {
+  const recoveryReady = dayPreview.shiftCounts.care > 0;
+  const guardReady = dayPreview.dangerRelief > 0 || dayPreview.shiftCounts.guard > 0;
+  const routeReady = dayPreview.shiftCounts.forage + dayPreview.shiftCounts.repair > 0;
+  const readyCount = [recoveryReady, guardReady, routeReady].filter(Boolean).length;
+
+  return {
+    headline:
+      readyCount >= 3
+        ? "留守支援已经成型，可以更大胆规划下一次出征。"
+        : readyCount > 0
+          ? "基地已有部分支援，补齐空缺后出征更稳。"
+          : "还没有形成留守支援，下一次出征会更依赖随身补给。",
+    items: [
+      {
+        detail: recoveryReady ? dayPreview.recoverySummary : "安排护理班，伤病和疲劳才会更快回到可出征状态。",
+        label: "恢复线",
+        tone: recoveryReady ? "ready" : "todo",
+        value: recoveryReady ? `${dayPreview.shiftCounts.care} 个护理班` : "等待护理"
+      },
+      {
+        detail: guardReady ? `${dayPreview.guardSummary}；明日危险 ${formatSignedNumber(dayPreview.dangerDelta)}。` : "安排守卫或建设瞭望塔、路障，降低基地暴露带来的连锁损失。",
+        label: "防线",
+        tone: guardReady ? "ready" : "urgent",
+        value: guardReady ? `减压 ${dayPreview.dangerRelief}` : "没有防线"
+      },
+      {
+        detail:
+          routeReady
+            ? `${dayPreview.forageSummary}；${dayPreview.repairSummary}`
+            : "搜寻班补给、修理班推进目标，两者会决定下一次出征是否只是止损。",
+        label: "路线准备",
+        tone: routeReady ? "ready" : "todo",
+        value: routeReady ? `搜寻 ${dayPreview.shiftCounts.forage} / 修理 ${dayPreview.shiftCounts.repair}` : "等待安排"
+      }
+    ],
+    summary: `支援覆盖 ${readyCount}/3。先让基地稳定，再把人和补给投入远征。`
+  };
 }
 
 function Survivors({

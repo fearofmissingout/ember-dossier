@@ -331,6 +331,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("aria-label=\"基地行动中枢\"");
     expect(source).toContain("base-command-center");
     expect(source).toContain("base-command-actions");
+    expect(source).toContain("baseExpeditionSupportBriefing");
+    expect(source).toContain("aria-label=\"基地出征支援简报\"");
+    expect(source).toContain("恢复线");
+    expect(source).toContain("防线");
+    expect(source).toContain("路线准备");
     expect(source).toContain("aria-label=\"基地归队承接\"");
     expect(source).toContain("overview-return-card");
     expect(source).toContain("latestReturnPlan.actions.map");
@@ -344,6 +349,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".playtest-route-grid");
     expect(styles).toContain(".base-command-center");
     expect(styles).toContain(".base-command-actions");
+    expect(styles).toContain(".base-expedition-briefing");
+    expect(styles).toContain(".base-expedition-briefing-grid");
     expect(styles).toContain(".overview-return-card");
     expect(styles).toContain(".overview-return-actions");
     expect(source).toContain("今日待办");

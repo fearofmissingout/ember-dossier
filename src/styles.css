@@ -1092,6 +1092,95 @@ button:disabled {
   line-height: 1.25;
 }
 
+.base-expedition-briefing {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #a9b68f;
+  border-radius: 8px;
+  background: #f4faef;
+}
+
+.base-expedition-briefing-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.base-expedition-briefing-heading span,
+.base-expedition-briefing-grid span {
+  color: #536c3d;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.base-expedition-briefing-heading strong,
+.base-expedition-briefing-heading small,
+.base-expedition-briefing-grid strong,
+.base-expedition-briefing-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-expedition-briefing-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.base-expedition-briefing-heading small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-expedition-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-expedition-briefing-grid article {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.82);
+}
+
+.base-expedition-briefing-grid article.ready {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.base-expedition-briefing-grid article.todo {
+  border-color: #d0c093;
+  background: #fff8e7;
+}
+
+.base-expedition-briefing-grid article.urgent {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.base-expedition-briefing-grid strong {
+  color: #2f3d27;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.base-expedition-briefing-grid small {
+  color: #5e6a52;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .overview-return-card {
   display: grid;
   gap: 10px;
@@ -7239,6 +7328,7 @@ button:disabled {
     .base-task-grid,
     .base-cycle-compass,
     .playtest-route-grid,
+    .base-expedition-briefing-grid,
     .base-command-actions,
     .base-command-strip,
     .development-queue-board,
@@ -7478,6 +7568,7 @@ button:disabled {
     .launch-checklist-grid,
     .base-command-strip,
     .base-command-actions,
+    .base-expedition-briefing-grid,
     .base-cycle-compass,
     .playtest-route-grid,
     .travel-record-strip,
