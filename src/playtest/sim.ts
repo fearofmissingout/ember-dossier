@@ -1032,7 +1032,7 @@ export type RoomCooperationPlanItem = {
   actionLabel: string;
   assignee: string;
   body: string;
-  id: "invite" | "contribution" | "squad" | "shifts" | "development" | "launch";
+  id: "invite" | "contribution" | "squad" | "shifts" | "event" | "development" | "launch";
   label: string;
   targetView: RoomCooperationPlanTarget;
   title: string;
@@ -1399,6 +1399,7 @@ export function roomCooperationPlan(session: PlaytestSession): RoomCooperationPl
   const currentNeed = readiness.items.find((item) => item.status === "blocked") ?? readiness.items.find((item) => item.status === "todo");
   const idleMember = members.find((member) => member.collaborationStatus !== "ready") ?? members[0] ?? null;
   const urgentContribution = contributionPlan.items.find((item) => item.priority === "urgent") ?? contributionPlan.items[0] ?? null;
+  const eventPreview = baseDayPreview(session).event;
   const items: RoomCooperationPlanItem[] = [];
 
   if (readiness.items.find((item) => item.id === "invite")?.status !== "ready") {
@@ -1452,6 +1453,19 @@ export function roomCooperationPlan(session: PlaytestSession): RoomCooperationPl
       targetView: "survivors",
       title: "安排至少一名留守幸存者",
       tone: shiftItem?.status === "blocked" ? "urgent" : "todo"
+    });
+  }
+
+  if (eventPreview.readiness !== "covered") {
+    items.push({
+      actionLabel: "补反制",
+      assignee: idleMember?.displayName ?? "任意成员",
+      body: `${eventPreview.riskLabel}：${eventPreview.advice} 预计结果：${eventPreview.likelyOutcome}`,
+      id: "event",
+      label: eventPreview.readiness === "exposed" ? "事件暴露" : "事件未满",
+      targetView: "survivors",
+      title: `反制：${eventPreview.title}（${eventPreview.recommendedWork.map((type) => baseWorkLabels[type]).join(" / ")}）`,
+      tone: eventPreview.readiness === "exposed" ? "urgent" : "todo"
     });
   }
 

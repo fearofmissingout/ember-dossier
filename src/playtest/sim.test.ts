@@ -338,6 +338,44 @@ describe("playtest room loop", () => {
     expect(plan.summary).toContain("准备远征");
   });
 
+  test("room cooperation plan asks friends to cover the next base event", () => {
+    let session = createStarterSession("user-a", "Alice", "cooperation-event-room");
+    session.room.members.push({
+      displayName: "阿周",
+      joinedAt: "2026-06-06T09:00:00.000Z",
+      lastSeenAt: "2026-06-06T10:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+    session = applyContribution(session, "user-a", { ammo: 2, food: 6, fuel: 0, materials: 4, medicine: 0, water: 6 });
+    session.room.base.resources.food = 8;
+    session.room.base.resources.water = 8;
+    const [scout, medic, guard, worker] = session.account.survivors;
+    session.room.assignedSurvivors.push(
+      { assignedAt: "2026-06-06T10:10:00.000Z", roomId: session.room.id, survivorId: scout.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:11:00.000Z", roomId: session.room.id, survivorId: medic.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:12:00.000Z", roomId: session.room.id, survivorId: guard.id, userId: "user-b" }
+    );
+    session.room.baseAssignments.push({ roomId: session.room.id, survivorId: worker.id, type: "repair", userId: "user-b" });
+
+    const plan = roomCooperationPlan(session);
+
+    expect(plan.tone).toBe("building");
+    expect(plan.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          actionLabel: "补反制",
+          id: "event",
+          label: "事件未满",
+          targetView: "survivors",
+          tone: "todo"
+        })
+      ])
+    );
+    expect(plan.items.find((item) => item.id === "event")?.title).toContain("围栏缺口");
+    expect(plan.items.find((item) => item.id === "event")?.body).toContain("防线压力");
+  });
+
   test("room playtest readiness turns multiplayer setup into launch checks", () => {
     let session = createStarterSession("user-a", "Alice", "readiness-room");
     session.room.members.push({
