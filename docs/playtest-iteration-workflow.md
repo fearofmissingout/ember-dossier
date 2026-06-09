@@ -254,9 +254,10 @@ GitHub Actions 也必须运行 `npm run iteration:check`，确保线上发布前
 
 ```bash
 npm run release:cadence -- --major-feature --local-smoke --iteration-passed --clean-tree
+npm run release:status -- --major-feature --iteration-passed --local-smoke
 ```
 
-`release:cadence` 不替代 `release:preflight`，只负责把“这一批是否应该发布”固定成可重复检查。小改动、未记录本地浏览器冒烟、未通过 `iteration:check` 或工作区不干净时，脚本会输出“暂不发布”。
+`release:cadence` 不替代 `release:preflight`，只负责把“这一批是否应该发布”固定成可重复检查。`release:status` 会把当前候选状态、下一步命令、本地冒烟、预检和发布后验收串成一份只读报告。小改动、未记录本地浏览器冒烟、未通过 `iteration:check` 或工作区不干净时，脚本会输出“暂不发布”。
 
 ## 3. 玩法切片验收模板
 

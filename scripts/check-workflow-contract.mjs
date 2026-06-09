@@ -8,6 +8,7 @@ const defaultFiles = {
   packageJson: "package.json",
   publish: "scripts/publish-github-api.mjs",
   releaseCadence: "scripts/check-release-cadence.mjs",
+  releaseStatus: "scripts/print-release-candidate-report.mjs",
   releaseChecklist: "docs/release-cadence-checklist.md",
   smoke: "scripts/print-local-smoke.mjs",
   viteConfig: "vite.config.ts",
@@ -60,6 +61,7 @@ const requiredChecks = [
     test: ({ docs, releaseChecklist }) =>
       docs.includes("docs/release-cadence-checklist.md") &&
       docs.includes("npm run release:cadence") &&
+      docs.includes("npm run release:status") &&
       releaseChecklist.includes("发布批次清单") &&
       releaseChecklist.includes("默认不频繁发布") &&
       releaseChecklist.includes("npm run release:cadence") &&
@@ -115,11 +117,23 @@ const requiredChecks = [
     test: ({ scripts }) => scripts["release:cadence"] === "node scripts/check-release-cadence.mjs"
   },
   {
+    id: "package script: release:status",
+    test: ({ scripts }) => scripts["release:status"] === "node scripts/print-release-candidate-report.mjs"
+  },
+  {
     id: "release cadence script: blocks small changes",
     test: ({ releaseCadence }) =>
       releaseCadence.includes("--ui-only") &&
       releaseCadence.includes("暂不发布") &&
       releaseCadence.includes("npm run release:preflight")
+  },
+  {
+    id: "release status script: reports candidate next step",
+    test: ({ releaseStatus }) =>
+      releaseStatus.includes("发布候选状态报告") &&
+      releaseStatus.includes("npm run smoke:local") &&
+      releaseStatus.includes("npm run release:preflight") &&
+      releaseStatus.includes("npm run release:verify")
   },
   {
     id: "package script: release:preflight",

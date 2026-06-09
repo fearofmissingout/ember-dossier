@@ -31,6 +31,7 @@ git revert
 默认不要频繁发布
 不要用线上部署当测试工具
 npm run release:cadence
+npm run release:status
 fallback 脚本会
 Cloudflare Token
 Supabase
@@ -78,6 +79,7 @@ if (productionMode) {
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
         "playtest:check": "node scripts/check-production-playtest.mjs",
         "release:cadence": "node scripts/check-release-cadence.mjs",
+        "release:status": "node scripts/print-release-candidate-report.mjs",
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
         "release:publish:api": "node scripts/publish-github-api.mjs",
         "release:verify": "node scripts/check-iteration-gates.mjs --production",
@@ -123,6 +125,12 @@ if (options.runChecks) {
 --ui-only
 暂不发布
 npm run release:preflight
+`,
+    releaseStatus: `
+发布候选状态报告
+npm run smoke:local
+npm run release:preflight
+npm run release:verify
 `,
     ...overrides
   };
