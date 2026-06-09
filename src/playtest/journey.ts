@@ -1674,6 +1674,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "swarm",
       traitLabel: "成群",
       traitText: "压力越高，反击越凶。"
+    },
+    {
+      armor: 1,
+      attackBonus: 3,
+      hpBonus: 6,
+      intro: "净水塔底部传来一阵倒灌声，一团裹着滤网的东西从检修梯后扑出。",
+      name: "滤网扑食者",
+      rewardKeys: ["water", "ammo"],
+      trait: "bleeder",
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
     }
   ],
   urban: [
@@ -1731,6 +1742,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "dread",
       traitLabel: "惊惧",
       traitText: "若没有防守，每次命中都会增加压力。"
+    },
+    {
+      armor: 1,
+      attackBonus: 2,
+      hpBonus: 8,
+      intro: "自动扶梯忽然反向转动，扶手带下挤出一具戴着安保牌的重影。",
+      name: "扶梯安保重影",
+      rewardKeys: ["materials", "fuel"],
+      trait: "armored",
+      traitLabel: "装甲",
+      traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
     }
   ],
   weird: [
@@ -1788,6 +1810,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "armored",
       traitLabel: "装甲",
       traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
+    },
+    {
+      armor: 0,
+      attackBonus: 4,
+      hpBonus: 5,
+      intro: "病历墙里钻出一个没有正面的影子，它每次转身都像在换一张脸。",
+      name: "无正面病影",
+      rewardKeys: ["medicine", "ammo"],
+      trait: "dread",
+      traitLabel: "惊惧",
+      traitText: "若没有防守，每次命中都会增加压力。"
     }
   ],
   wilds: [
@@ -1845,6 +1878,17 @@ const familyEnemies: Record<LocationFamily, EnemyTemplate[]> = {
       trait: "armored",
       traitLabel: "装甲",
       traitText: "除非用弹药或战术暴露弱点，否则会削减攻击伤害。"
+    },
+    {
+      armor: 1,
+      attackBonus: 3,
+      hpBonus: 7,
+      intro: "灌木丛里站起一只用藤蔓缝合的猎犬，嘴里还咬着半截路标。",
+      name: "藤缝猎犬",
+      rewardKeys: ["food", "medicine"],
+      trait: "bleeder",
+      traitLabel: "锯齿",
+      traitText: "命中会留下持续流血，直到包扎处理。"
     }
   ]
 };

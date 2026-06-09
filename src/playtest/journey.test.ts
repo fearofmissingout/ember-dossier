@@ -67,10 +67,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "resources", roadBeats: 5, shops: 5 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "urban", roadBeats: 5, shops: 5 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "weird", roadBeats: 5, shops: 5 }),
-        expect.objectContaining({ camps: 5, enemies: 5, events: 5, family: "wilds", roadBeats: 5, shops: 5 })
+        expect.objectContaining({ camps: 5, enemies: 6, events: 5, family: "resources", roadBeats: 5, shops: 5 }),
+        expect.objectContaining({ camps: 5, enemies: 6, events: 5, family: "urban", roadBeats: 5, shops: 5 }),
+        expect.objectContaining({ camps: 5, enemies: 6, events: 5, family: "weird", roadBeats: 5, shops: 5 }),
+        expect.objectContaining({ camps: 5, enemies: 6, events: 5, family: "wilds", roadBeats: 5, shops: 5 })
       ])
     );
   });
@@ -192,13 +192,19 @@ describe("journey route generation", () => {
       squadIds: session.account.survivors.slice(0, 3).map((survivor) => survivor.id)
     };
 
+    const resourceRoute = createJourney(session, draft, "water-plant", 60);
     const urbanRoute = createJourney(session, draft, "hospital", 60);
+    const weirdRoute = createJourney(session, draft, "greenhouse", 60);
     const wildRoute = createJourney(session, draft, "farm", 60);
 
-    expect(urbanRoute.nodes[1].enemy?.name).toBe("电梯井群响");
-    expect(urbanRoute.nodes[1].enemy?.trait).toBe("dread");
-    expect(wildRoute.nodes[1].enemy?.name).toBe("铁丝犁兽");
-    expect(wildRoute.nodes[1].enemy?.trait).toBe("armored");
+    expect(resourceRoute.nodes[1].enemy?.name).toBe("滤网扑食者");
+    expect(resourceRoute.nodes[1].enemy?.trait).toBe("bleeder");
+    expect(urbanRoute.nodes[1].enemy?.name).toBe("扶梯安保重影");
+    expect(urbanRoute.nodes[1].enemy?.trait).toBe("armored");
+    expect(weirdRoute.nodes[1].enemy?.name).toBe("无正面病影");
+    expect(weirdRoute.nodes[1].enemy?.trait).toBe("dread");
+    expect(wildRoute.nodes[1].enemy?.name).toBe("藤缝猎犬");
+    expect(wildRoute.nodes[1].enemy?.trait).toBe("bleeder");
   });
 
   test("summarizes route pace and upcoming journey beats", () => {
