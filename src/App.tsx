@@ -1229,6 +1229,8 @@ export default function App() {
     );
   }
 
+  const activeViewLabel = views.find((item) => item.key === view)?.label ?? "基地总览";
+
   return (
     <main className="app-shell" data-app-mode="single-page">
       <aside className="side-rail">
@@ -1352,7 +1354,7 @@ export default function App() {
         <header className="top-bar">
           <div>
             <p className="eyebrow">共享避难所 / 第 12 日</p>
-            <h1>{views.find((item) => item.key === view)?.label}</h1>
+            <h1>{activeViewLabel}</h1>
           </div>
           <div className="system-status">
             <span className={syncStatus === "error" ? "sync-pill error" : "sync-pill"} title={syncError ?? undefined}>
@@ -1370,20 +1372,19 @@ export default function App() {
           </div>
         </header>
 
-        <div className="mobile-command-strip" aria-label="手机端单页行动栏">
-          <div>
+        <div className="mobile-command-strip" aria-label="手机端状态栏">
+          <div className="mobile-command-room">
             <span>{roomSlug}</span>
             <strong>{syncStatusLabels[syncStatus]}</strong>
           </div>
-          <button className={view === "expedition" ? "active" : ""} type="button" onClick={() => setView("expedition")}>
-            出征
-          </button>
-          <button className={view === "survivors" ? "active" : ""} type="button" onClick={() => setView("survivors")}>
-            编队
-          </button>
-          <button className={view === "facilities" ? "active" : ""} type="button" onClick={() => setView("facilities")}>
-            建设
-          </button>
+          <div className="mobile-command-view">
+            <span>当前页面</span>
+            <strong>{activeViewLabel}</strong>
+          </div>
+          <div className="mobile-command-metrics">
+            <span>在线 {roomPlayers.length}</span>
+            <strong>士气 {state.resources.morale} / 危险 {state.resources.danger}</strong>
+          </div>
         </div>
 
         {syncStatus === "error" && (

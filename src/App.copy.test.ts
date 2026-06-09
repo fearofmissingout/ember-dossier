@@ -331,7 +331,11 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("mobilePrimary: true");
     expect(source).toContain("const navClassName = [");
     expect(source).toContain("item.mobilePrimary ? \"mobile-primary\" : \"mobile-secondary\"");
-    expect(source).toContain("aria-label=\"手机端单页行动栏\"");
+    expect(source).toContain("aria-label=\"手机端状态栏\"");
+    expect(source).toContain("activeViewLabel");
+    expect(source).toContain("mobile-command-room");
+    expect(source).toContain("mobile-command-view");
+    expect(source).toContain("mobile-command-metrics");
     expect(source).toContain("aria-label=\"数据库同步提示\"");
     expect(source).toContain("aria-label=\"房间捐入优先级\"");
     expect(source).toContain("可以继续本地试玩；重试会重新读取房间并上传当前进度。");
@@ -342,6 +346,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("sync-health-card");
     expect(source).not.toMatch(/<a\s+href=|window\.location\.href/);
     expect(styles).toContain(".mobile-command-strip");
+    expect(styles).toContain(".mobile-command-view");
+    expect(styles).toContain(".mobile-command-metrics");
     expect(styles).toContain(".nav-item.mobile-secondary");
     expect(styles).toContain(".sync-health-card");
     expect(styles).toContain(".room-contribution-plan");
