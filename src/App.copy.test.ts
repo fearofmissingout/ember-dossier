@@ -561,6 +561,8 @@ describe("hosted playtest copy", () => {
 
     expect(source).toContain("roomCooperationSummary");
     expect(source).toContain("roomCooperationPulse");
+    expect(source).toContain("roomLaunchBriefing");
+    expect(source).toContain("launchBriefing={roomLaunchBriefing(session)}");
     expect(source).toContain("pulse={roomCooperationPulse(session)}");
     expect(source).toContain("roomPlaytestReadiness");
     expect(source).toContain("aria-label=\"房间协作总览\"");
@@ -574,6 +576,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("单次远征");
     expect(source).toContain("aria-label=\"多人试玩开局检查\"");
     expect(source).toContain("aria-label=\"房间协作分工板\"");
+    expect(source).toContain("aria-label=\"多人开局指挥\"");
+    expect(source).toContain("多人开局指挥");
+    expect(source).toContain("room-launch-briefing");
+    expect(source).toContain("room-launch-grid");
     expect(source).toContain("按顺序补齐邀请、捐入、编队、班次和出征");
     expect(source).toContain("协作状态");
     expect(source).toContain("下一步：");
@@ -601,6 +607,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("member-collaboration-hint");
     expect(source).toContain("协作建议：");
     expect(styles).toContain(".room-cooperation-board");
+    expect(styles).toContain(".room-launch-briefing");
+    expect(styles).toContain(".room-launch-grid");
     expect(styles).toContain(".room-cooperation-pulse");
     expect(styles).toContain(".room-cooperation-pulse-grid");
     expect(styles).toContain(".room-action-ladder");

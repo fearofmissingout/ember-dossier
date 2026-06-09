@@ -40,6 +40,7 @@ import {
   roomCooperationPulse,
   roomCooperationSummary,
   roomContributionPlan,
+  roomLaunchBriefing,
   roomMemberSummaries,
   roomPlaytestReadiness,
   setBaseAssignment,
@@ -1447,6 +1448,7 @@ export default function App() {
             player={player}
             players={roomPlayers}
             memberSummaries={roomMemberSummaries(session)}
+            launchBriefing={roomLaunchBriefing(session)}
             playtestReadiness={roomPlaytestReadiness(session)}
             pulse={roomCooperationPulse(session)}
             roomSlug={roomSlug}
@@ -5230,6 +5232,7 @@ function RoomMembers({
   currentUserId,
   player,
   players,
+  launchBriefing,
   memberSummaries,
   playtestReadiness,
   pulse,
@@ -5243,6 +5246,7 @@ function RoomMembers({
 }: {
   contributionPlan: ReturnType<typeof roomContributionPlan>;
   currentUserId: string;
+  launchBriefing: ReturnType<typeof roomLaunchBriefing>;
   player: RoomPlayer;
   players: RoomPlayer[];
   memberSummaries: RoomMemberSummary[];
@@ -5303,6 +5307,7 @@ function RoomMembers({
     index: index + 1,
     targetView: roomReadinessItemTargetView(item.id)
   }));
+  const launchTarget = roomReadinessItemTargetView(launchBriefing.primaryItemId);
 
   return (
     <section className="panel">
@@ -5313,6 +5318,28 @@ function RoomMembers({
           <p className="muted-copy">同一个房间链接会共享基地、远征结果和动态流。</p>
         </div>
         <span className="subtle-pill">{roomSlug}</span>
+      </div>
+
+      <div className={`room-launch-briefing ${launchBriefing.tone}`} aria-label="多人开局指挥">
+        <div className="room-launch-heading">
+          <div>
+            <span>多人开局指挥</span>
+            <strong>{launchBriefing.headline}</strong>
+            <small>{launchBriefing.summary}</small>
+          </div>
+          <button type="button" onClick={() => onNavigate(launchTarget)}>
+            {launchBriefing.primaryLabel}
+          </button>
+        </div>
+        <div className="room-launch-grid">
+          {launchBriefing.items.map((item) => (
+            <button className={item.status} key={item.id} type="button" onClick={() => onNavigate(roomReadinessItemTargetView(item.id))}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={`room-cooperation-pulse ${pulse.tone}`} aria-label="好友房间协作脉冲">

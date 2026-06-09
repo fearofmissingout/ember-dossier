@@ -960,6 +960,23 @@ export type RoomPlaytestReadiness = {
   summary: string;
 };
 
+export type RoomLaunchBriefingItem = {
+  detail: string;
+  id: RoomPlaytestReadinessItem["id"];
+  label: string;
+  status: RoomPlaytestReadinessItem["status"];
+  value: string;
+};
+
+export type RoomLaunchBriefing = {
+  headline: string;
+  items: RoomLaunchBriefingItem[];
+  primaryItemId: RoomPlaytestReadinessItem["id"];
+  primaryLabel: string;
+  summary: string;
+  tone: RoomPlaytestReadiness["status"];
+};
+
 export type RoomCooperationPulseItem = {
   detail: string;
   id: "members" | "contribution" | "squad" | "shifts";
@@ -1225,6 +1242,39 @@ export function roomPlaytestReadiness(session: PlaytestSession): RoomPlaytestRea
   };
 }
 
+export function roomLaunchBriefing(session: PlaytestSession): RoomLaunchBriefing {
+  const readiness = roomPlaytestReadiness(session);
+  const cooperation = roomCooperationSummary(session);
+  const nextItem = readiness.items.find((item) => item.status === "blocked") ?? readiness.items.find((item) => item.status === "todo");
+  const primaryItem = nextItem ?? readiness.items.find((item) => item.id === "expedition") ?? readiness.items[0];
+  const blockedCount = readiness.items.filter((item) => item.status === "blocked").length;
+  const todoCount = readiness.items.filter((item) => item.status === "todo").length;
+  const items = readiness.items.slice(0, 5).map((item) => ({
+    detail: item.detail,
+    id: item.id,
+    label: item.label,
+    status: item.status,
+    value: roomLaunchItemValue(item, cooperation)
+  }));
+
+  return {
+    headline:
+      readiness.status === "ready"
+        ? "好友房间已具备完整试玩开局条件。"
+        : readiness.status === "blocked"
+          ? "先补关键协作缺口，再开局远征。"
+          : "房间正在接近可开局状态。",
+    items,
+    primaryItemId: primaryItem.id,
+    primaryLabel: readiness.status === "ready" || primaryItem.id === "expedition" ? "开始远征" : primaryItem.label,
+    summary:
+      readiness.status === "ready" || primaryItem.id === "expedition"
+        ? `${readiness.readyCount}/${readiness.items.length} 项就绪，可以进入出征准备。`
+        : `就绪 ${readiness.readyCount}/${readiness.items.length}，阻塞 ${blockedCount}，待办 ${todoCount}。${readiness.nextAction}`,
+    tone: readiness.status
+  };
+}
+
 export function roomCooperationPulse(session: PlaytestSession): RoomCooperationPulse {
   const cooperation = roomCooperationSummary(session);
   const readiness = roomPlaytestReadiness(session);
@@ -1301,6 +1351,26 @@ function roomPlaytestNextAction(items: RoomPlaytestReadinessItem[]) {
   }
 
   return "可以进入远征准备，开始一次完整多人试玩。";
+}
+
+function roomLaunchItemValue(item: RoomPlaytestReadinessItem, cooperation: RoomCooperationSummary) {
+  if (item.id === "invite") {
+    return `${cooperation.memberCount} 人`;
+  }
+
+  if (item.id === "contribution") {
+    return `${cooperation.contributionCount} 次`;
+  }
+
+  if (item.id === "squad") {
+    return `${cooperation.assignedSurvivors}/3`;
+  }
+
+  if (item.id === "shifts") {
+    return `${cooperation.baseShifts} 个`;
+  }
+
+  return item.status === "ready" ? "可开局" : "待准备";
 }
 
 export function roomContributionPlan(session: PlaytestSession): RoomContributionPlan {

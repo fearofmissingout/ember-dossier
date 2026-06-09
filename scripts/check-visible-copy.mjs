@@ -62,7 +62,8 @@ const requiredChineseAnchors = [
   "好友房间协作脉冲",
   "归队复盘脉冲",
   "今日指挥板",
-  "本回合战斗指挥"
+  "本回合战斗指挥",
+  "多人开局指挥"
 ];
 
 const additionalRequiredChineseAnchors = [

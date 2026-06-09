@@ -26,6 +26,7 @@ import {
   roomCooperationPulse,
   roomCooperationSummary,
   roomContributionPlan,
+  roomLaunchBriefing,
   roomPlaytestReadiness,
   roomMemberSummaries,
   setBaseAssignment,
@@ -318,6 +319,47 @@ describe("playtest room loop", () => {
     expect(ready.items.find((item) => item.id === "shifts")).toMatchObject({ status: "ready" });
     expect(ready.items.find((item) => item.id === "expedition")?.detail).toContain("出征准备");
     expect(["building", "ready"]).toContain(ready.status);
+  });
+
+  test("room launch briefing turns readiness checks into a primary launch action", () => {
+    let session = createStarterSession("user-a", "Alice", "launch-briefing-room");
+    session.room.base.resources.food = 0;
+    session.room.base.resources.water = 0;
+
+    const blocked = roomLaunchBriefing(session);
+
+    expect(blocked.tone).toBe("blocked");
+    expect(blocked.primaryItemId).toBe("contribution");
+    expect(blocked.primaryLabel).toBe("共享库存");
+    expect(blocked.headline).toContain("关键协作缺口");
+    expect(blocked.items.map((item) => item.id)).toEqual(["invite", "contribution", "squad", "shifts", "expedition"]);
+    expect(blocked.items.find((item) => item.id === "squad")?.value).toBe("0/3");
+
+    session.room.members.push({
+      displayName: "阿周",
+      joinedAt: "2026-06-06T09:00:00.000Z",
+      lastSeenAt: "2026-06-06T10:00:00.000Z",
+      role: "member",
+      userId: "user-b"
+    });
+    session = applyContribution(session, "user-a", { ammo: 0, food: 8, fuel: 0, materials: 0, medicine: 0, water: 8 });
+    session.room.base.resources.food = 12;
+    session.room.base.resources.water = 12;
+    session.room.base.resources.materials = 0;
+    const [scout, medic, guard, worker] = session.account.survivors;
+    session.room.assignedSurvivors.push(
+      { assignedAt: "2026-06-06T10:10:00.000Z", roomId: session.room.id, survivorId: scout.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:11:00.000Z", roomId: session.room.id, survivorId: medic.id, userId: "user-a" },
+      { assignedAt: "2026-06-06T10:12:00.000Z", roomId: session.room.id, survivorId: guard.id, userId: "user-b" }
+    );
+    session.room.baseAssignments.push({ roomId: session.room.id, survivorId: worker.id, type: "guard", userId: "user-b" });
+
+    const ready = roomLaunchBriefing(session);
+
+    expect(ready.primaryItemId).toBe("expedition");
+    expect(ready.primaryLabel).toBe("开始远征");
+    expect(ready.summary).toContain("可以进入出征准备");
+    expect(["building", "ready"]).toContain(ready.tone);
   });
 
   test("room contribution plan turns shared gaps into resource priorities", () => {
