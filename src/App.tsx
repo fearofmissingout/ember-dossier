@@ -3026,7 +3026,7 @@ function ExpeditionPrep({
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   return (
-    <div className="expedition-layout">
+    <div className={journey ? "expedition-layout journey-active" : "expedition-layout"}>
       <section className="expedition-prep-command" aria-label="出征准备指挥台">
         <div className="expedition-prep-heading">
           <div>
@@ -3065,6 +3065,18 @@ function ExpeditionPrep({
           </div>
         </div>
       </section>
+
+      {journey && activeNode && (
+        <JourneyPanel
+          activeNode={activeNode}
+          journey={journey}
+          objective={objective}
+          onCombatAction={onCombatAction}
+          onJourneyAction={onJourneyAction}
+          readiness={readiness}
+          squad={selectedSquad}
+        />
+      )}
 
       <section className="panel expedition-prep-section" id="prep-squad">
         <p className="eyebrow">步骤 1</p>
@@ -3381,17 +3393,6 @@ function ExpeditionPrep({
             <p className="muted-copy">建造设施、选择出征纪律，或让未出征幸存者执行基地班次，就能形成可用的后勤线。</p>
           )}
         </div>
-        {journey && activeNode && (
-          <JourneyPanel
-            activeNode={activeNode}
-            journey={journey}
-            objective={objective}
-            onCombatAction={onCombatAction}
-            onJourneyAction={onJourneyAction}
-            readiness={readiness}
-            squad={selectedSquad}
-          />
-        )}
         <div className="departure-decision-card" aria-label="出发决策摘要">
           <div className="departure-decision-heading">
             <span>出发决策</span>
@@ -3714,6 +3715,7 @@ function JourneyPanel({
     baseImpact: journeyActionBaseImpact(item, journey)
   }));
   const mobilePrimaryActions = currentActionQueue.slice(0, 2);
+  const mobileSecondaryActions = currentActionQueue.slice(2);
   const actionComparison = buildJourneyActionComparison(currentActionQueue);
   const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
   const actionPulse = journeyActionPulse(journey, latestActionResult, actionGuide.primaryAction, routePace);
@@ -3836,9 +3838,22 @@ function JourneyPanel({
               </button>
             ))}
           </div>
+          {mobileSecondaryActions.length > 0 && (
+            <div className="journey-mobile-secondary-actions" aria-label="手机端备选行动">
+              <span>备选行动</span>
+              <div>
+                {mobileSecondaryActions.map((item) => (
+                  <button className={item.tone} key={`mobile-secondary-command-${item.id}`} type="button" onClick={item.onSelect}>
+                    <strong>{item.label}</strong>
+                    <small>{item.baseImpact}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="journey-mobile-command-links" aria-label="手机端页面跳转">
-            <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
-              更多操作
+            <button type="button" onClick={() => scrollToJourneySection("journey-vitals")}>
+              看状态
             </button>
             <button type="button" onClick={() => scrollToJourneySection("journey-process")}>
               看过程

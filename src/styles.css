@@ -5664,12 +5664,14 @@ button:disabled {
 }
 
 .journey-mobile-command-actions,
+.journey-mobile-secondary-actions,
 .journey-mobile-command-links {
   display: grid;
   gap: 6px;
 }
 
-.journey-mobile-command-actions button {
+.journey-mobile-command-actions button,
+.journey-mobile-secondary-actions button {
   display: grid;
   min-width: 0;
   gap: 4px;
@@ -5679,7 +5681,10 @@ button:disabled {
 
 .journey-mobile-command-actions button span,
 .journey-mobile-command-actions button strong,
-.journey-mobile-command-actions button small {
+.journey-mobile-command-actions button small,
+.journey-mobile-secondary-actions span,
+.journey-mobile-secondary-actions button strong,
+.journey-mobile-secondary-actions button small {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -11407,12 +11412,39 @@ button:disabled {
   }
 
   .side-rail {
+    position: sticky;
+    top: 0;
+    z-index: 15;
     display: grid;
-    gap: 12px;
+    min-height: 0;
+    gap: 0;
+    padding-block: 8px;
+    border-bottom: 1px solid #d1bd98;
+    background: rgba(248, 242, 227, 0.98);
   }
 
   .brand-lockup {
     margin-bottom: 0;
+  }
+
+  .side-rail .room-card,
+  .side-rail .playtest-settings-card,
+  .side-rail > .ghost-button {
+    display: none;
+  }
+
+  .side-rail .stamp {
+    width: 44px;
+    height: 34px;
+    font-size: 11px;
+  }
+
+  .side-rail .brand-lockup strong {
+    font-size: 15px;
+  }
+
+  .side-rail .brand-lockup p {
+    font-size: 10px;
   }
 
   .top-bar,
@@ -11420,6 +11452,16 @@ button:disabled {
   .base-shift-plan-heading,
   .journey-process-heading {
     display: grid;
+  }
+
+  .top-bar {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .top-bar .eyebrow {
+    margin-bottom: 2px;
+    font-size: 10px;
   }
 
   .base-shift-plan-heading small {
@@ -11433,7 +11475,7 @@ button:disabled {
   }
 
   .top-bar h1 {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .base-vista-art {
@@ -11450,19 +11492,25 @@ button:disabled {
   }
 
   .system-status {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .system-status span,
   .system-status button {
-    width: 100%;
+    width: auto;
     min-width: 0;
-    min-height: 32px;
+    min-height: 28px;
+    flex: 0 0 auto;
+    padding: 5px 8px;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     overflow-wrap: anywhere;
     text-align: center;
   }
@@ -11890,6 +11938,21 @@ button:disabled {
     box-shadow: 0 14px 26px rgba(64, 43, 21, 0.14);
   }
 
+  .expedition-layout.journey-active > .expedition-prep-command {
+    display: none;
+  }
+
+  .journey-command-center > .journey-command-hud,
+  .journey-command-center > .journey-action-guide,
+  .journey-command-center > .journey-turn-summary,
+  .journey-command-center > .journey-route-intel,
+  .journey-command-center > .journey-action-comparison,
+  .journey-command-center > .journey-command-result,
+  .journey-command-center > .journey-action-pulse,
+  .journey-command-center > .journey-result-breakdown {
+    display: none;
+  }
+
   .journey-turn-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -11924,6 +11987,7 @@ button:disabled {
   }
 
   .journey-action-deck {
+    display: none;
     padding: 8px;
   }
 
@@ -12023,8 +12087,13 @@ button:disabled {
   }
 
   .journey-mobile-flow {
+    order: 2;
     gap: 9px;
     padding: 10px;
+  }
+
+  .journey-section-nav {
+    order: 3;
   }
 
   .journey-mobile-flow-main strong {
@@ -12051,6 +12120,7 @@ button:disabled {
   }
 
   .journey-mobile-command-card {
+    order: 1;
     display: grid;
     gap: 8px;
     padding: 10px;
@@ -12159,6 +12229,57 @@ button:disabled {
     font-size: 11px;
     font-weight: 800;
     line-height: 1.35;
+  }
+
+  .journey-mobile-secondary-actions {
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  .journey-mobile-secondary-actions > span {
+    color: #8b4b31;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .journey-mobile-secondary-actions > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .journey-mobile-secondary-actions button {
+    min-height: 48px;
+    padding: 8px;
+    border: 1px solid #d4bd96;
+    border-radius: 8px;
+    background: #fff6e5;
+    color: #3f3124;
+  }
+
+  .journey-mobile-secondary-actions button.danger,
+  .journey-mobile-secondary-actions button.risk {
+    border-color: #d8a18f;
+    background: #fff0ea;
+  }
+
+  .journey-mobile-secondary-actions button.safe,
+  .journey-mobile-secondary-actions button.counter {
+    border-color: #a7c6a1;
+    background: #edf7eb;
+  }
+
+  .journey-mobile-secondary-actions button strong {
+    color: #35271c;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .journey-mobile-secondary-actions button small {
+    color: #6a5a49;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.3;
   }
 
   .journey-mobile-command-links {
