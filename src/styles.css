@@ -9799,6 +9799,120 @@ button:disabled {
   line-height: 1.35;
 }
 
+.member-action-plan {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid #b7c5a0;
+  border-radius: 8px;
+  background: #f4faee;
+}
+
+.member-action-plan-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.member-action-plan-heading span,
+.member-action-plan-grid span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.member-action-plan-heading strong,
+.member-action-plan-heading small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-action-plan-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.member-action-plan-heading small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.member-action-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.member-action-plan-grid button {
+  display: grid;
+  min-width: 0;
+  min-height: 128px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.86);
+  color: #304226;
+  text-align: left;
+}
+
+.member-action-plan-grid button.urgent {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.member-action-plan-grid button.todo {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.member-action-plan-grid button.ready {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.member-action-plan-grid strong,
+.member-action-plan-grid b,
+.member-action-plan-grid small,
+.member-action-plan-grid em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-action-plan-grid strong {
+  color: #2f3d27;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.member-action-plan-grid b {
+  color: #3f3321;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.member-action-plan-grid small {
+  color: #5f684e;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.member-action-plan-grid em {
+  color: #6d5839;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
 .your-room-task {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -10752,6 +10866,7 @@ button:disabled {
     .base-event-preview,
     .route-phase-grid,
     .room-duty-board,
+    .member-action-plan-grid,
     .ownership-boundary-grid,
     .room-launch-grid,
     .room-cooperation-plan-grid,

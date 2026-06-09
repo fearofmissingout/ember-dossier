@@ -5812,6 +5812,7 @@ function RoomMembers({
 }) {
   const currentMember = memberSummaries.find((member) => member.userId === currentUserId);
   const currentAction = currentMember ? roomMemberPrimaryAction(currentMember) : null;
+  const memberActionPlan = roomMemberActionPlan(memberSummaries, currentUserId);
   const membersWithContributions = memberSummaries.filter((member) => member.contributionCount > 0);
   const membersWithSquad = memberSummaries.filter((member) => member.assignedCount > 0);
   const membersWithShifts = memberSummaries.filter((member) => member.baseShiftText !== "未安排");
@@ -6081,6 +6082,25 @@ function RoomMembers({
         </div>
       </div>
 
+      <div className="member-action-plan" aria-label="成员行动队列">
+        <div className="member-action-plan-heading">
+          <span>成员行动队列</span>
+          <strong>每个人下一步做什么，一眼能分清。</strong>
+          <small>优先处理未捐入、未编队、未安排班次的成员；当前玩家会固定标记出来。</small>
+        </div>
+        <div className="member-action-plan-grid">
+          {memberActionPlan.map((item) => (
+            <button className={item.status} key={item.userId} type="button" onClick={() => onNavigate(item.view)}>
+              <span>{item.badge}</span>
+              <strong>{item.displayName}</strong>
+              <b>{item.title}</b>
+              <small>{item.hint}</small>
+              <em>{item.metrics}</em>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {currentMember && currentAction && (
         <div className={`your-room-task ${currentMember.collaborationStatus}`} aria-label="你的协作任务">
           <div>
@@ -6164,6 +6184,46 @@ function roomMemberPrimaryAction(member: RoomMemberSummary): { label: string; ti
   }
 
   return { label: "准备远征", title: "你的协作项已覆盖", view: "expedition" };
+}
+
+function roomMemberActionPlan(members: RoomMemberSummary[], currentUserId: string) {
+  const statusRank: Record<RoomMemberSummary["collaborationStatus"], number> = {
+    urgent: 0,
+    todo: 1,
+    ready: 2
+  };
+
+  return [...members]
+    .sort((left, right) => {
+      const statusDelta = statusRank[left.collaborationStatus] - statusRank[right.collaborationStatus];
+      if (statusDelta !== 0) {
+        return statusDelta;
+      }
+
+      if (left.userId === currentUserId && right.userId !== currentUserId) {
+        return -1;
+      }
+
+      if (right.userId === currentUserId && left.userId !== currentUserId) {
+        return 1;
+      }
+
+      return left.displayName.localeCompare(right.displayName, "zh-Hans-CN");
+    })
+    .map((member) => {
+      const action = roomMemberPrimaryAction(member);
+      const self = member.userId === currentUserId;
+      return {
+        badge: self ? "你" : member.collaborationStatus === "urgent" ? "优先" : member.collaborationStatus === "todo" ? "待办" : "就绪",
+        displayName: member.displayName,
+        hint: member.collaborationHint,
+        metrics: `捐入 ${member.contributionText} / 编队 ${member.assignedCount} / 班次 ${member.baseShiftText}`,
+        status: member.collaborationStatus,
+        title: action.title,
+        userId: member.userId,
+        view: action.view
+      };
+    });
 }
 
 function roomCooperationRequests(

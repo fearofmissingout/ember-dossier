@@ -649,6 +649,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("下一步：");
     expect(source).toContain("summary.actionHint");
     expect(source).toContain("cooperationLanes.map");
+    expect(source).toContain("memberActionPlan");
+    expect(source).toContain("roomMemberActionPlan");
+    expect(source).toContain("aria-label=\"成员行动队列\"");
+    expect(source).toContain("每个人下一步做什么，一眼能分清。");
     expect(source).toContain("捐入补给");
     expect(source).toContain("出征编队");
     expect(source).toContain("留守班次");
@@ -685,6 +689,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".room-cooperation-metrics");
     expect(styles).toContain(".room-cooperation-gaps");
     expect(styles).toContain(".room-duty-board");
+    expect(styles).toContain(".member-action-plan");
+    expect(styles).toContain(".member-action-plan-grid");
     expect(styles).toContain(".room-gap-card");
     expect(styles).toContain(".room-playtest-readiness");
     expect(styles).toContain(".room-playtest-check-grid");
