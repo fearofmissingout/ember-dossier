@@ -200,6 +200,12 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("combat-mobile-dashboard");
     expect(source).toContain("combat-mobile-bars");
     expect(source).toContain("combat-mobile-intent");
+    expect(source).toContain("combatRoundBreakdown");
+    expect(source).toContain("aria-label=\"本回合战斗拆解\"");
+    expect(source).toContain("我方动作");
+    expect(source).toContain("敌人反应");
+    expect(source).toContain("反制判定");
+    expect(source).toContain("状态变化");
     expect(source).toContain("aria-label=\"战斗动作判读\"");
     expect(source).toContain("combatActionPreviews");
     expect(source).toContain("反制动作");
@@ -211,6 +217,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".combat-mobile-bars");
     expect(styles).toContain(".combat-mobile-intent");
     expect(styles).toContain(".combat-mobile-result");
+    expect(styles).toContain(".combat-round-breakdown");
+    expect(styles).toContain(".combat-round-breakdown article.danger");
     expect(styles).toContain(".combat-action-readout");
   });
 

@@ -3705,6 +3705,15 @@ function JourneyPanel({
                 <strong>{latestCombatRound?.outcomeText ?? "选择一个动作开始本回合。"}</strong>
                 <small>{latestCombatRound?.enemyText ?? "先看敌人意图，再决定攻击、防守、包扎或战术。"}</small>
               </div>
+              <div className="combat-round-breakdown" aria-label="本回合战斗拆解">
+                {combatRoundBreakdown(journey, latestCombatRound).map((item) => (
+                  <article className={item.tone} key={item.id}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    <small>{item.detail}</small>
+                  </article>
+                ))}
+              </div>
             </div>
             <div className="combat-trait">
               <strong>{journey.combat.enemyTraitLabel}</strong>
@@ -4243,6 +4252,54 @@ function CombatReplayStrip({ records }: { records?: JourneyCombatRoundRecord[] }
       ))}
     </div>
   );
+}
+
+function combatRoundBreakdown(journey: JourneyState, record: JourneyCombatRoundRecord | null) {
+  if (!journey.combat || !record) {
+    return [
+      {
+        detail: "先观察敌人意图，再从上方远征行动台选择本回合动作。",
+        id: "pending",
+        label: "等待行动",
+        tone: "warning",
+        value: journey.combat ? journey.combat.intentLabel : "无战斗"
+      }
+    ];
+  }
+
+  const delta = journey.lastActionDelta;
+  return [
+    {
+      detail: record.outcomeText,
+      id: "actor",
+      label: "我方动作",
+      tone: record.tone,
+      value: `${record.actorName} / ${record.actionLabel}`
+    },
+    {
+      detail: record.enemyText,
+      id: "enemy",
+      label: "敌人反应",
+      tone: delta && delta.conditionDelta.fatigue + delta.battleScarDelta > 0 ? "danger" : record.tone,
+      value: journey.combat.intentLabel
+    },
+    {
+      detail: record.counterText,
+      id: "counter",
+      label: "反制判定",
+      tone: record.counterText.includes("反制") || record.counterText.includes("破势") ? "safe" : "warning",
+      value: record.counterText.includes("节奏") ? "节奏变化" : "判定结果"
+    },
+    {
+      detail: delta
+        ? `压力 ${formatSignedPercent(delta.pressureDelta)} / 疲劳 ${formatSignedNumber(delta.conditionDelta.fatigue)} / 战斗伤痕 ${formatSignedNumber(delta.battleScarDelta)}`
+        : "本回合还没有可比对的前后变化。",
+      id: "delta",
+      label: "状态变化",
+      tone: delta && (delta.pressureDelta > 0 || delta.conditionDelta.fatigue > 0 || delta.battleScarDelta > 0) ? "warning" : "safe",
+      value: delta ? `距离 ${formatSignedNumber(delta.conditionDelta.distance)}` : "无变化"
+    }
+  ];
 }
 
 function CombatBar({ label, max, tone, value }: { label: string; max: number; tone: "danger" | "safe"; value: number }) {
