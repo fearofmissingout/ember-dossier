@@ -64,6 +64,7 @@ import {
   campOptionOutcome,
   calculateCarryBurden,
   combatActionPreview,
+  combatCommandBriefing,
   combatRoundPlan,
   combatThreatPreview,
   combatLootPlan,
@@ -3240,6 +3241,7 @@ function JourneyPanel({
         return [{ action, icon: combatActionIcon(action), preview }];
       })
     : [];
+  const combatBriefing = journey.combat ? combatCommandBriefing(journey, combatActionPreviews.map((item) => item.preview)) : null;
   const counterActionLabels = combatActionPreviews
     .filter((item) => item.preview.counterTag === "Counter")
     .map((item) => item.preview.label)
@@ -4018,6 +4020,27 @@ function JourneyPanel({
                 <strong>{journey.combat.enemyName}</strong>
                 <small>{journey.combat.enemyTraitLabel}：{journey.combat.enemyTraitText}</small>
               </div>
+              {combatBriefing && (
+                <div className={`combat-command-briefing ${combatBriefing.tone}`} aria-label="本回合战斗指挥">
+                  <div className="combat-command-heading">
+                    <span>战斗指挥</span>
+                    <strong>{combatBriefing.headline}</strong>
+                    <small>{combatBriefing.summary}</small>
+                  </div>
+                  <button type="button" onClick={() => onCombatAction(combatBriefing.primaryAction)}>
+                    执行：{combatBriefing.primaryLabel}
+                  </button>
+                  <div className="combat-command-grid">
+                    {combatBriefing.items.map((item) => (
+                      <article className={item.tone} key={item.id}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                        <small>{item.detail}</small>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="combat-mobile-bars" aria-label="战斗生命摘要">
                 <div>
                   <span>敌人</span>

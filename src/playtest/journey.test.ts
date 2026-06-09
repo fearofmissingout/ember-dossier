@@ -5,6 +5,7 @@ import {
   calculateCarryBurden,
   campOptionOutcome,
   combatActionPreview,
+  combatCommandBriefing,
   combatLootPlan,
   combatRoundPlan,
   combatThreatPreview,
@@ -1828,6 +1829,49 @@ describe("journey route generation", () => {
     });
     expect(plan?.reason).toContain("游猎 推荐 攻击");
     expect(plan?.riskText).toContain("避开 防守 / 包扎");
+  });
+
+  test("combat command briefing combines counter action risk and survival pressure", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const session = createStarterSession("user-a", "Alice", "combat-command-briefing-room");
+    const squad = session.account.survivors.slice(0, 3);
+    const journey = createJourney(
+      session,
+      {
+        loadout: { ammo: 1, food: 1, fuel: 0, materials: 0, medicine: 1, water: 1 },
+        risk: "standard",
+        squadIds: squad.map((survivor) => survivor.id)
+      },
+      "hospital",
+      60
+    );
+    journey.currentNodeIndex = 1;
+    journey.pressure = 70;
+    journey.combat = createCombatForNode(journey.nodes[1], squad, 60);
+    if (journey.combat) {
+      journey.combat.intent = "prowl";
+      journey.combat.intentLabel = "游猎";
+      journey.combat.intentText = "它在寻找薄弱队形。攻击或战术可以打断。";
+      journey.combat.attack = 12;
+      journey.combat.squadHp = 8;
+      journey.combat.squadMaxHp = 28;
+    }
+    const previews = (["strike", "guard", "patch", "tactic", "retreat"] as const).flatMap((action) => {
+      const preview = combatActionPreview(journey, action, squad, 60);
+      return preview ? [preview] : [];
+    });
+
+    const briefing = combatCommandBriefing(journey, previews);
+
+    expect(briefing).toMatchObject({
+      primaryAction: "strike",
+      primaryLabel: "攻击",
+      tone: "danger"
+    });
+    expect(briefing?.headline).toContain("优先保命和反制");
+    expect(briefing?.summary).toContain("反制 攻击 / 战术");
+    expect(briefing?.items.map((item) => item.id)).toEqual(["intent", "counter", "risk", "survival"]);
+    expect(briefing?.items.find((item) => item.id === "survival")?.value).toBe("可能倒下");
   });
 
   test("combat counters build tempo and enemy stagger", () => {

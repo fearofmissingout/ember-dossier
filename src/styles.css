@@ -6313,6 +6313,120 @@ button:disabled {
   font-size: 17px;
 }
 
+.combat-command-briefing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid #a9b978;
+  border-radius: 8px;
+  background: #f3fae8;
+}
+
+.combat-command-briefing.warning {
+  border-color: #d3ac5d;
+  background: #fff6da;
+}
+
+.combat-command-briefing.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.combat-command-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.combat-command-heading span,
+.combat-command-grid span {
+  color: #7a4b2f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.combat-command-heading strong,
+.combat-command-heading small,
+.combat-command-grid strong,
+.combat-command-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.combat-command-heading strong {
+  color: #2f291c;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.combat-command-heading small {
+  color: #655644;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.combat-command-briefing > button {
+  min-height: 42px;
+  align-self: center;
+  padding: 8px 12px;
+  border: 1px solid #8b6a38;
+  border-radius: 8px;
+  background: #3b2a1b;
+  color: #fff7e9;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.combat-command-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.combat-command-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 78px;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #d3bb8e;
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.8);
+}
+
+.combat-command-grid article.safe {
+  border-color: #91b07b;
+  background: #eef8e8;
+}
+
+.combat-command-grid article.warning {
+  border-color: #d5ac5e;
+  background: #fff6da;
+}
+
+.combat-command-grid article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.combat-command-grid strong {
+  color: #2f291c;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.combat-command-grid small {
+  color: #665744;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .combat-mobile-heading small,
 .combat-mobile-result small,
 .combat-mobile-intent small,
@@ -8732,6 +8846,7 @@ button:disabled {
   .frontline-grid,
   .combat-threat,
   .combat-action-readout,
+  .combat-command-grid,
   .combat-round-breakdown,
   .journey-command-snapshot,
   .journey-result-breakdown,
@@ -8988,6 +9103,7 @@ button:disabled {
   .account-upgrade-row,
   .frontline-grid,
   .combat-threat,
+  .combat-command-grid,
   .archive-grid,
   .combat-round-breakdown,
   .journey-status-grid,
@@ -9504,9 +9620,14 @@ button:disabled {
 
   .combat-mobile-bars,
   .combat-mobile-intent,
+  .combat-command-briefing,
   .combat-action-readout,
   .combat-loot-plan-grid {
     grid-template-columns: 1fr;
+  }
+
+  .combat-command-briefing > button {
+    width: 100%;
   }
 
   .report-next-actions {

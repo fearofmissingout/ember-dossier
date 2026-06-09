@@ -1079,6 +1079,23 @@ export type JourneyCombatRoundPlan = {
   tone: "safe" | "warning";
 };
 
+export type JourneyCombatCommandBriefingItem = {
+  detail: string;
+  id: "intent" | "counter" | "risk" | "survival";
+  label: string;
+  tone: "safe" | "warning" | "danger";
+  value: string;
+};
+
+export type JourneyCombatCommandBriefing = {
+  headline: string;
+  items: JourneyCombatCommandBriefingItem[];
+  primaryAction: CombatAction;
+  primaryLabel: string;
+  summary: string;
+  tone: "safe" | "warning" | "danger";
+};
+
 type JourneyEventTemplate = {
   body: string;
   careful: Omit<JourneyChoice, "reward"> & { rewardKeys: ResourceKey[] };
@@ -4653,6 +4670,69 @@ export function combatRoundPlan(journey: Pick<JourneyState, "combat" | "pressure
     reason: `${threat.intentLabel} 推荐 ${label}，预计反击 ${threat.incomingDamage}。`,
     riskText: `${riskyText}。${threat.warning}`,
     tone: threat.riskyActions.length > 0 || threat.pressureDamage > 0 ? "warning" : "safe"
+  };
+}
+
+export function combatCommandBriefing(
+  journey: Pick<JourneyState, "combat" | "pressure">,
+  previews: JourneyCombatActionPreview[]
+): JourneyCombatCommandBriefing | null {
+  const combat = journey.combat;
+  const threat = combatThreatPreview(journey);
+  const plan = combatRoundPlan(journey);
+  if (!combat || !threat || !plan) {
+    return null;
+  }
+
+  const plannedPreview = previews.find((preview) => preview.action === plan.action);
+  const squadRatio = combat.squadMaxHp > 0 ? combat.squadHp / combat.squadMaxHp : 0;
+  const lethalPressure = threat.incomingDamage >= combat.squadHp;
+  const tone: JourneyCombatCommandBriefing["tone"] =
+    lethalPressure || squadRatio <= 0.32 ? "danger" : plan.tone === "warning" || squadRatio <= 0.55 ? "warning" : "safe";
+  const counterText = threat.counterLabels.join(" / ") || "保持队形";
+  const riskyText = threat.riskyLabels.join(" / ") || "暂无";
+
+  return {
+    headline:
+      tone === "danger"
+        ? "本回合可能造成减员，优先保命和反制。"
+        : tone === "warning"
+          ? "本回合有明显风险，按意图选择反制。"
+          : "本回合节奏可控，优先扩大优势。",
+    items: [
+      {
+        detail: threat.summary,
+        id: "intent",
+        label: "敌人意图",
+        tone: threat.pressureDamage > 0 ? "warning" : "safe",
+        value: threat.intentLabel
+      },
+      {
+        detail: plannedPreview?.effect ?? plan.reason,
+        id: "counter",
+        label: "推荐动作",
+        tone: plannedPreview?.counterTag === "Counter" ? "safe" : "warning",
+        value: plan.label
+      },
+      {
+        detail: threat.warning,
+        id: "risk",
+        label: "避免动作",
+        tone: threat.riskyLabels.length > 0 ? "warning" : "safe",
+        value: riskyText
+      },
+      {
+        detail: `预计反击 ${threat.incomingDamage}；队伍耐力 ${combat.squadHp}/${combat.squadMaxHp}。`,
+        id: "survival",
+        label: "生存压力",
+        tone: lethalPressure || squadRatio <= 0.32 ? "danger" : squadRatio <= 0.55 ? "warning" : "safe",
+        value: lethalPressure ? "可能倒下" : `${Math.round(squadRatio * 100)}%`
+      }
+    ],
+    primaryAction: plan.action,
+    primaryLabel: plan.label,
+    summary: [`反制 ${counterText}`, `风险 ${riskyText}`, `节奏 ${combat.tempo ?? 0}/3`, `破势 ${combat.stagger ?? 0}/3`].join(" / "),
+    tone
   };
 }
 
