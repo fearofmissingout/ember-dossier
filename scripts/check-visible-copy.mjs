@@ -57,7 +57,8 @@ const requiredChineseAnchors = [
   "本回合指挥摘要",
   "手机端当前行动面板",
   "出征行动脉冲",
-  "基地建设路线板"
+  "基地建设路线板",
+  "基地日结脉冲"
 ];
 
 const additionalRequiredChineseAnchors = [

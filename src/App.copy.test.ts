@@ -413,6 +413,7 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("base-command-actions");
     expect(source).toContain("lastBaseActionFeedback");
     expect(source).toContain("buildBaseActionFeedback");
+    expect(source).toContain("baseDaySettlementPulse");
     expect(source).toContain("BaseActionFeedbackPanel");
     expect(source).toContain("baseFeedbackForScope");
     expect(source).toContain("aria-label={label}");
@@ -442,6 +443,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".panel > .base-action-feedback");
     expect(styles).toContain(".base-action-feedback-grid");
     expect(styles).toContain(".base-action-feedback-grid article.warning");
+    expect(styles).toContain(".base-settlement-pulse");
+    expect(styles).toContain(".base-settlement-pulse-grid");
     expect(styles).toContain(".base-expedition-briefing");
     expect(styles).toContain(".base-expedition-briefing-grid");
     expect(styles).toContain(".overview-return-card");

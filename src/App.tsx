@@ -1559,6 +1559,7 @@ function Overview({
     { label: "复盘", text: "查看战报，回基地处理下一轮循环。", view: "reports" as ViewKey }
   ];
   const baseExpeditionSupport = baseExpeditionSupportBriefing(dayPreview);
+  const settlementPulse = baseDaySettlementPulse(lastBaseActionFeedback, session);
 
   return (
     <div className="view-grid">
@@ -1704,6 +1705,27 @@ function Overview({
             </div>
           </div>
           <BaseActionFeedbackPanel feedback={lastBaseActionFeedback} label="基地操作结果拆解" />
+          {settlementPulse && (
+            <div className={`base-settlement-pulse ${settlementPulse.tone}`} aria-label="基地日结脉冲">
+              <div className="base-settlement-pulse-heading">
+                <div>
+                  <span>{settlementPulse.label}</span>
+                  <strong>{settlementPulse.title}</strong>
+                  <small>{settlementPulse.body}</small>
+                </div>
+                <small>{settlementPulse.nextHint}</small>
+              </div>
+              <div className="base-settlement-pulse-grid">
+                {settlementPulse.items.map((item) => (
+                  <article className={item.tone} key={item.id}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    <small>{item.detail}</small>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
           {latestReturnPlan?.hasPlan && (
             <div className="overview-return-card" aria-label="基地归队承接">
               <div className="overview-return-heading">
@@ -2001,6 +2023,59 @@ function buildBaseActionFeedback(
     ],
     scope,
     title
+  };
+}
+
+function baseDaySettlementPulse(feedback: BaseActionFeedback | null, session: PlaytestSession) {
+  if (!feedback || feedback.title !== "结束当天") {
+    return null;
+  }
+
+  const resourceItem = feedback.items.find((item) => item.id === "resources");
+  const baseItem = feedback.items.find((item) => item.id === "base");
+  const survivorItem = feedback.items.find((item) => item.id === "survivors");
+  const feedItem = feedback.items.find((item) => item.id === "feed");
+  const dangerItem = feedback.items.find((item) => item.tone === "danger");
+  const safeCount = feedback.items.filter((item) => item.tone === "safe").length;
+  const tone = dangerItem ? "danger" : safeCount >= 2 ? "safe" : "warning";
+  const objective = session.room.base.objective;
+
+  return {
+    body: feedItem?.detail.split("\n")[0] ?? feedback.detail.split("\n")[0],
+    items: [
+      resourceItem ?? {
+        detail: "本日没有明确资源变化。",
+        id: "resources",
+        label: "资源",
+        tone: "warning",
+        value: "无变化"
+      },
+      baseItem ?? {
+        detail: "基地状态保持稳定。",
+        id: "base",
+        label: "基地",
+        tone: "warning",
+        value: `第 ${session.room.base.day} 天`
+      },
+      survivorItem ?? {
+        detail: "幸存者状态没有明显变化。",
+        id: "survivors",
+        label: "幸存者",
+        tone: "warning",
+        value: "无变化"
+      }
+    ],
+    label: "日结脉冲",
+    nextHint:
+      objective.status === "won"
+        ? "房间目标已经完成，可以查看战报并准备下一轮协作。"
+        : objective.status === "lost"
+          ? "目标已经失败，建议复盘资源、班次和设施路线。"
+          : dangerItem
+            ? "下一天优先补口粮、守卫或护理，先把基地风险压回可控。"
+            : "基地还能继续运转，下一步可以安排建设、班次或远征。",
+    title: `第 ${session.room.base.day} 天结算`,
+    tone
   };
 }
 
