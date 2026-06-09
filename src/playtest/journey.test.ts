@@ -65,10 +65,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "resources", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "urban", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "weird", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 3, family: "wilds", roadBeats: 5, shops: 4 })
+        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "resources", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "urban", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "weird", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "wilds", roadBeats: 5, shops: 4 })
       ])
     );
   });
@@ -107,9 +107,9 @@ describe("journey route generation", () => {
     const resourceRoute = createJourney(session, draft, "water-plant", 60);
     const weirdRoute = createJourney(session, draft, "greenhouse", 60);
 
-    expect(resourceRoute.nodes[0].title).toBe("沉降池吊桥");
+    expect(resourceRoute.nodes[0].title).toBe("旁通阀阵");
     expect(resourceRoute.nodes[3].shop?.label).toBe("买泵站调度图");
-    expect(weirdRoute.nodes[0].title).toBe("倒置候诊区");
+    expect(weirdRoute.nodes[0].title).toBe("白色病历墙");
     expect(weirdRoute.nodes[3].shop?.label).toBe("买画框里的钥匙");
   });
 

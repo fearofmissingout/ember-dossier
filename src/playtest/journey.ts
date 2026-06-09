@@ -1157,6 +1157,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "燃料点亮的照明弹压住了黑水里的动静，队伍抢在桥面塌陷前通过。",
         supplyPriority: ["fuel", "ammo"]
       }
+    },
+    {
+      title: "旁通阀阵",
+      body: "一排手轮贴着墙排开，阀门编号被水垢盖住，只剩下几处还能辨认的旧箭头。",
+      careful: {
+        fallbackLog: "队伍逐个比对阀门，水声慢慢变轻，但时间被一点点磨掉。",
+        label: "校准阀门",
+        pressure: -10,
+        rewardKeys: ["water", "materials"],
+        rollShift: -0.1,
+        successLog: "饮水让队伍稳住节奏，阀阵被调到低压，旁边的检修箱也能安全打开。",
+        supplyPriority: ["water", "materials"]
+      },
+      force: {
+        fallbackLog: "他们直接拧开主阀，白雾冲出管线，把远处的脚步也一并叫醒。",
+        label: "强开主阀",
+        pressure: 14,
+        rewardKeys: ["fuel", "materials"],
+        rollShift: 0.13,
+        successLog: "弹药打断卡死的阀销，队伍抢在蒸汽扩散前穿过旁通管。",
+        supplyPriority: ["ammo", "fuel"]
+      }
     }
   ],
   urban: [
@@ -1224,6 +1246,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rollShift: 0.11,
         successLog: "弹药吓退了楼下的动静，队伍趁乱拆下几段可用线缆。",
         supplyPriority: ["ammo", "materials"]
+      }
+    },
+    {
+      title: "地下换乘厅",
+      body: "换乘厅的电子屏还在翻页，站台广播每隔几分钟就宣布一班永远不会来的车。",
+      careful: {
+        fallbackLog: "队伍沿着售票机背面移动，拿到几份旧物资，却被广播拖慢了步伐。",
+        label: "沿售票机绕行",
+        pressure: -9,
+        rewardKeys: ["fuel", "materials"],
+        rollShift: -0.09,
+        successLog: "食物让队伍耐心等完广播间隔，顺着检票口背面绕开了大厅。",
+        supplyPriority: ["food", "water"]
+      },
+      force: {
+        fallbackLog: "他们跨过闸机直冲站台，金属闸门连响三声，隧道深处也回了三声。",
+        label: "翻闸直冲",
+        pressure: 13,
+        rewardKeys: ["ammo", "materials"],
+        rollShift: 0.12,
+        successLog: "弹药压住了闸机后面的动静，队伍趁广播失真时穿过站台。",
+        supplyPriority: ["ammo", "fuel"]
       }
     }
   ],
@@ -1293,6 +1337,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         successLog: "燃料烧掉了倒挂帘幕，露出一条短暂正常的通道。",
         supplyPriority: ["fuel", "ammo"]
       }
+    },
+    {
+      title: "白色病历墙",
+      body: "整面墙贴满空白病历，纸页会在有人靠近时自动翻到下一页。",
+      careful: {
+        fallbackLog: "队伍按住翻页声慢慢读出出口方向，但每个人都觉得自己被记录了一次。",
+        label: "按住病历",
+        pressure: -7,
+        rewardKeys: ["medicine", "materials"],
+        rollShift: -0.1,
+        successLog: "药品让紧张的手不再发抖，纸页终于停在一条真实走廊的编号上。",
+        supplyPriority: ["medicine", "water"]
+      },
+      force: {
+        fallbackLog: "他们把病历撕开，纸页落地后开始替队伍写脚步声。",
+        label: "撕开病历墙",
+        pressure: 17,
+        rewardKeys: ["ammo", "medicine"],
+        rollShift: 0.16,
+        successLog: "燃料烧出一条没有字的裂口，队伍从纸灰里冲了过去。",
+        supplyPriority: ["fuel", "ammo"]
+      }
     }
   ],
   wilds: [
@@ -1360,6 +1426,28 @@ const familyEvents: Record<LocationFamily, JourneyEventTemplate[]> = {
         rollShift: 0.1,
         successLog: "燃料烟雾遮住了队伍，留下的棚架还能拆成材料。",
         supplyPriority: ["fuel", "materials"]
+      }
+    },
+    {
+      title: "废弃灌浆站",
+      body: "田埂尽头有一台灌浆机，管口凝着硬壳，像某种已经停止呼吸的喉咙。",
+      careful: {
+        fallbackLog: "队伍拆下还能用的阀片，动作很慢，但没有惊动田埂下的东西。",
+        label: "拆阀片",
+        pressure: -8,
+        rewardKeys: ["materials", "fuel"],
+        rollShift: -0.08,
+        successLog: "水让队伍能洗掉管口污泥，几块干净阀片被收进背包。",
+        supplyPriority: ["water", "materials"]
+      },
+      force: {
+        fallbackLog: "他们砸开灌浆机外壳，空腔回声沿着田埂滚了很远。",
+        label: "砸开外壳",
+        pressure: 12,
+        rewardKeys: ["materials", "ammo"],
+        rollShift: 0.11,
+        successLog: "弹药吓退了田埂下的动静，队伍抢出一捆可用管线。",
+        supplyPriority: ["ammo", "fuel"]
       }
     }
   ]
