@@ -1822,6 +1822,23 @@ function Overview({
                 </article>
               ))}
             </div>
+            <div className={`base-event-preview ${dayPreview.event.readiness}`} aria-label="基地事件预告">
+              <div>
+                <span>下一事件</span>
+                <strong>{dayPreview.event.title}</strong>
+                <small>{dayPreview.event.riskLabel}；支援 {dayPreview.event.supportScore}</small>
+              </div>
+              <div>
+                <span>推荐反制</span>
+                <strong>{dayPreview.event.recommendedWork.map((type) => baseWorkLabel(type)).join(" / ")}</strong>
+                <small>{dayPreview.event.facilityText}</small>
+              </div>
+              <div>
+                <span>预计结果</span>
+                <strong>{dayPreview.event.likelyOutcome}</strong>
+                <small>{dayPreview.event.advice}</small>
+              </div>
+            </div>
           </div>
           <BaseActionFeedbackPanel feedback={lastBaseActionFeedback} label="基地操作结果拆解" />
           {settlementPulse && (

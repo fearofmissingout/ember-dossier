@@ -1578,6 +1578,64 @@ button:disabled {
   line-height: 1.35;
 }
 
+.base-event-preview {
+  display: grid;
+  grid-template-columns: 0.8fr 0.9fr 1.3fr;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #c8b179;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.base-event-preview.covered {
+  border-color: #7ca174;
+  background: #edf7eb;
+}
+
+.base-event-preview.partial {
+  border-color: #c69d45;
+  background: #fff4d7;
+}
+
+.base-event-preview.exposed {
+  border-color: #c56f5e;
+  background: #fff0ea;
+}
+
+.base-event-preview > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 4px;
+}
+
+.base-event-preview span {
+  color: #71562d;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.base-event-preview strong,
+.base-event-preview small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-event-preview strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.28;
+}
+
+.base-event-preview small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .base-expedition-briefing {
   display: grid;
   gap: 10px;
@@ -10195,6 +10253,7 @@ button:disabled {
     .journey-action-pulse,
     .journey-turn-summary,
     .base-schedule-preview-grid,
+    .base-event-preview,
     .route-phase-grid,
     .room-duty-board,
     .ownership-boundary-grid,

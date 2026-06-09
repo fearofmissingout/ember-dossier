@@ -799,7 +799,30 @@ type BaseDayEventResult = {
   title: string;
 };
 
+type BaseDayEventPlanDefinition = {
+  coveredOutcome: string;
+  exposedOutcome: string;
+  facilities: string[];
+  facilityText: string;
+  fullSupport: number;
+  partialOutcome: string;
+  recommendedWork: BaseWorkType[];
+  riskLabel: string;
+};
+
 const baseDayEventTitles = ["围栏缺口", "库存变质", "医务高峰", "信号窗口", "净水滤芯堵塞", "夜间求救信号"] as const;
+
+export type BaseDayEventPreview = {
+  advice: string;
+  eventIndex: number;
+  facilityText: string;
+  likelyOutcome: string;
+  recommendedWork: BaseWorkType[];
+  readiness: "covered" | "partial" | "exposed";
+  riskLabel: string;
+  supportScore: number;
+  title: string;
+};
 
 export function baseDayEventBreadth() {
   return {
@@ -888,6 +911,7 @@ export type BaseDevelopmentBriefingItem = {
 export type BaseDayPreview = {
   dangerDelta: number;
   dangerRelief: number;
+  event: BaseDayEventPreview;
   foodAvailable: number;
   foodNeed: number;
   foodShortage: number;
@@ -1831,10 +1855,12 @@ export function baseDayPreview(session: PlaytestSession): BaseDayPreview {
   const objectiveGain = shifts.objectiveGain + radioObjectiveBonus;
   const objectiveProjected = Math.min(session.room.base.objective.requiredParts, objectiveCurrent + objectiveGain);
   const supplyPressure = foodShortage + waterShortage > 0 ? `食物短缺 ${foodShortage}，水短缺 ${waterShortage}` : "食物和水足够过夜";
+  const event = baseDayEventPreview(session, nextDay, shifts.shiftCounts);
 
   return {
     dangerDelta,
     dangerRelief: Math.max(0, watchtowerLevel + barricadeLevel + shifts.dangerReduction),
+    event,
     foodAvailable,
     foodNeed,
     foodShortage,
@@ -1857,6 +1883,110 @@ export function baseDayPreview(session: PlaytestSession): BaseDayPreview {
     waterNeed,
     waterShortage
   };
+}
+
+export function baseDayEventPreview(session: PlaytestSession, day = session.room.base.day + 1, coverage = previewBaseAssignments(session).shiftCounts): BaseDayEventPreview {
+  const eventIndex = baseDayEventIndexFor(day);
+  const title = baseDayEventTitles[eventIndex];
+  const plan = baseDayEventPlan(eventIndex);
+  const facilitySupport = plan.facilities.reduce((sum, facilityId) => sum + facilityLevel(session, facilityId), 0);
+  const shiftSupport = plan.recommendedWork.reduce((sum, type) => sum + coverage[type], 0);
+  const supportScore = facilitySupport + shiftSupport;
+  const readiness: BaseDayEventPreview["readiness"] = supportScore >= plan.fullSupport ? "covered" : supportScore > 0 ? "partial" : "exposed";
+  const recommendedWorkText = plan.recommendedWork.map((type) => baseWorkLabels[type]).join(" / ");
+
+  return {
+    advice:
+      readiness === "covered"
+        ? `已覆盖关键反制。保持${recommendedWorkText}，日结时大概率转成收益。`
+        : readiness === "partial"
+          ? `已有部分支援，但最好再补 ${recommendedWorkText}。`
+          : `缺少反制班次。优先安排 ${recommendedWorkText}，否则日结会放大损失。`,
+    eventIndex,
+    facilityText: plan.facilityText,
+    likelyOutcome:
+      readiness === "covered"
+        ? plan.coveredOutcome
+        : readiness === "partial"
+          ? plan.partialOutcome
+          : plan.exposedOutcome,
+    recommendedWork: plan.recommendedWork,
+    readiness,
+    riskLabel: plan.riskLabel,
+    supportScore,
+    title
+  };
+}
+
+function baseDayEventIndexFor(day: number) {
+  return Math.max(0, day - 2) % baseDayEventTitles.length;
+}
+
+function baseDayEventPlan(eventIndex: number): BaseDayEventPlanDefinition {
+  const plans: BaseDayEventPlanDefinition[] = [
+    {
+      coveredOutcome: "守卫、瞭望塔和路障会把缺口变成危险下降。",
+      exposedOutcome: "无人守夜时，危险和士气损失会一起上升。",
+      facilities: ["watchtower", "barricade"],
+      facilityText: "瞭望塔 / 路障",
+      fullSupport: 3,
+      partialOutcome: "能阻止最坏突破，但仍会增加少量危险。",
+      recommendedWork: ["guard"],
+      riskLabel: "防线压力"
+    },
+    {
+      coveredOutcome: "搜寻班和厨房能把变质库存转成可用口粮。",
+      exposedOutcome: "缺少处理时会损失食物、水和士气。",
+      facilities: ["kitchen"],
+      facilityText: "厨房",
+      fullSupport: 2,
+      partialOutcome: "能隔离损失，但不会获得额外补给。",
+      recommendedWork: ["forage"],
+      riskLabel: "口粮风险"
+    },
+    {
+      coveredOutcome: "护理班和医务室能稳定伤员，甚至清除一处伤病。",
+      exposedOutcome: "没有护理准备时，会消耗药品并推高疲劳。",
+      facilities: ["clinic"],
+      facilityText: "医务室",
+      fullSupport: 2,
+      partialOutcome: "能省下一些药品，但恢复效率有限。",
+      recommendedWork: ["care"],
+      riskLabel: "伤病压力"
+    },
+    {
+      coveredOutcome: "修理班、无线电和工坊能直接推进房间目标。",
+      exposedOutcome: "无人响应信号时，危险会上升。",
+      facilities: ["radio", "workshop"],
+      facilityText: "电台 / 工坊",
+      fullSupport: 2,
+      partialOutcome: "能拿到少量目标进度，但收益不稳定。",
+      recommendedWork: ["repair"],
+      riskLabel: "目标窗口"
+    },
+    {
+      coveredOutcome: "修理与搜寻配合能恢复供水并带回材料。",
+      exposedOutcome: "滤芯堵塞会损失水和材料，并拖低士气。",
+      facilities: ["generator"],
+      facilityText: "发电机",
+      fullSupport: 3,
+      partialOutcome: "能临时保住一部分供水。",
+      recommendedWork: ["repair", "forage"],
+      riskLabel: "供水故障"
+    },
+    {
+      coveredOutcome: "守卫、护理和电台能把求救信号转成目标线索。",
+      exposedOutcome: "无人分辨信号会增加危险并打击士气。",
+      facilities: ["radio"],
+      facilityText: "电台",
+      fullSupport: 3,
+      partialOutcome: "能记下坐标，但仍会增加少量危险。",
+      recommendedWork: ["guard", "care"],
+      riskLabel: "信号判断"
+    }
+  ];
+
+  return plans[eventIndex] ?? plans[0];
 }
 
 export function baseShiftPlan(session: PlaytestSession): BaseShiftPlan {

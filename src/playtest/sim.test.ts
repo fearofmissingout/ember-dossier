@@ -16,6 +16,7 @@ import {
   assignSurvivorToRoom,
   baseCommandBriefing,
   baseDayEventBreadth,
+  baseDayEventPreview,
   baseDayPreview,
   baseDevelopmentBriefing,
   baseDevelopmentPlan,
@@ -1545,6 +1546,43 @@ describe("playtest room loop", () => {
     expect(preview.repairSummary).toContain("修理班 1");
     expect(preview.guardSummary).toContain("守卫班 1");
     expect(preview.recoverySummary).toContain("疲劳恢复");
+    expect(preview.event).toMatchObject({
+      eventIndex: 0,
+      readiness: "covered",
+      recommendedWork: ["guard"],
+      supportScore: 3
+    });
+  });
+
+  test("previews the next base event counterplay before ending the day", () => {
+    let session = createStarterSession("user-a", "Alice", "event-preview-room");
+    const watchtower = session.room.base.facilities.find((facility) => facility.id === "watchtower");
+    const barricade = session.room.base.facilities.find((facility) => facility.id === "barricade");
+    if (watchtower) {
+      watchtower.level = 1;
+    }
+    if (barricade) {
+      barricade.level = 1;
+    }
+
+    const exposed = baseDayEventPreview(session, 2);
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "guard");
+    const covered = baseDayEventPreview(session, 2);
+
+    expect(exposed).toMatchObject({
+      eventIndex: 0,
+      readiness: "partial",
+      recommendedWork: ["guard"],
+      supportScore: 2
+    });
+    expect(covered).toMatchObject({
+      eventIndex: 0,
+      readiness: "covered",
+      recommendedWork: ["guard"],
+      supportScore: 3
+    });
+    expect(covered.likelyOutcome).toContain("危险下降");
+    expect(covered.advice).toContain("已覆盖");
   });
 
   test("base shift plan turns assignments into actionable base decisions", () => {
