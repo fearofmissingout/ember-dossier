@@ -2947,13 +2947,15 @@ function JourneyPanel({
     segmentMitigation.value > 0
       ? `设施减压 ${segmentMitigation.pressure}%${segmentMitigation.fatigue > 0 ? ` / 疲劳 -${segmentMitigation.fatigue}` : ""}`
       : "暂无设施掩护";
-  const currentActionQueue = pendingRoad
+  const commandActionItems = pendingRoad
     ? pendingRoad.choices.map((choice) => {
         const preview = roadEncounterChoicePreview(journey, choice);
         return {
+          body: choice.text,
           detail: `${preview.costText} / ${preview.rewardText}`,
           id: `road-${choice.id}`,
           label: choice.label,
+          onSelect: () => onJourneyAction(`road-${choice.id}` as JourneyAction),
           result: preview.outcomeLabel,
           tone: preview.tone
         };
@@ -2962,34 +2964,42 @@ function JourneyPanel({
       ? combatLootList.map((option) => {
           const outcome = combatLootOutcome(option, journey.support);
           return {
+            body: option.text,
             detail: `${formatResourceDelta(outcome.reward)} / 疲${formatSignedNumber(outcome.fatigue)} / 压${formatSignedPercent(outcome.pressure)}`,
             id: `loot-${option.id}`,
             label: option.label,
+            onSelect: () => onJourneyAction(`loot-${option.id}` as JourneyAction),
             result: "战利结算",
             tone: "safe"
           };
         })
       : journey.combat
         ? combatActionPreviews.map(({ action, preview }) => ({
+            body: preview.actorName,
             detail: preview.effect,
             id: `combat-${action}`,
             label: preview.label,
+            onSelect: () => onCombatAction(action),
             result: combatCounterTagLabel(preview.counterTag),
             tone: preview.counterTag.toLowerCase()
           }))
         : activeNode.type === "event"
           ? [
               {
+                body: "放慢速度处理现场，适合补给紧张或压力偏高时使用。",
                 detail: activeNode.careful?.successLog ?? "放慢速度，降低失误。",
                 id: "careful",
                 label: activeNode.careful?.label ?? "谨慎搜索",
+                onSelect: () => onJourneyAction("careful"),
                 result: "稳妥推进",
                 tone: "safe"
               },
               {
+                body: "更快通过当前节点，适合想抢时间但能承受风险时使用。",
                 detail: activeNode.force?.fallbackLog ?? activeNode.force?.successLog ?? "更快通过，承担额外风险。",
                 id: "force",
                 label: activeNode.force?.label ?? "强行推进",
+                onSelect: () => onJourneyAction("force"),
                 result: "快速推进",
                 tone: "warning"
               }
@@ -3004,18 +3014,22 @@ function JourneyPanel({
                   const outcome = shopOfferOutcome(action, offer, journey.support);
                   return [
                     {
+                      body: outcome.text,
                       detail: `随身 ${formatResourceDelta(outcome.fieldSupplyReward)} / 入库 ${formatResourceDelta(outcome.reward)} / 压力${formatSignedPercent(outcome.pressure)}`,
                       id: `shop-${action}`,
                       label: outcome.label,
+                      onSelect: () => onJourneyAction(`shop-${action}` as JourneyAction),
                       result: outcome.objectiveBonus > 0 ? `目标 +${outcome.objectiveBonus}` : "补给交易",
                       tone: "safe"
                     }
                   ];
                 }),
                 {
+                  body: "不交易，保留随身补给和筹码继续前进。",
                   detail: "不消耗，不补给。",
-                  id: "skip-shop",
+                  id: "skip",
                   label: "跳过交易",
+                  onSelect: () => onJourneyAction("skip"),
                   result: "保留筹码",
                   tone: "standard"
                 }
@@ -3029,9 +3043,11 @@ function JourneyPanel({
                   const outcome = campOptionOutcome(action, option, journey.support);
                   return [
                     {
+                      body: outcome.successLog,
                       detail: `疲${formatSignedNumber(outcome.fatigue)} / 饥${formatSignedNumber(outcome.hunger)} / 渴${formatSignedNumber(outcome.thirst)} / 压${formatSignedPercent(outcome.pressure)}`,
                       id: `camp-${action}`,
                       label: outcome.label,
+                      onSelect: () => onJourneyAction(action),
                       result: outcome.objectiveBonus > 0 ? `目标 +${outcome.objectiveBonus}` : "营地恢复",
                       tone: "safe"
                     }
@@ -3039,13 +3055,27 @@ function JourneyPanel({
                 })
               : [
                   {
+                    body: "带着已经获得的战利品返回基地。",
                     detail: extractionPreview.fieldSupplySummary,
                     id: "extract",
                     label: "撤离并结算",
+                    onSelect: () => onJourneyAction("extract"),
                     result: "回基地",
                     tone: "safe"
                   }
                 ];
+  if (canReturnEarly) {
+    commandActionItems.push({
+      body: extractionPreview.canExtractNow ? "提前带回当前收益。" : "承受阻碍，强行脱离路线。",
+      detail: `地点奖励 ${extractionPreview.options[0]?.rewardScalePercent ?? 0}%`,
+      id: "return-early",
+      label: returnEarlyLabel,
+      onSelect: () => onJourneyAction("extract"),
+      result: extractionPreview.canExtractNow ? "提前返程" : "紧急返程",
+      tone: "danger"
+    });
+  }
+  const currentActionQueue = commandActionItems;
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -3203,122 +3233,18 @@ function JourneyPanel({
             <strong>{actionGuide.primaryAction}</strong>
             <small>{nextCommandHint}</small>
           </div>
-          {pendingRoad ? (
-            pendingRoad.choices.map((choice) => {
-              const preview = roadEncounterChoicePreview(journey, choice);
-              return (
-                <button className={`journey-command-button ${preview.tone}`} key={`command-road-${choice.id}`} type="button" onClick={() => onJourneyAction(`road-${choice.id}` as JourneyAction)}>
-                  <strong>{choice.label}</strong>
-                  <span>{choice.text}</span>
-                  <small>{preview.outcomeLabel}：{preview.costText} / {preview.rewardText}</small>
-                </button>
-              );
-            })
-          ) : journey.pendingCombatLoot ? (
-            combatLootList.map((option) => {
-              const outcome = combatLootOutcome(option, journey.support);
-              return (
-                <button className="journey-command-button safe" key={`command-loot-${option.id}`} type="button" onClick={() => onJourneyAction(`loot-${option.id}` as JourneyAction)}>
-                  <strong>{option.label}</strong>
-                  <span>{option.text}</span>
-                  <small>
-                    {formatResourceDelta(outcome.reward)} / 疲{formatSignedNumber(outcome.fatigue)} / 压{formatSignedPercent(outcome.pressure)}
-                  </small>
-                </button>
-              );
-            })
-          ) : journey.combat ? (
-            combatActionList.map((action) => {
-              const preview = combatActionPreview(journey, action, squad, readiness);
-              if (!preview) {
-                return null;
-              }
-              const Icon = combatActionIcon(action);
-              return (
-                <button className={`journey-command-button ${preview.counterTag.toLowerCase()}`} key={`command-combat-${action}`} type="button" onClick={() => onCombatAction(action)}>
-                  <strong>
-                    <Icon size={15} aria-hidden="true" />
-                    {preview.label}
-                  </strong>
-                  <span>{preview.actorName}</span>
-                  <small>{combatCounterTagLabel(preview.counterTag)}：{preview.effect}</small>
-                </button>
-              );
-            })
-          ) : activeNode.type === "event" ? (
-            <>
-              <button className="journey-command-button safe" type="button" onClick={() => onJourneyAction("careful")}>
-                <strong>{activeNode.careful?.label ?? "谨慎搜索"}</strong>
-                <span>{activeNode.careful?.successLog ?? "放慢速度，降低失误。"}</span>
-                <small>更稳，通常压力更低。</small>
-              </button>
-              <button className="journey-command-button warning" type="button" onClick={() => onJourneyAction("force")}>
-                <strong>{activeNode.force?.label ?? "强行推进"}</strong>
-                <span>{activeNode.force?.fallbackLog ?? activeNode.force?.successLog ?? "更快通过，承担额外风险。"}</span>
-                <small>更快，但可能提高压力。</small>
-              </button>
-            </>
-          ) : activeNode.type === "shop" ? (
-            <>
-              {shopActionList.map((action) => {
-                const offer = activeNode.shop?.offers[action];
-                if (!offer) {
-                  return null;
-                }
-                const outcome = shopOfferOutcome(action, offer, journey.support);
-                return (
-                  <button className="journey-command-button safe" key={`command-shop-${action}`} type="button" onClick={() => onJourneyAction(`shop-${action}` as JourneyAction)}>
-                    <strong>{outcome.label}</strong>
-                    <span>{outcome.text}</span>
-                    <small>
-                      随身 {formatResourceDelta(outcome.fieldSupplyReward)} / 入库 {formatResourceDelta(outcome.reward)} / 压力
-                      {formatSignedPercent(outcome.pressure)}
-                      {outcome.objectiveBonus > 0 ? ` / 目标 +${outcome.objectiveBonus}` : ""}
-                    </small>
-                    {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
-                  </button>
-                );
-              })}
-              <button className="journey-command-button" type="button" onClick={() => onJourneyAction("skip")}>
-                <strong>跳过交易</strong>
-                <span>保留筹码继续前进。</span>
-                <small>不消耗，不补给。</small>
-              </button>
-            </>
-          ) : activeNode.type === "camp" ? (
-            campActionList.map((action) => {
-              const option = activeNode.camp?.[action];
-              if (!option) {
-                return null;
-              }
-              const outcome = campOptionOutcome(action, option, journey.support);
-              return (
-                <button className="journey-command-button safe" key={`command-camp-${action}`} type="button" onClick={() => onJourneyAction(action)}>
-                  <strong>{outcome.label}</strong>
-                  <span>{outcome.successLog}</span>
-                  <small>
-                    疲{formatSignedNumber(outcome.fatigue)} / 饥{formatSignedNumber(outcome.hunger)} / 渴{formatSignedNumber(outcome.thirst)}
-                    / 压{formatSignedPercent(outcome.pressure)}
-                    {outcome.objectiveBonus > 0 ? ` / 目标 +${outcome.objectiveBonus}` : ""}
-                  </small>
-                  {outcome.supportText && <small className="facility-support-note">{outcome.supportText}</small>}
-                </button>
-              );
-            })
-          ) : (
-            <button className="journey-command-button safe" type="button" onClick={() => onJourneyAction("extract")}>
-              <strong>撤离并结算</strong>
-              <span>带着已获得的战利品返回基地。</span>
-              <small>{extractionPreview.fieldSupplySummary}</small>
+          {commandActionItems.map((item, index) => (
+            <button className={`journey-command-button ${item.tone}`} key={`command-${item.id}`} type="button" onClick={item.onSelect}>
+              <strong>
+                <b>{index + 1}</b>
+                {item.label}
+              </strong>
+              <span>{item.body}</span>
+              <small>
+                {item.result}：{item.detail}
+              </small>
             </button>
-          )}
-          {canReturnEarly && (
-            <button className="journey-command-button danger" type="button" onClick={() => onJourneyAction("extract")}>
-              <strong>{returnEarlyLabel}</strong>
-              <span>{extractionPreview.canExtractNow ? "提前带回当前收益。" : "承受阻碍，强行脱离路线。"}</span>
-              <small>地点奖励 {extractionPreview.options[0]?.rewardScalePercent ?? 0}%</small>
-            </button>
-          )}
+          ))}
         </div>
         <div className="journey-command-result" aria-label="最近行动结果">
           <span>{journey.logs.length > 0 ? "最近结果" : "当前情况"}</span>

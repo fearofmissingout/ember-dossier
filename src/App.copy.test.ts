@@ -127,7 +127,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-turn-summary");
     expect(source).toContain("journey-command-actions");
     expect(source).toContain("journey-action-queue");
+    expect(source).toContain("commandActionItems");
     expect(source).toContain("currentActionQueue");
+    expect(source).toContain("onClick={item.onSelect}");
     expect(source).toContain("journey-command-result");
     expect(source).toContain("当前阻碍");
     expect(source).toContain("推荐动作");
@@ -155,6 +157,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-command-actions");
     expect(styles).toContain(".journey-action-queue");
     expect(styles).toContain(".journey-action-queue-list");
+    expect(styles).toContain(".journey-command-button strong b");
     expect(styles).toContain(".journey-command-result");
     expect(styles).toContain(".journey-mobile-flow");
     expect(styles).toContain(".journey-mobile-route");

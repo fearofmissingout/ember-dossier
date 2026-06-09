@@ -4187,6 +4187,19 @@ button:disabled {
   font-weight: 900;
 }
 
+.journey-command-button strong b {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: #3f3321;
+  color: #fffaf0;
+  font-size: 11px;
+  font-weight: 950;
+}
+
 .journey-command-button span {
   color: #554836;
   font-size: 12px;
