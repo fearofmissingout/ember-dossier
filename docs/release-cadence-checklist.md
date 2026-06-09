@@ -38,6 +38,7 @@
 ## 命令顺序
 
 ```bash
+npm run release:cadence -- --major-feature --local-smoke --iteration-passed --clean-tree
 npm run iteration:check
 npm run smoke:local
 git status --short
@@ -45,6 +46,8 @@ npm run release:preflight
 git push origin HEAD:master
 npm run release:verify
 ```
+
+`release:cadence` 只做发布节奏判定，不替代本地门禁。小 UI、文案、样式、测试或内部整理默认会返回“暂不发布”；只有大功能、线上阻断或完整批次，并且本地浏览器冒烟、`iteration:check`、干净工作区都已记录后，才进入 `release:preflight`。
 
 如果只能使用 GitHub API fallback，也必须先运行 `npm run release:preflight`。`--skip-checks` 只允许在同一个 commit 已经刚刚通过发布预检、并且只是重试远程写入时使用。
 

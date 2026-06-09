@@ -7,6 +7,7 @@ const defaultFiles = {
   gates: "scripts/check-iteration-gates.mjs",
   packageJson: "package.json",
   publish: "scripts/publish-github-api.mjs",
+  releaseCadence: "scripts/check-release-cadence.mjs",
   releaseChecklist: "docs/release-cadence-checklist.md",
   smoke: "scripts/print-local-smoke.mjs",
   viteConfig: "vite.config.ts",
@@ -58,8 +59,10 @@ const requiredChecks = [
     id: "doc stage: release batch checklist",
     test: ({ docs, releaseChecklist }) =>
       docs.includes("docs/release-cadence-checklist.md") &&
+      docs.includes("npm run release:cadence") &&
       releaseChecklist.includes("发布批次清单") &&
       releaseChecklist.includes("默认不频繁发布") &&
+      releaseChecklist.includes("npm run release:cadence") &&
       releaseChecklist.includes("大功能") &&
       releaseChecklist.includes("线上阻断") &&
       releaseChecklist.includes("暂不发布") &&
@@ -106,6 +109,17 @@ const requiredChecks = [
   {
     id: "package script: copy:check",
     test: ({ scripts }) => scripts["copy:check"] === "node scripts/check-visible-copy.mjs"
+  },
+  {
+    id: "package script: release:cadence",
+    test: ({ scripts }) => scripts["release:cadence"] === "node scripts/check-release-cadence.mjs"
+  },
+  {
+    id: "release cadence script: blocks small changes",
+    test: ({ releaseCadence }) =>
+      releaseCadence.includes("--ui-only") &&
+      releaseCadence.includes("暂不发布") &&
+      releaseCadence.includes("npm run release:preflight")
   },
   {
     id: "package script: release:preflight",

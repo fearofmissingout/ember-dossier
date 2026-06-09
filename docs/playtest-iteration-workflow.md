@@ -250,6 +250,14 @@ git push origin HEAD:master
 
 GitHub Actions 也必须运行 `npm run iteration:check`，确保线上发布前的检查和本地门禁一致。不要用线上部署当测试工具；如果只是 UI 文案、小样式、局部数值或内部文档调整，先累积到下一次完整试玩切片再发布。
 
+发布前先运行批次判定：
+
+```bash
+npm run release:cadence -- --major-feature --local-smoke --iteration-passed --clean-tree
+```
+
+`release:cadence` 不替代 `release:preflight`，只负责把“这一批是否应该发布”固定成可重复检查。小改动、未记录本地浏览器冒烟、未通过 `iteration:check` 或工作区不干净时，脚本会输出“暂不发布”。
+
 ## 3. 玩法切片验收模板
 
 每次新增玩法时，用下面模板检查：

@@ -30,6 +30,7 @@ git revert
 ### 2.8 发布节奏
 默认不要频繁发布
 不要用线上部署当测试工具
+npm run release:cadence
 fallback 脚本会
 Cloudflare Token
 Supabase
@@ -48,6 +49,7 @@ docs/release-cadence-checklist.md
 暂不发布
 发布批次判定
 本地浏览器冒烟
+npm run release:cadence
 npm run release:preflight
 npm run smoke:local
 npm run release:verify
@@ -75,6 +77,7 @@ if (productionMode) {
         "copy:check": "node scripts/check-visible-copy.mjs",
         "playable:check": "vitest run src/playtest/playableLoop.test.ts",
         "playtest:check": "node scripts/check-production-playtest.mjs",
+        "release:cadence": "node scripts/check-release-cadence.mjs",
         "release:preflight": "node scripts/check-iteration-gates.mjs --release",
         "release:publish:api": "node scripts/publish-github-api.mjs",
         "release:verify": "node scripts/check-iteration-gates.mjs --production",
@@ -115,6 +118,11 @@ if (options.runChecks) {
   run("npm", ["run", "release:preflight"], "Release preflight");
 }
 --skip-checks
+`,
+    releaseCadence: `
+--ui-only
+暂不发布
+npm run release:preflight
 `,
     ...overrides
   };

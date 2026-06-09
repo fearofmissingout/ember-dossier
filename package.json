@@ -17,6 +17,7 @@
     "smoke:local": "node scripts/print-local-smoke.mjs",
     "workflow:check": "node scripts/check-workflow-contract.mjs",
     "iteration:check": "node scripts/check-iteration-gates.mjs",
+    "release:cadence": "node scripts/check-release-cadence.mjs",
     "release:preflight": "node scripts/check-iteration-gates.mjs --release",
     "release:publish:api": "node scripts/publish-github-api.mjs",
     "release:verify": "node scripts/check-iteration-gates.mjs --production"
