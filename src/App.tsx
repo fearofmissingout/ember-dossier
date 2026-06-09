@@ -4529,6 +4529,11 @@ function RoomMembers({
       value: "结算回流"
     }
   ];
+  const roomActionLadder = playtestReadiness.items.map((item, index) => ({
+    ...item,
+    index: index + 1,
+    targetView: roomReadinessItemTargetView(item.id)
+  }));
 
   return (
     <section className="panel">
@@ -4569,6 +4574,23 @@ function RoomMembers({
               <strong>{gap.label}</strong>
               <small>{gap.text}</small>
             </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="room-action-ladder" aria-label="房间行动链">
+        <div className="room-action-ladder-heading">
+          <span>房间行动链</span>
+          <strong>{playtestReadiness.nextAction}</strong>
+          <small>按顺序补齐邀请、捐入、编队、班次和出征，房间就能进入稳定试玩。</small>
+        </div>
+        <div className="room-action-ladder-grid">
+          {roomActionLadder.map((item) => (
+            <button className={item.status} key={item.id} type="button" onClick={() => onNavigate(item.targetView)}>
+              <span>第 {item.index} 步</span>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </button>
           ))}
         </div>
       </div>
@@ -4746,7 +4768,11 @@ function roomReadinessTargetView(readiness: ReturnType<typeof roomPlaytestReadin
     return "expedition";
   }
 
-  const targets: Record<typeof nextItem.id, ViewKey> = {
+  return roomReadinessItemTargetView(nextItem.id);
+}
+
+function roomReadinessItemTargetView(itemId: ReturnType<typeof roomPlaytestReadiness>["items"][number]["id"]): ViewKey {
+  const targets: Record<typeof itemId, ViewKey> = {
     contribution: "overview",
     expedition: "expedition",
     invite: "members",
@@ -4754,7 +4780,7 @@ function roomReadinessTargetView(readiness: ReturnType<typeof roomPlaytestReadin
     squad: "survivors"
   };
 
-  return targets[nextItem.id];
+  return targets[itemId];
 }
 
 function ArchiveView({ state }: { state: GameState }) {

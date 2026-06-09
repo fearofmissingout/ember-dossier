@@ -6703,6 +6703,105 @@ button:disabled {
   color: #604733;
 }
 
+.room-action-ladder {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid #b9c99e;
+  border-radius: 8px;
+  background: #f4faef;
+}
+
+.room-action-ladder-heading {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.room-action-ladder-heading span,
+.room-action-ladder-grid span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.room-action-ladder-heading strong,
+.room-action-ladder-heading small,
+.room-action-ladder-grid strong,
+.room-action-ladder-grid small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-action-ladder-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.room-action-ladder-heading small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.room-action-ladder-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.room-action-ladder-grid button {
+  display: grid;
+  min-width: 0;
+  min-height: 94px;
+  gap: 4px;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid #c8d3b5;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.86);
+  color: #3c4c31;
+  text-align: left;
+}
+
+.room-action-ladder-grid button.ready {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.room-action-ladder-grid button.todo {
+  border-color: #d0c093;
+  background: #fff8e7;
+}
+
+.room-action-ladder-grid button.blocked {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.room-action-ladder-grid button:hover {
+  border-color: #789060;
+  background: #fffdf5;
+}
+
+.room-action-ladder-grid strong {
+  color: #2f3d27;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.room-action-ladder-grid small {
+  color: #5e6a52;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .room-duty-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7329,6 +7428,7 @@ button:disabled {
     .base-cycle-compass,
     .playtest-route-grid,
     .base-expedition-briefing-grid,
+    .room-action-ladder-grid,
     .base-command-actions,
     .base-command-strip,
     .development-queue-board,
@@ -7590,6 +7690,7 @@ button:disabled {
     .journey-turn-summary,
     .room-duty-board,
     .ownership-boundary-grid,
+    .room-action-ladder-grid,
     .room-playtest-check-grid,
     .location-choice-grid,
     .room-cooperation-board,

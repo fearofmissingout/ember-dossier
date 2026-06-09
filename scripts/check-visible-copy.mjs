@@ -48,6 +48,7 @@ const requiredChineseAnchors = [
   "建设队列总览",
   "多人试玩开局检查",
   "房间协作分工板",
+  "房间行动链",
   "下一轮远征建议",
   "发布准入检查",
   "浏览器冒烟清单",
@@ -78,6 +79,7 @@ const additionalRequiredChineseAnchors = [
   "完整基地到出征闭环",
   "游客房间",
   "房间共享",
+  "按顺序补齐邀请",
   "先看代价和收益"
 ];
 
