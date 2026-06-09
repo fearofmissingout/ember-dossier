@@ -32,6 +32,7 @@ import {
   accountGrowthBoundary,
   baseDevelopmentPlan,
   baseRecoveryPlan,
+  baseShiftPlan,
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
@@ -47,6 +48,7 @@ import {
   type BaseTaskItem,
   type BaseDevelopmentPlan,
   type BaseRecoveryPlan,
+  type BaseShiftPlan,
   type RoomCooperationSummary,
   type RoomMemberSummary
 } from "./playtest/sim";
@@ -1383,6 +1385,7 @@ export default function App() {
             baseAssignments={session.room.baseAssignments}
             baseFeedback={baseFeedbackForScope(lastBaseActionFeedback, "survivors")}
             recoveryPlan={baseRecoveryPlan(session)}
+            shiftPlan={baseShiftPlan(session)}
             onToggle={toggleSurvivor}
             onTreat={treatSelectedSurvivor}
             onWorkChange={assignBaseShift}
@@ -2194,6 +2197,7 @@ function Survivors({
   baseAssignments,
   baseFeedback,
   recoveryPlan,
+  shiftPlan,
   onToggle,
   onTreat,
   onWorkChange
@@ -2206,6 +2210,7 @@ function Survivors({
   baseAssignments: PlaytestSession["room"]["baseAssignments"];
   baseFeedback: BaseActionFeedback | null;
   recoveryPlan: BaseRecoveryPlan;
+  shiftPlan: BaseShiftPlan;
   onToggle: (id: string) => void;
   onTreat: (id: string) => void;
   onWorkChange: (id: string, type: BaseWorkType | "idle") => void;
@@ -2226,6 +2231,28 @@ function Survivors({
         <span className="subtle-pill">已选 {selectedIds.length}/5</span>
       </div>
       <BaseActionFeedbackPanel feedback={baseFeedback} label="幸存者操作结果" />
+      <div className="base-shift-plan" aria-label="基地班次预案">
+        <div className="base-shift-plan-heading">
+          <div>
+            <span>基地班次预案</span>
+            <strong>{shiftPlan.summary}</strong>
+          </div>
+          <small>先定今天的基地重心，再到幸存者卡片里分配岗位。</small>
+        </div>
+        <div className="base-shift-plan-grid">
+          {shiftPlan.items.map((item) => (
+            <article className={item.status} key={item.id}>
+              <div>
+                <span>{item.label}</span>
+                <b>{item.assigned} 人</b>
+              </div>
+              <strong>{item.effect}</strong>
+              <small>{item.detail}</small>
+              <em>{item.nextAction}</em>
+            </article>
+          ))}
+        </div>
+      </div>
       <div className="recovery-plan-card" aria-label="基地恢复计划">
         <div>
           <span>恢复计划</span>

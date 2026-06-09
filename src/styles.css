@@ -2170,6 +2170,130 @@ button:disabled {
   font-size: 26px;
 }
 
+.base-shift-plan {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #b7c8ad;
+  border-radius: 8px;
+  background: #f5f8eb;
+}
+
+.base-shift-plan-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.base-shift-plan-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.base-shift-plan-heading span,
+.base-shift-plan-grid span {
+  color: #566744;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.base-shift-plan-heading strong,
+.base-shift-plan-heading small,
+.base-shift-plan-grid strong,
+.base-shift-plan-grid small,
+.base-shift-plan-grid em,
+.base-shift-plan-grid b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.base-shift-plan-heading strong {
+  color: #283427;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.base-shift-plan-heading small {
+  max-width: 32ch;
+  color: #617052;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.base-shift-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.base-shift-plan-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 138px;
+  align-content: start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #d1c4a0;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.base-shift-plan-grid article.ready {
+  border-color: #86a977;
+  background: #f0f8e7;
+}
+
+.base-shift-plan-grid article.todo {
+  border-color: #cbb66b;
+  background: #fff8dd;
+}
+
+.base-shift-plan-grid article.urgent {
+  border-color: #c66f62;
+  background: #fff0eb;
+}
+
+.base-shift-plan-grid article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.base-shift-plan-grid b {
+  color: #385630;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.base-shift-plan-grid strong {
+  color: #2d3728;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.base-shift-plan-grid small {
+  color: #5c684d;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.base-shift-plan-grid em {
+  margin-top: auto;
+  color: #775b35;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .recovery-plan-card {
   display: grid;
   gap: 10px;
@@ -7987,6 +8111,7 @@ button:disabled {
   .view-grid,
   .expedition-layout,
   .survivor-grid,
+  .base-shift-plan-grid,
   .survivor-role-grid,
   .facility-grid,
   .account-base-levels,
@@ -8068,8 +8193,14 @@ button:disabled {
 
   .top-bar,
   .panel-heading,
+  .base-shift-plan-heading,
   .journey-process-heading {
     display: grid;
+  }
+
+  .base-shift-plan-heading small {
+    max-width: none;
+    text-align: left;
   }
 
   .journey-process-heading small {
@@ -8233,6 +8364,7 @@ button:disabled {
   .view-grid,
   .expedition-layout,
   .survivor-grid,
+  .base-shift-plan-grid,
   .survivor-role-grid,
   .facility-grid,
   .account-base-levels,

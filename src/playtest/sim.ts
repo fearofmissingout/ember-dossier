@@ -881,6 +881,21 @@ export type BaseDayPreview = {
   waterShortage: number;
 };
 
+export type BaseShiftPlanItem = {
+  assigned: number;
+  detail: string;
+  effect: string;
+  id: BaseWorkType;
+  label: string;
+  nextAction: string;
+  status: "urgent" | "todo" | "ready";
+};
+
+export type BaseShiftPlan = {
+  items: BaseShiftPlanItem[];
+  summary: string;
+};
+
 export type RoomMemberSummary = {
   assignedCount: number;
   baseShiftText: string;
@@ -1383,6 +1398,91 @@ export function baseDayPreview(session: PlaytestSession): BaseDayPreview {
     waterAvailable,
     waterNeed,
     waterShortage
+  };
+}
+
+export function baseShiftPlan(session: PlaytestSession): BaseShiftPlan {
+  const day = baseDayPreview(session);
+  const recovery = baseRecoveryPlan(session);
+  const shifts = day.shiftCounts;
+  const objectiveRemaining = Math.max(0, session.room.base.objective.requiredParts - day.objectiveProjected);
+  const supplyShortage = day.foodShortage + day.waterShortage;
+  const dangerAfterDay = clamp(session.room.base.danger + day.dangerDelta, 0, 100);
+
+  const items: BaseShiftPlanItem[] = [
+    {
+      assigned: shifts.forage,
+      detail:
+        shifts.forage > 0
+          ? day.forageSummary
+          : supplyShortage > 0
+            ? `明日仍缺食物 ${day.foodShortage} / 饮水 ${day.waterShortage}，优先安排搜寻或捐入库存。`
+            : "口粮压力可控，搜寻班可以继续垫高后续出征补给。",
+      effect: shifts.forage > 0 ? "补给进账" : supplyShortage > 0 ? "缺口未覆盖" : "补给储备",
+      id: "forage",
+      label: "搜寻补给",
+      nextAction: shifts.forage > 0 ? "保留搜寻班，日结后补入口粮。" : "派高体能或幸运的幸存者去搜寻。",
+      status: supplyShortage > 0 && shifts.forage === 0 ? "urgent" : shifts.forage > 0 ? "ready" : "todo"
+    },
+    {
+      assigned: shifts.repair,
+      detail:
+        shifts.repair > 0
+          ? day.repairSummary
+          : objectiveRemaining > 0
+            ? `目标还差 ${objectiveRemaining} 进度，修理班会推进房间胜利条件。`
+            : "房间目标已接近完成，修理班可转向材料和设施准备。",
+      effect: shifts.repair > 0 ? `目标 ${day.objectiveProjected}/${session.room.base.objective.requiredParts}` : "目标停滞",
+      id: "repair",
+      label: "修理目标",
+      nextAction: shifts.repair > 0 ? "保留修理班，争取缩短房间目标天数。" : "派技术最高的幸存者修理目标。",
+      status: objectiveRemaining > 0 && shifts.repair === 0 ? "todo" : shifts.repair > 0 ? "ready" : "todo"
+    },
+    {
+      assigned: shifts.guard,
+      detail:
+        shifts.guard > 0
+          ? day.guardSummary
+          : dangerAfterDay >= 25
+            ? `日结后危险可能到 ${dangerAfterDay}，无人守卫会让事件更疼。`
+            : "危险暂时可控，但守卫班能减少夜间突发损失。",
+      effect: shifts.guard > 0 ? `危险 ${formatSignedNumber(day.dangerDelta)}` : "防线空缺",
+      id: "guard",
+      label: "守卫防线",
+      nextAction: shifts.guard > 0 ? "守卫班已覆盖，日结风险会更低。" : "派意志或敏捷高的人守卫。",
+      status: dangerAfterDay >= 25 && shifts.guard === 0 ? "urgent" : shifts.guard > 0 ? "ready" : "todo"
+    },
+    {
+      assigned: shifts.care,
+      detail:
+        shifts.care > 0
+          ? recovery.summary
+          : recovery.injuredCount > 0 || recovery.recoveringCount > 0
+            ? `${recovery.injuredCount} 名伤员，${recovery.recoveringCount} 人恢复中；无人护理会拖慢下一次出征。`
+            : "队伍状态稳定，护理班可以让疲劳恢复更稳。",
+      effect: shifts.care > 0 ? `预计清除 ${recovery.likelyInjuryClears} 处伤病` : "恢复放缓",
+      id: "care",
+      label: "护理恢复",
+      nextAction: shifts.care > 0 ? "护理班已安排，日结后处理恢复。" : "派医疗最高的人护理伤员。",
+      status:
+        (recovery.injuredCount > 0 || recovery.recoveringCount > 0) && shifts.care === 0
+          ? "urgent"
+          : shifts.care > 0
+            ? "ready"
+            : "todo"
+    }
+  ];
+  const urgentCount = items.filter((item) => item.status === "urgent").length;
+  const readyCount = items.filter((item) => item.status === "ready").length;
+
+  return {
+    items,
+    summary:
+      urgentCount > 0
+        ? `还有 ${urgentCount} 个基地缺口需要补班；已覆盖 ${readyCount} 条班次。`
+        : readyCount > 0
+          ? `今日基地班次已覆盖 ${readyCount} 条，可以日结或继续微调。`
+          : "还没有安排基地班次；先决定今天要补给、修理、防线还是恢复。"
   };
 }
 

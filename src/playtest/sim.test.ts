@@ -18,6 +18,7 @@ import {
   baseDayPreview,
   baseDevelopmentPlan,
   baseRecoveryPlan,
+  baseShiftPlan,
   baseTaskList,
   resolvePlaytestExpedition,
   roomCooperationSummary,
@@ -1283,6 +1284,32 @@ describe("playtest room loop", () => {
     expect(preview.repairSummary).toContain("修理班 1");
     expect(preview.guardSummary).toContain("守卫班 1");
     expect(preview.recoverySummary).toContain("疲劳恢复");
+  });
+
+  test("base shift plan turns assignments into actionable base decisions", () => {
+    let session = createStarterSession("user-a", "Alice", "shift-plan-room");
+    session.room.base.resources.food = 1;
+    session.room.base.resources.water = 1;
+    session.room.base.danger = 30;
+    session.room.base.objective.repairedParts = 1;
+    session.account.survivors[2].injuries = ["扭伤"];
+    session.account.survivors[2].status = "recovering";
+    session = setBaseAssignment(session, "user-a", session.account.survivors[0].id, "repair");
+
+    const plan = baseShiftPlan(session);
+
+    expect(plan.items.map((item) => item.id)).toEqual(["forage", "repair", "guard", "care"]);
+    expect(plan.items.find((item) => item.id === "forage")).toMatchObject({
+      assigned: 0,
+      status: "urgent"
+    });
+    expect(plan.items.find((item) => item.id === "repair")).toMatchObject({
+      assigned: 1,
+      status: "ready"
+    });
+    expect(plan.items.find((item) => item.id === "guard")?.status).toBe("urgent");
+    expect(plan.items.find((item) => item.id === "care")?.status).toBe("urgent");
+    expect(plan.summary).toContain("缺口");
   });
 
   test("keeps base day events stocked with enough variety", () => {

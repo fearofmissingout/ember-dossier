@@ -53,6 +53,8 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("survivorExpeditionGrowthPreview");
     expect(source).toContain("expeditionXpGain");
     expect(source).toContain("survivorRoleBoard");
+    expect(source).toContain("baseShiftPlan");
+    expect(source).toContain("shiftPlan={baseShiftPlan(session)}");
     expect(source).toContain("aria-label=\"幸存者培养队列\"");
     expect(source).toContain("aria-label=\"出征成长预期\"");
     expect(source).toContain("aria-label=\"幸存者定位建议\"");
@@ -68,6 +70,9 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("守卫防线");
     expect(source).toContain("按顺序处理，下一次出征更稳。");
     expect(source).toContain("标准完整撤离预计");
+    expect(styles).toContain(".base-shift-plan");
+    expect(styles).toContain(".base-shift-plan-grid");
+    expect(styles).toContain(".base-shift-plan-grid article.urgent");
     expect(styles).toContain(".account-growth-boundary");
     expect(styles).toContain(".account-growth-metrics");
     expect(styles).toContain(".growth-plan-card");
