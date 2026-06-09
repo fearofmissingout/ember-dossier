@@ -4010,6 +4010,27 @@ button:disabled {
   display: none;
 }
 
+.journey-mobile-command-actions,
+.journey-mobile-command-links {
+  display: grid;
+  gap: 6px;
+}
+
+.journey-mobile-command-actions button {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+  text-align: left;
+}
+
+.journey-mobile-command-actions button span,
+.journey-mobile-command-actions button strong,
+.journey-mobile-command-actions button small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .journey-section-nav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -8413,13 +8434,69 @@ button:disabled {
     line-height: 1.35;
   }
 
-  .journey-mobile-command-card div:last-child {
+  .journey-mobile-command-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-mobile-command-actions button {
+    min-height: 56px;
+    padding: 9px;
+    border: 1px solid #b8945f;
+    border-radius: 8px;
+    background: #3b2a1b;
+    color: #fff7e9;
+  }
+
+  .journey-mobile-command-actions button.safe,
+  .journey-mobile-command-actions button.counter {
+    border-color: #6f9b73;
+    background: #234b36;
+  }
+
+  .journey-mobile-command-actions button.warning,
+  .journey-mobile-command-actions button.standard {
+    border-color: #c38b2d;
+    background: #624112;
+  }
+
+  .journey-mobile-command-actions button.danger,
+  .journey-mobile-command-actions button.risk {
+    border-color: #c97963;
+    background: #652f23;
+  }
+
+  .journey-mobile-command-actions button span {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(255, 247, 233, 0.18);
+    color: #fff7e9;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .journey-mobile-command-actions button strong {
+    color: #fff7e9;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .journey-mobile-command-actions button small {
+    color: #f5dfbd;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .journey-mobile-command-links {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 
-  .journey-mobile-command-card button {
+  .journey-mobile-command-links button {
     min-width: 0;
     min-height: 40px;
     border: 1px solid #b8945f;
@@ -8430,7 +8507,7 @@ button:disabled {
     font-weight: 900;
   }
 
-  .journey-mobile-command-card button:last-child {
+  .journey-mobile-command-links button:last-child {
     background: #fffaf0;
     color: #463727;
   }

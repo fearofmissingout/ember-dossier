@@ -3225,6 +3225,7 @@ function JourneyPanel({
     });
   }
   const currentActionQueue = commandActionItems;
+  const mobilePrimaryActions = currentActionQueue.slice(0, 2);
   const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3300,9 +3301,18 @@ function JourneyPanel({
             <strong>{actionGuide.primaryAction}</strong>
             <small>{nextCommandHint}</small>
           </div>
-          <div>
+          <div className="journey-mobile-command-actions" aria-label="手机端当前行动">
+            {mobilePrimaryActions.map((item, index) => (
+              <button className={item.tone} key={`mobile-command-${item.id}`} type="button" onClick={item.onSelect}>
+                <span>{index + 1}</span>
+                <strong>{item.label}</strong>
+                <small>{item.result}：{item.detail}</small>
+              </button>
+            ))}
+          </div>
+          <div className="journey-mobile-command-links" aria-label="手机端页面跳转">
             <button type="button" onClick={() => scrollToJourneySection("journey-action-options")}>
-              处理当前
+              更多操作
             </button>
             <button type="button" onClick={() => scrollToJourneySection("journey-process")}>
               看过程
