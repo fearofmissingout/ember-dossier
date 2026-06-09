@@ -5919,6 +5919,18 @@ button:disabled {
   line-height: 1.35;
 }
 
+.journey-base-impact {
+  display: block;
+  padding: 5px 6px;
+  border: 1px solid rgba(132, 157, 115, 0.72);
+  border-radius: 7px;
+  background: rgba(242, 250, 232, 0.82);
+  color: #415b34;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .journey-action-deck {
   display: grid;
   gap: 8px;
@@ -6096,7 +6108,8 @@ button:disabled {
 
 .journey-command-button strong,
 .journey-command-button span,
-.journey-command-button small {
+.journey-command-button small,
+.journey-command-button em {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -6133,6 +6146,14 @@ button:disabled {
 .journey-command-button small {
   color: #716049;
   font-size: 11px;
+  line-height: 1.3;
+}
+
+.journey-command-button em {
+  color: #415b34;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
   line-height: 1.3;
 }
 

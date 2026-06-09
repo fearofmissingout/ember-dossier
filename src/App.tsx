@@ -3709,7 +3709,10 @@ function JourneyPanel({
       tone: "danger"
     });
   }
-  const currentActionQueue = commandActionItems;
+  const currentActionQueue = commandActionItems.map((item) => ({
+    ...item,
+    baseImpact: journeyActionBaseImpact(item, journey)
+  }));
   const mobilePrimaryActions = currentActionQueue.slice(0, 2);
   const actionComparison = buildJourneyActionComparison(currentActionQueue);
   const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
@@ -3909,6 +3912,7 @@ function JourneyPanel({
                 <small>{item.cost}</small>
                 <em>{item.risk}</em>
                 <p>{item.reason}</p>
+                <small className="journey-base-impact">{item.baseImpact}</small>
               </article>
             ))}
           </div>
@@ -3927,6 +3931,7 @@ function JourneyPanel({
                   <span>{item.result}</span>
                   <strong>{item.label}</strong>
                   <small>{item.detail}</small>
+                  <small className="journey-base-impact">{item.baseImpact}</small>
                   <em>{item.body}</em>
                 </div>
               </button>
@@ -3939,7 +3944,7 @@ function JourneyPanel({
             <strong>{actionGuide.primaryAction}</strong>
             <small>{nextCommandHint}</small>
           </div>
-          {commandActionItems.map((item, index) => (
+          {currentActionQueue.map((item, index) => (
             <button className={`journey-command-button ${item.tone}`} key={`command-${item.id}`} type="button" onClick={item.onSelect}>
               <strong>
                 <b>{index + 1}</b>
@@ -3949,6 +3954,7 @@ function JourneyPanel({
               <small>
                 {item.result}：{item.detail}
               </small>
+              <em>{item.baseImpact}</em>
             </button>
           ))}
         </div>
@@ -5152,6 +5158,7 @@ function roadToneLabel(tone: "find" | "hazard" | "road") {
 
 function buildJourneyActionComparison(
   actions: Array<{
+    baseImpact: string;
     body: string;
     detail: string;
     id: string;
@@ -5176,10 +5183,67 @@ function buildJourneyActionComparison(
     id: action.id,
     label: action.label,
     rankLabel: index === 0 && action.tone !== "danger" && action.tone !== "risk" ? "推荐" : action.tone === "danger" || action.tone === "risk" ? "高风险" : "备选",
+    baseImpact: action.baseImpact,
     reason: action.body,
     risk: journeyActionRiskLabel(action.tone),
     tone: action.tone
   }));
+}
+
+function journeyActionBaseImpact(
+  action: {
+    body: string;
+    detail: string;
+    id: string;
+    label: string;
+    result: string;
+    tone: string;
+  },
+  journey: JourneyState
+) {
+  if (action.id === "extract" || action.id === "return-early") {
+    return "回基地：结算战利、目标推进、伤病和疲劳。";
+  }
+
+  if (action.id.startsWith("loot-")) {
+    return "回基地：战斗战利会转成仓库资源、设施材料或安全撤离余量。";
+  }
+
+  if (action.id.startsWith("shop-")) {
+    return action.result.includes("目标")
+      ? "回基地：情报会推进房间目标，也会影响下一轮路线准备。"
+      : "回基地：补给和服务会改善下一段路，入库资源可用于设施发展。";
+  }
+
+  if (action.id.startsWith("camp-")) {
+    return action.result.includes("目标")
+      ? "回基地：侦察线索会推进房间目标，降低下一轮准备压力。"
+      : "回基地：状态恢复会减少伤病处理和基地医疗压力。";
+  }
+
+  if (action.id.startsWith("road-")) {
+    return action.result.includes("收获") || action.detail.includes("战利")
+      ? "回基地：路上收获会进入战报和共享库存。"
+      : "回基地：路线压力和疲劳会变成归队后的恢复需求。";
+  }
+
+  if (action.id.startsWith("combat-")) {
+    return "回基地：战斗损耗会影响伤病恢复，胜利战利可支撑设施升级。";
+  }
+
+  if (action.id === "careful") {
+    return "回基地：稳妥处理通常减少伤病和压力，适合保住后续路线。";
+  }
+
+  if (action.id === "force") {
+    return "回基地：强行推进可能换来速度，但会增加恢复和补给压力。";
+  }
+
+  if (journey.pressure >= 70) {
+    return "回基地：当前压力偏高，后续更需要医疗、休整和低风险路线。";
+  }
+
+  return "回基地：本次选择会写入战报，影响下一轮基地准备。";
 }
 
 function journeyActionRiskLabel(tone: string) {

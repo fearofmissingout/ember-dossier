@@ -154,6 +154,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("journey-action-comparison");
     expect(source).toContain("buildJourneyActionComparison");
     expect(source).toContain("journeyActionRiskLabel");
+    expect(source).toContain("journeyActionBaseImpact");
+    expect(source).toContain("回基地：结算战利、目标推进、伤病和疲劳。");
+    expect(source).toContain("回基地：本次选择会写入战报，影响下一轮基地准备。");
+    expect(source).toContain("journey-base-impact");
     expect(source).toContain("commandActionItems");
     expect(source).toContain("currentActionQueue");
     expect(source).toContain("onClick={item.onSelect}");
@@ -216,6 +220,7 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-action-deck");
     expect(styles).toContain(".journey-action-comparison");
     expect(styles).toContain(".journey-action-comparison-grid");
+    expect(styles).toContain(".journey-base-impact");
     expect(styles).toContain(".journey-action-queue-list");
     expect(styles).toContain(".journey-action-queue-list button");
     expect(styles).toContain(".journey-command-button strong b");
