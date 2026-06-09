@@ -3488,6 +3488,7 @@ function JourneyPanel({
   const nodeTypeLabel = pendingRoad ? roadToneLabel(pendingRoad.tone) : journeyNodeTypeLabel(activeNode.type);
   const nodeTitle = pendingRoad?.title ?? activeNode.title;
   const nodeBody = pendingRoad?.body ?? activeNode.body;
+  const nodeSceneTone = pendingRoad ? `road-${pendingRoad.tone}` : activeNode.type;
   const activeCombatPulse = journey.combat ? journey.combat.traitPulse ?? enemyTraitPulse(journey.combat.enemyTrait) : null;
   const routePace = routePaceFor(journey);
   const processDigest = journeyProcessDigest(journey);
@@ -4324,6 +4325,7 @@ function JourneyPanel({
         <span className="subtle-pill">{nodeTypeLabel}</span>
         <h3>{nodeTitle}</h3>
         <p>{nodeBody}</p>
+        <JourneyNodeScene body={nodeBody} label={nodeTypeLabel} title={nodeTitle} tone={nodeSceneTone} />
         <div className="journey-node-command-note" aria-label="当前节点操作提示">
           <span>操作入口</span>
           <strong>本节点动作已收拢到上方远征行动台。</strong>
@@ -5282,6 +5284,23 @@ function survivorRoleTone(survivor: Survivor) {
   }
 
   return "scout";
+}
+
+function JourneyNodeScene({ body, label, title, tone }: { body: string; label: string; title: string; tone: string }) {
+  return (
+    <div className={`journey-node-scene ${tone}`} aria-hidden="true">
+      <i className="journey-node-sky" />
+      <i className="journey-node-ground" />
+      <i className="journey-node-marker" />
+      <i className="journey-node-prop primary" />
+      <i className="journey-node-prop secondary" />
+      <div>
+        <span>{label}</span>
+        <strong>{title}</strong>
+        <small>{body}</small>
+      </div>
+    </div>
+  );
 }
 
 function BurdenPreview({ burden }: { burden: JourneyCarryBurden }) {

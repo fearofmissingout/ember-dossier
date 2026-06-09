@@ -652,6 +652,21 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain("-webkit-line-clamp: 2");
   });
 
+  test("keeps current expedition node scene feedback visible", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("JourneyNodeScene");
+    expect(source).toContain("nodeSceneTone");
+    expect(source).toContain("journey-node-scene");
+    expect(styles).toContain(".journey-node-scene");
+    expect(styles).toContain(".journey-node-scene.combat");
+    expect(styles).toContain(".journey-node-scene.camp");
+    expect(styles).toContain(".journey-node-scene.shop");
+    expect(styles).toContain(".journey-node-scene.extraction");
+    expect(styles).toContain(".journey-node-scene.road-find");
+  });
+
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");
