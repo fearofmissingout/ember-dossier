@@ -3286,6 +3286,7 @@ function JourneyPanel({
   const currentActionQueue = commandActionItems;
   const mobilePrimaryActions = currentActionQueue.slice(0, 2);
   const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
+  const actionPulse = journeyActionPulse(journey, latestActionResult, actionGuide.primaryAction, routePace);
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -3471,6 +3472,18 @@ function JourneyPanel({
           <span>{journey.logs.length > 0 ? "最近结果" : "当前情况"}</span>
           <strong>{journey.logs.length > 0 ? latestActionResult.split("：")[0] : nodeTitle}</strong>
           <small>{latestActionResult}</small>
+        </div>
+        <div className={`journey-action-pulse ${actionPulse.tone}`} aria-label="出征行动脉冲">
+          <div>
+            <span>{actionPulse.label}</span>
+            <strong>{actionPulse.title}</strong>
+            <small>{actionPulse.body}</small>
+          </div>
+          <div>
+            <span>主要后果</span>
+            <strong>{actionPulse.impact}</strong>
+            <small>{actionPulse.nextHint}</small>
+          </div>
         </div>
         <div className="journey-result-breakdown" aria-label="行动结果拆解">
           {resultBreakdown.map((item) => (
@@ -4248,6 +4261,73 @@ function journeyRouteIntel(journey: JourneyState, pace: ReturnType<typeof routeP
     nextStop: nextNode?.title ?? "返回基地",
     priorityHint,
     remainingSummary
+  };
+}
+
+function journeyActionPulse(
+  journey: JourneyState,
+  latestActionResult: string,
+  primaryAction: string,
+  pace: ReturnType<typeof routePaceFor>
+) {
+  const delta = journey.lastActionDelta ?? null;
+  const latestDecision = journey.decisions[journey.decisions.length - 1] ?? null;
+  const latestCombat = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const hasReward = delta ? hasPositiveResourceDelta(delta.rewardDelta) || hasPositiveResourceDelta(delta.fieldSupplyDelta) : false;
+  const hasCost = delta
+    ? hasNegativeResourceDelta(delta.fieldSupplyDelta) ||
+      delta.pressureDelta > 0 ||
+      delta.conditionDelta.fatigue > 0 ||
+      delta.conditionDelta.hunger > 0 ||
+      delta.conditionDelta.thirst > 0 ||
+      delta.battleScarDelta > 0
+    : false;
+  const tone =
+    delta && (delta.pressureDelta >= 10 || delta.battleScarDelta > 0 || journey.pressure >= 75)
+      ? "danger"
+      : delta && (hasCost || journey.pressure >= 50)
+        ? "warning"
+        : "safe";
+  const title = latestCombat
+    ? `${latestCombat.actionLabel}：${latestCombat.outcomeText}`
+    : latestDecision
+      ? `${latestDecision.label}：${latestDecision.impactText}`
+      : latestActionResult.split("：")[0] || primaryAction;
+  const impactParts = delta
+    ? [
+        delta.routeDelta !== 0 ? `路线 ${formatSignedNumber(delta.routeDelta)} 站` : "",
+        delta.objectiveDelta !== 0 ? `目标 ${formatSignedNumber(delta.objectiveDelta)}` : "",
+        delta.pressureDelta !== 0 ? `压力 ${formatSignedPercent(delta.pressureDelta)}` : "",
+        hasReward ? `收获 ${formatSignedResourceDelta(delta.rewardDelta)}` : ""
+      ].filter(Boolean)
+    : [];
+  const conditionParts = delta
+    ? [
+        delta.conditionDelta.fatigue !== 0 ? `疲劳 ${formatSignedNumber(delta.conditionDelta.fatigue)}` : "",
+        delta.conditionDelta.hunger !== 0 ? `饥饿 ${formatSignedNumber(delta.conditionDelta.hunger)}` : "",
+        delta.conditionDelta.thirst !== 0 ? `口渴 ${formatSignedNumber(delta.conditionDelta.thirst)}` : "",
+        delta.battleScarDelta !== 0 ? `伤痕 ${formatSignedNumber(delta.battleScarDelta)}` : ""
+      ].filter(Boolean)
+    : [];
+
+  return {
+    body: delta ? delta.logLine : latestActionResult,
+    impact: impactParts.length > 0 ? impactParts.join(" / ") : conditionParts.length > 0 ? conditionParts.join(" / ") : "局势稳定",
+    label: delta ? "行动反馈" : "旅途状态",
+    nextHint:
+      pace.remainingStops <= 0
+        ? "已经接近撤离窗口，确认收益后可以回基地结算。"
+        : journey.combat
+          ? "下一步仍在战斗中，优先处理敌人意图和队伍生命。"
+          : journey.pendingCombatLoot
+            ? "先处理战利品，再决定继续推进还是撤离。"
+            : journey.pendingRoadEvent
+              ? "路口仍未处理，选择路线策略后才能继续前进。"
+              : hasCost
+                ? "状态有消耗，下一步优先考虑营地、补给或稳妥推进。"
+                : "节奏还稳，可以继续按当前计划推进。",
+    title,
+    tone
   };
 }
 

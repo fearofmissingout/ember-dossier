@@ -146,6 +146,10 @@ describe("hosted playtest copy", () => {
     expect(source).toContain("本节点动作已收拢到上方远征行动台。");
     expect(source).toContain("避免同一页出现两套可点击按钮。");
     expect(source).toContain("journey-command-result");
+    expect(source).toContain("journeyActionPulse");
+    expect(source).toContain("aria-label=\"出征行动脉冲\"");
+    expect(source).toContain("行动反馈");
+    expect(source).toContain("主要后果");
     expect(source).toContain("journeyActionResultBreakdown");
     expect(source).toContain("lastActionDelta");
     expect(source).toContain("annotateJourneyActionDelta");
@@ -193,6 +197,8 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".journey-node-command-note");
     expect(styles).toContain(".journey-primary-actions .combat-action-grid");
     expect(styles).toContain(".journey-command-result");
+    expect(styles).toContain(".journey-action-pulse");
+    expect(styles).toContain(".journey-action-pulse.danger");
     expect(styles).toContain(".journey-result-breakdown");
     expect(styles).toContain(".journey-result-breakdown article.warning");
     expect(styles).toContain(".journey-mobile-flow");

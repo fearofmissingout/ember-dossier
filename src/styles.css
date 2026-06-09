@@ -4619,6 +4619,63 @@ button:disabled {
   line-height: 1.4;
 }
 
+.journey-action-pulse {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr);
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #c8b381;
+  border-radius: 8px;
+  background: #fff8e4;
+}
+
+.journey-action-pulse.safe {
+  border-color: #8fb079;
+  background: #f2fbdf;
+}
+
+.journey-action-pulse.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.journey-action-pulse.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.journey-action-pulse div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.journey-action-pulse span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.journey-action-pulse strong,
+.journey-action-pulse small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-action-pulse strong {
+  color: #34281a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.journey-action-pulse small {
+  color: #625547;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .journey-result-breakdown {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -8432,6 +8489,7 @@ button:disabled {
     .playtest-checkpoint-grid,
     .release-readiness-grid,
     .browser-smoke-grid,
+    .journey-action-pulse,
     .journey-turn-summary,
     .room-duty-board,
     .ownership-boundary-grid,
