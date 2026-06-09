@@ -4248,6 +4248,65 @@ button:disabled {
   line-height: 1.4;
 }
 
+.journey-result-breakdown {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.journey-result-breakdown article {
+  display: grid;
+  min-width: 0;
+  min-height: 92px;
+  align-content: start;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #d7c3a0;
+  border-radius: 8px;
+  background: rgba(255, 252, 244, 0.86);
+}
+
+.journey-result-breakdown article.safe {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.journey-result-breakdown article.warning {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.journey-result-breakdown article.danger {
+  border-color: #c97963;
+  background: #fff0ea;
+}
+
+.journey-result-breakdown span {
+  color: #7a5d3f;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.journey-result-breakdown strong,
+.journey-result-breakdown small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.journey-result-breakdown strong {
+  color: #34281a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.journey-result-breakdown small {
+  color: #625547;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .journey-detail-grid {
   order: 7;
   display: grid;
@@ -7571,6 +7630,7 @@ button:disabled {
   .combat-threat,
   .combat-action-readout,
   .journey-command-snapshot,
+  .journey-result-breakdown,
   .journey-status-grid,
   .route-pacing,
   .journey-objective-card,
@@ -7815,6 +7875,7 @@ button:disabled {
   .combat-threat,
   .archive-grid,
   .journey-status-grid,
+  .journey-result-breakdown,
   .route-pacing,
   .journey-objective-card,
   .extraction-preview-options,

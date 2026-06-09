@@ -3076,6 +3076,7 @@ function JourneyPanel({
     });
   }
   const currentActionQueue = commandActionItems;
+  const resultBreakdown = journeyActionResultBreakdown(journey, latestActionResult, routePace);
   const scrollToJourneySection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -3250,6 +3251,15 @@ function JourneyPanel({
           <span>{journey.logs.length > 0 ? "最近结果" : "当前情况"}</span>
           <strong>{journey.logs.length > 0 ? latestActionResult.split("：")[0] : nodeTitle}</strong>
           <small>{latestActionResult}</small>
+        </div>
+        <div className="journey-result-breakdown" aria-label="行动结果拆解">
+          {resultBreakdown.map((item) => (
+            <article className={item.tone} key={item.id}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </article>
+          ))}
         </div>
       </section>
       <div className="journey-detail-grid" id="journey-process" aria-label="远征详情">
@@ -3991,6 +4001,68 @@ function journeyRouteIntel(journey: JourneyState, pace: ReturnType<typeof routeP
     priorityHint,
     remainingSummary
   };
+}
+
+function journeyActionResultBreakdown(journey: JourneyState, latestActionResult: string, pace: ReturnType<typeof routePaceFor>) {
+  const latestDecision = journey.decisions[journey.decisions.length - 1] ?? null;
+  const latestTravel = journey.travelHistory[journey.travelHistory.length - 1] ?? null;
+  const latestRoad = journey.roadEvents[journey.roadEvents.length - 1] ?? null;
+  const latestCombat = journey.combatHistory[journey.combatHistory.length - 1] ?? null;
+  const worstCondition = Math.max(journey.condition.fatigue, journey.condition.hunger, journey.condition.thirst);
+  const pressureTone = journey.pressure >= 70 || worstCondition >= 75 ? "danger" : journey.pressure >= 45 || worstCondition >= 55 ? "warning" : "safe";
+  const resourceDetail = latestDecision
+    ? `${latestDecision.nodeTitle}：${latestDecision.impactText}`
+    : latestCombat
+      ? `${latestCombat.actionLabel}：${latestCombat.outcomeText}`
+      : latestActionResult;
+  const routeDetail = latestTravel
+    ? `${latestTravel.title}，${latestTravel.conditionText}。${latestTravel.effects.slice(0, 3).join(" / ")}`
+    : latestRoad
+      ? `${latestRoad.title}：${latestRoad.outcome}`
+      : `${pace.currentLabel} / ${pace.nextLabel}`;
+
+  return [
+    {
+      detail: resourceDetail,
+      id: "reward",
+      label: "资源变化",
+      tone: formatResourceDelta(journey.bonusReward) === "无战利品" ? "warning" : "safe",
+      value: formatResourceDelta(journey.bonusReward)
+    },
+    {
+      detail: `疲劳 ${journey.condition.fatigue} / 饥饿 ${journey.condition.hunger} / 口渴 ${journey.condition.thirst} / 战斗伤痕 ${journey.battleScars}`,
+      id: "condition",
+      label: "队伍状态",
+      tone: pressureTone,
+      value: worstCondition >= 70 ? "需要休整" : worstCondition >= 50 ? "状态吃紧" : "还能行动"
+    },
+    {
+      detail: routeDetail,
+      id: "route",
+      label: "路线推进",
+      tone: pace.remainingStops <= 0 ? "safe" : latestTravel?.tone ?? (latestRoad ? roadToneForResultBreakdown(latestRoad.tone) : "warning"),
+      value: `${pace.currentStop}/${pace.totalStops} 站`
+    },
+    {
+      detail: `随身补给：${formatResourceDelta(journey.fieldSupplies)}。${journey.pendingRoadEvent ? "路上抉择尚未处理。" : "当前没有路口阻塞。"}`,
+      id: "risk",
+      label: "风险变化",
+      tone: pressureTone,
+      value: `压力 ${journey.pressure}%`
+    }
+  ];
+}
+
+function roadToneForResultBreakdown(tone: "find" | "hazard" | "road") {
+  if (tone === "find") {
+    return "safe";
+  }
+
+  if (tone === "hazard") {
+    return "danger";
+  }
+
+  return "warning";
 }
 
 function countJourneyNodeTypes(nodes: JourneyNode[]) {
