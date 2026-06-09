@@ -3792,7 +3792,8 @@ function JourneyPanel({
           </div>
           <div className="journey-mobile-route" aria-label="当前路线步骤">
             {compactRouteStops.map((stop) => (
-              <span className={stop.state} key={`${journey.id}-mobile-flow-${stop.index}`}>
+              <span className={`${stop.state} ${routeStopClass(stop.label)}`} key={`${journey.id}-mobile-flow-${stop.index}`}>
+                <i>{routeStopGlyph(stop.label)}</i>
                 <b>{stop.index}</b>
                 <small>{stop.label}</small>
               </span>
@@ -4015,9 +4016,11 @@ function JourneyPanel({
       </div>
       <div className="journey-track" aria-label="出征路线进度">
         {routePace.forecast.map((stop) => (
-          <span className={stop.state} key={`${journey.id}-pace-${stop.index}`}>
+          <span className={`${stop.state} ${routeStopClass(stop.label)}`} key={`${journey.id}-pace-${stop.index}`}>
+            <i>{routeStopGlyph(stop.label)}</i>
             <b>{stop.index}</b>
             <small>{stop.label}</small>
+            <em>{stop.title}</em>
           </span>
         ))}
       </div>
@@ -4732,6 +4735,46 @@ function journeyNodeTypeLabel(type: JourneyNode["type"]) {
     shop: "商店"
   };
   return labels[type];
+}
+
+function routeStopClass(label: string) {
+  if (label.includes("战")) {
+    return "combat";
+  }
+
+  if (label.includes("营")) {
+    return "camp";
+  }
+
+  if (label.includes("商") || label.includes("交")) {
+    return "shop";
+  }
+
+  if (label.includes("撤") || label.includes("返")) {
+    return "extraction";
+  }
+
+  return "event";
+}
+
+function routeStopGlyph(label: string) {
+  if (label.includes("战")) {
+    return "战";
+  }
+
+  if (label.includes("营")) {
+    return "营";
+  }
+
+  if (label.includes("商") || label.includes("交")) {
+    return "商";
+  }
+
+  if (label.includes("撤") || label.includes("返")) {
+    return "撤";
+  }
+
+  return "事";
 }
 
 function expeditionRoutePhasePlan(location: GameState["locations"][number], risk: RiskStrategy, readiness: number, supportEffects: number) {

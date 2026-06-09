@@ -638,6 +638,20 @@ describe("hosted playtest copy", () => {
     expect(styles).toContain(".frontline-row");
   });
 
+  test("keeps expedition route nodes visually typed during travel", () => {
+    const source = readFileSync("src/App.tsx", "utf8");
+    const styles = readFileSync("src/styles.css", "utf8");
+
+    expect(source).toContain("routeStopClass");
+    expect(source).toContain("routeStopGlyph");
+    expect(source).toContain("journey-mobile-flow");
+    expect(source).toContain("journey-track");
+    expect(styles).toContain(".journey-track::before");
+    expect(styles).toContain(".journey-track span.combat i");
+    expect(styles).toContain(".journey-mobile-route i");
+    expect(styles).toContain("-webkit-line-clamp: 2");
+  });
+
   test("shows a Chinese room cooperation summary for multiplayer rooms", () => {
     const source = readFileSync("src/App.tsx", "utf8");
     const styles = readFileSync("src/styles.css", "utf8");
