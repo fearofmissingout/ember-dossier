@@ -11,6 +11,7 @@ import {
   expeditionDoctrineOptions,
   expeditionSupportDiagnosis,
   expeditionSupportPlan,
+  facilitySynergyPlan,
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
   survivorLevelCap,
@@ -77,6 +78,23 @@ describe("expedition doctrines", () => {
 
     expect(overwatch.roadSearch).toBe(passive.roadSearch + 2);
     expect(overwatch.roadPush).toBe(passive.roadPush + 1);
+  });
+
+  test("facility synergies add long-term expedition support from paired buildings", () => {
+    const facilities = completeFacilities(starterRoomFacilities());
+    const plan = facilitySynergyPlan(facilities);
+    const support = supportFromFacilities(facilities);
+
+    expect(plan.summary).toContain("设施协同");
+    expect(plan.items.filter((item) => item.status === "active").map((item) => item.id)).toContain("recovery-line");
+    expect(plan.items.find((item) => item.id === "route-intel-line")?.missing).toContain("电台");
+    expect(plan.items.find((item) => item.id === "field-sustain-line")?.missing.length).toBeGreaterThan(0);
+    expect(support.campRest).toBeGreaterThan(Math.max(0, facilities.find((facility) => facility.id === "dorm")?.level ?? 0) - 1);
+    expect(support.lootMedicine).toBeGreaterThan(0);
+
+    const withRadio = facilities.map((facility) => (facility.id === "radio" ? { ...facility, level: 1 } : facility));
+    expect(facilitySynergyPlan(withRadio).items.find((item) => item.id === "route-intel-line")?.status).toBe("active");
+    expect(supportFromFacilities(withRadio).shopIntel).toBeGreaterThan(support.shopIntel);
   });
 
   test("base prep shifts add temporary expedition support for non-squad survivors", () => {

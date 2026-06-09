@@ -122,6 +122,21 @@ export type ExpeditionSupportDiagnosis = {
   weakestStageLabel: string;
 };
 
+export type FacilitySynergyItem = {
+  detail: string;
+  effect: string;
+  id: string;
+  label: string;
+  missing: string[];
+  status: "active" | "blocked";
+};
+
+export type FacilitySynergyPlan = {
+  activeCount: number;
+  items: FacilitySynergyItem[];
+  summary: string;
+};
+
 export type AccountBaseSupportLine = {
   detail: string;
   effect: string;
@@ -479,11 +494,40 @@ export function supportFromFacilities(facilities: Facility[], doctrineId?: Exped
     }
   };
 
+  applyFacilitySynergySupport(support, facilities);
+
   if (!doctrineId || !expeditionDoctrineOptions(facilities).some((doctrine) => doctrine.id === doctrineId)) {
     return support;
   }
 
   return applyExpeditionDoctrine(support, doctrineId);
+}
+
+export function facilitySynergyPlan(facilities: Facility[]): FacilitySynergyPlan {
+  const items = facilitySynergyDefinitions.map((synergy) => {
+    const missing = synergy.requiredFacilityIds
+      .filter((facilityId) => facilityLevel(facilities, facilityId) <= 0)
+      .map((facilityId) => facilitySynergyFacilityLabels[facilityId] ?? facilityId);
+
+    return {
+      detail: synergy.detail,
+      effect: synergy.effect,
+      id: synergy.id,
+      label: synergy.label,
+      missing,
+      status: missing.length === 0 ? ("active" as const) : ("blocked" as const)
+    };
+  });
+  const activeCount = items.filter((item) => item.status === "active").length;
+
+  return {
+    activeCount,
+    items,
+    summary:
+      activeCount > 0
+        ? `设施协同 ${activeCount}/${items.length} 已激活，基地会把组合能力带到出征。`
+        : "还没有设施协同。先建成两条互相支撑的基础设施线。"
+  };
 }
 
 export function emptyExpeditionSupport(): ExpeditionSupport {
@@ -907,6 +951,80 @@ function applyExpeditionDoctrine(support: ExpeditionSupport, doctrineId: Expedit
   }
 
   return next;
+}
+
+const facilitySynergyFacilityLabels: Record<string, string> = {
+  barricade: "围栏",
+  clinic: "医务室",
+  dorm: "宿舍",
+  generator: "发电机",
+  kitchen: "厨房",
+  radio: "电台",
+  watchtower: "望塔",
+  workshop: "工坊"
+};
+
+const facilitySynergyDefinitions = [
+  {
+    detail: "宿舍稳定轮换，医务室处理伤口，队伍在营地和战后更容易恢复。",
+    effect: "营地休整 +1 / 包扎 +1 / 医疗战利品 +1",
+    id: "recovery-line",
+    label: "恢复线",
+    requiredFacilityIds: ["dorm", "clinic"]
+  },
+  {
+    detail: "望塔先标路，电台同步频段，路上险情和商店情报都会更清楚。",
+    effect: "压力 -1 / 路线搜索 +1 / 商店情报 +1",
+    id: "route-intel-line",
+    label: "路线情报线",
+    requiredFacilityIds: ["watchtower", "radio"]
+  },
+  {
+    detail: "工坊改装背架，发电机提供工具电力，搜刮和弹药整备更稳定。",
+    effect: "背包容量 +1 / 弹药伤害 +1 / 战利品 +1",
+    id: "salvage-line",
+    label: "搜刮线",
+    requiredFacilityIds: ["workshop", "generator"]
+  },
+  {
+    detail: "厨房准备口粮，围栏筛掉追击路线，出门更稳也更能撑到撤离。",
+    effect: "食物 +1 / 水 +1 / 路段稳固 +1",
+    id: "field-sustain-line",
+    label: "野外续航线",
+    requiredFacilityIds: ["kitchen", "barricade"]
+  }
+];
+
+function applyFacilitySynergySupport(support: ExpeditionSupport, facilities: Facility[]) {
+  const active = new Set(
+    facilitySynergyDefinitions
+      .filter((synergy) => synergy.requiredFacilityIds.every((facilityId) => facilityLevel(facilities, facilityId) > 0))
+      .map((synergy) => synergy.id)
+  );
+
+  if (active.has("recovery-line")) {
+    support.campRest += 1;
+    support.patchHeal += 1;
+    support.lootMedicine += 1;
+  }
+
+  if (active.has("route-intel-line")) {
+    support.pressureRelief += 1;
+    support.roadSearch += 1;
+    support.shopIntel += 1;
+  }
+
+  if (active.has("salvage-line")) {
+    support.carryCapacity = (support.carryCapacity ?? 0) + 1;
+    support.ammoDamage += 1;
+    support.lootSalvage += 1;
+  }
+
+  if (active.has("field-sustain-line")) {
+    support.startingSupplies.food = (support.startingSupplies.food ?? 0) + 1;
+    support.startingSupplies.water = (support.startingSupplies.water ?? 0) + 1;
+    support.roadSecure += 1;
+  }
 }
 
 function primaryPerkFor(survivor: AccountSurvivor): SurvivorPerkId {

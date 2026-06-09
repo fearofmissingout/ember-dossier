@@ -125,6 +125,7 @@ import {
   expeditionDoctrineOptions,
   expeditionSupportDiagnosis,
   expeditionSupportPlan,
+  facilitySynergyPlan,
   isSurvivorAtLevelCap,
   mergeExpeditionSupport,
   supportFromAccountBase,
@@ -5767,6 +5768,8 @@ function Facilities({
   developmentRoute: BaseDevelopmentRoute;
   onUpgrade: (id: string) => void;
 }) {
+  const synergyPlan = facilitySynergyPlan(state.facilities);
+
   return (
     <section className="panel">
       <p className="eyebrow">设施</p>
@@ -5835,6 +5838,26 @@ function Facilities({
               <small>可以把资源转向远征、恢复和个人基地成长。</small>
             </article>
           )}
+        </div>
+        <div className="facility-synergy-board" aria-label="设施协同路线">
+          <div className="facility-synergy-heading">
+            <div>
+              <span>设施协同</span>
+              <strong>{synergyPlan.summary}</strong>
+            </div>
+            <small>成对设施会把基地经营转化成出征后勤，不只是单个建筑加数值。</small>
+          </div>
+          <div className="facility-synergy-grid">
+            {synergyPlan.items.map((item) => (
+              <article className={item.status} key={item.id}>
+                <span>{item.status === "active" ? "已激活" : "待补齐"}</span>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+                <b>{item.effect}</b>
+                {item.missing.length > 0 && <em>缺：{item.missing.join("、")}</em>}
+              </article>
+            ))}
+          </div>
         </div>
         <div className="development-project-strip">
           {developmentPlan.recommended.map((project) => (

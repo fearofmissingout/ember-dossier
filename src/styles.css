@@ -9191,6 +9191,112 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.facility-synergy-board {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #bfc7a7;
+  border-radius: 8px;
+  background: #f6faee;
+}
+
+.facility-synergy-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.facility-synergy-heading div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.facility-synergy-heading span,
+.facility-synergy-grid span {
+  color: #526c38;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.facility-synergy-heading strong,
+.facility-synergy-heading small,
+.facility-synergy-grid strong,
+.facility-synergy-grid small,
+.facility-synergy-grid b,
+.facility-synergy-grid em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.facility-synergy-heading strong {
+  color: #2f3d27;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.facility-synergy-heading small {
+  max-width: 34ch;
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.facility-synergy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.facility-synergy-grid article {
+  display: grid;
+  min-width: 0;
+  min-height: 142px;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d8c4a4;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+
+.facility-synergy-grid article.active {
+  border-color: #83a77f;
+  background: #edf7eb;
+}
+
+.facility-synergy-grid article.blocked {
+  border-color: #d0a24b;
+  background: #fff5d8;
+}
+
+.facility-synergy-grid strong {
+  color: #2f3d27;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.facility-synergy-grid small {
+  color: #5e6a52;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.facility-synergy-grid b,
+.facility-synergy-grid em {
+  margin-top: auto;
+  color: #75552e;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
 .development-project-card {
   display: grid;
   gap: 7px;
@@ -11103,6 +11209,7 @@ button:disabled {
     .base-command-actions,
     .base-command-strip,
     .development-briefing-grid,
+    .facility-synergy-grid,
     .development-queue-board,
     .development-route-steps,
     .march-forecast,
@@ -11389,6 +11496,7 @@ button:disabled {
     .facility-impact-grid,
   .development-queue-board,
   .development-briefing-grid,
+  .facility-synergy-grid,
   .development-route-steps,
     .development-project-strip,
     .member-summary-row,
