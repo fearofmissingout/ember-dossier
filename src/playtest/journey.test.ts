@@ -67,10 +67,10 @@ describe("journey route generation", () => {
   test("keeps each location family stocked with multiple route beats", () => {
     expect(journeyContentBreadth()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "resources", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "urban", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "weird", roadBeats: 5, shops: 4 }),
-        expect.objectContaining({ camps: 3, enemies: 5, events: 4, family: "wilds", roadBeats: 5, shops: 4 })
+        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "resources", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "urban", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "weird", roadBeats: 5, shops: 4 }),
+        expect.objectContaining({ camps: 5, enemies: 5, events: 4, family: "wilds", roadBeats: 5, shops: 4 })
       ])
     );
   });
@@ -146,12 +146,16 @@ describe("journey route generation", () => {
     };
 
     const resourceRoute = createJourney(session, draft, "water-plant", 60);
+    const urbanRoute = createJourney(session, draft, "hospital", 60);
     const weirdRoute = createJourney(session, draft, "greenhouse", 60);
+    const wildRoute = createJourney(session, draft, "farm", 60);
 
-    expect(resourceRoute.nodes[2]).toMatchObject({ title: "高架管廊", type: "camp" });
-    expect(resourceRoute.nodes[2].body).toContain("干燥平台");
-    expect(weirdRoute.nodes[2]).toMatchObject({ title: "倒影天井", type: "camp" });
+    expect(resourceRoute.nodes[2]).toMatchObject({ title: "旧泵车车斗", type: "camp" });
+    expect(resourceRoute.nodes[2].body).toContain("空滤芯");
+    expect(urbanRoute.nodes[2]).toMatchObject({ title: "消防楼梯平台", type: "camp" });
+    expect(weirdRoute.nodes[2]).toMatchObject({ title: "无源广播室", type: "camp" });
     expect(weirdRoute.nodes[2].camp?.rest.label).toBe("处理伤口");
+    expect(wildRoute.nodes[2]).toMatchObject({ title: "拖拉机草窝", type: "camp" });
   });
 
   test("camp choices use location-family specific tradeoffs", () => {

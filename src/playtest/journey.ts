@@ -1961,6 +1961,14 @@ const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>
     {
       body: "高架管廊下有一段干燥平台，能看见来路，也能听见泵房深处的回声。",
       title: "高架管廊"
+    },
+    {
+      body: "沉淀池边的控制柜还剩一点余温，队伍可以借着铁皮挡风，也能顺手核对水位刻度。",
+      title: "沉淀池控制柜"
+    },
+    {
+      body: "旧泵车的车斗铺着帆布和空滤芯，睡上去不舒服，但至少离积水和脚印都够远。",
+      title: "旧泵车车斗"
     }
   ],
   urban: [
@@ -1975,6 +1983,14 @@ const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>
     {
       body: "地下车库收费亭里还有一张窄椅和半卷胶带，只要不碰道闸就很安静。",
       title: "收费亭"
+    },
+    {
+      body: "便利店后仓的卷帘门卡在半截，货架挡住视线，也挡住了大多数不请自来的脚步。",
+      title: "便利店后仓"
+    },
+    {
+      body: "消防楼梯平台堆着旧灭火器和湿报纸，往上能望见街口，往下能听见楼道里的回音。",
+      title: "消防楼梯平台"
     }
   ],
   weird: [
@@ -1989,6 +2005,14 @@ const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>
     {
       body: "倒影天井里看不见天空，却能看见队伍休息时应该有的样子。",
       title: "倒影天井"
+    },
+    {
+      body: "一排病床自己排成圆形，床头卡上写着队伍的名字，但字迹每隔几分钟就会换一次。",
+      title: "轮换病床圈"
+    },
+    {
+      body: "没有声源的广播室会在整点报平安，报完之后，门外的脚步声也会暂时停下。",
+      title: "无源广播室"
     }
   ],
   wilds: [
@@ -2003,6 +2027,14 @@ const familyCamps: Record<LocationFamily, Array<{ body: string; title: string }>
     {
       body: "半塌谷仓的阁楼还能承重，麦草厚到能压住脚步，也能藏住疲劳。",
       title: "谷仓阁楼"
+    },
+    {
+      body: "溪谷石棚低得必须弯腰进去，里面潮湿却避风，能把火光藏在岩缝后面。",
+      title: "溪谷石棚"
+    },
+    {
+      body: "废弃拖拉机旁长满高草，铁壳还能挡雨，轮胎印也能误导追来的东西。",
+      title: "拖拉机草窝"
     }
   ]
 };
